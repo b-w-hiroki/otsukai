@@ -167,6 +167,52 @@
     .comment-input-row input { flex: 1; padding: 6px 10px; font-size: 13px; }
     .comment-input-row button { padding: 6px 12px; font-size: 12px; white-space: nowrap; }
     .req.has-unread-comment { border-left-color: #f97316; }
+    .claimer-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fef3c7;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin: 8px 0 4px;
+    }
+    .claimer-badge .avatar { width: 38px; height: 38px; font-size: 22px; flex-shrink: 0; }
+    .claimer-badge-name { font-size: 14px; font-weight: 700; color: #92400e; }
+    .claimer-badge-status { font-size: 12px; color: #b45309; margin-top: 2px; }
+    .shortcut-area { margin-bottom: 4px; }
+    .shortcut-area-label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    .shortcut-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .shortcut-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 20px;
+      padding: 6px 8px 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      border: none;
+    }
+    .shortcut-chip:active { background: #bfdbfe; }
+    .chip-delete {
+      background: transparent;
+      border: none;
+      color: #93c5fd;
+      font-size: 16px;
+      padding: 0 2px;
+      cursor: pointer;
+      line-height: 1;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chip-delete:hover { color: var(--danger); }
     .pill {
       display: inline-block;
       font-size: 11px;
@@ -518,8 +564,16 @@
               </label>
             </div>
             <textarea id="new-memo" placeholder="メモ（任意・ブランド指定や注意点など）" maxlength="200"></textarea>
-            <button id="btn-add-request">追加する</button>
+            <div class="row" style="gap:8px;">
+              <button id="btn-add-request" style="flex:1;">追加する</button>
+              <button id="btn-add-shortcut" class="ghost" style="white-space:nowrap;" title="入力内容をショートカット登録">⭐ 登録</button>
+            </div>
           </div>
+        </div>
+
+        <div id="shortcut-area" class="shortcut-area" style="display:none;">
+          <div class="shortcut-area-label">⚡ よく買うもの（タップで即追加）</div>
+          <div id="shortcut-chips" class="shortcut-chips"></div>
         </div>
 
         <div id="list-open"></div>
@@ -627,7 +681,8 @@
       prevComments: {},
       expandedItems: new Set(),
       unreadComments: new Set(),
-      muteNotifications: true
+      muteNotifications: true,
+      shortcuts: {}
     };
 
     const $ = (id) => document.getElementById(id);
@@ -739,7 +794,7 @@
     async function signOut() {
       detachListeners();
       state.uid = null; state.profile = null; state.familyId = null; state.family = null;
-      state.requests = {}; state.stats = {}; state.prevRequests = {};
+      state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {};
       await auth.signOut();
     }
 
@@ -894,6 +949,11 @@
         updateUnreadComments();
         renderRequests();
       });
+      // Shortcuts
+      attach(familyRef().child("shortcuts"), "value", (s) => {
+        state.shortcuts = s.val() || {};
+        renderShortcuts();
+      });
       showScreen("main");
     }
 
@@ -1031,7 +1091,53 @@
       $("new-name").value = "";
       $("new-memo").value = "";
       $("new-urgent").checked = false;
-      showToast("依頼しました 🧺", { sound: false });
+      showToast("追加しました 🛒", { sound: false });
+    }
+    async function addShortcut() {
+      const name = $("new-name").value.trim();
+      if (!name) return showToast("品名を入力してください");
+      const diff = $("new-diff").value;
+      const urgent = $("new-urgent").checked;
+      const ref = familyRef().child("shortcuts").push();
+      await ref.set({ name, diff, urgent: urgent || false, createdAt: now(), createdBy: state.uid });
+      showToast(`⭐ 「${name}」をショートカット登録しました`);
+    }
+    async function deleteShortcut(id) {
+      await familyRef().child("shortcuts/" + id).remove();
+    }
+    async function addFromShortcut(s) {
+      const id = familyRef().child("requests").push().key;
+      const req = { name: s.name, diff: s.diff || "normal", urgent: s.urgent || false, status: "open", requestedBy: state.uid, requestedAt: now() };
+      await familyRef().child("requests/" + id).set(req);
+      await bumpStat("requestedCount");
+      showToast(`🛒 「${s.name}」を追加しました`);
+    }
+    function renderShortcuts() {
+      const area = $("shortcut-area");
+      const chips = $("shortcut-chips");
+      if (!area || !chips) return;
+      const entries = Object.entries(state.shortcuts);
+      if (!entries.length) { area.style.display = "none"; return; }
+      area.style.display = "block";
+      chips.innerHTML = entries.map(([id, s]) => `
+        <button class="shortcut-chip" data-sid="${id}">
+          ${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}
+          <span class="chip-delete" data-del="${id}" role="button" aria-label="削除">×</span>
+        </button>
+      `).join("");
+      chips.querySelectorAll(".shortcut-chip").forEach(chip => {
+        chip.addEventListener("click", (e) => {
+          if (e.target.closest(".chip-delete")) return;
+          const s = state.shortcuts[chip.dataset.sid];
+          if (s) addFromShortcut(s);
+        });
+      });
+      chips.querySelectorAll(".chip-delete").forEach(del => {
+        del.addEventListener("click", (e) => {
+          e.stopPropagation();
+          deleteShortcut(del.dataset.del);
+        });
+      });
     }
     async function claimRequest(id) {
       await familyRef().child("requests/" + id).update({
@@ -1128,10 +1234,16 @@
             <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
-          <div class="meta">${memberEmoji(r.claimedBy)} ${escapeHtml(memberName(r.claimedBy))}さんが買いに行く ・ ${timeAgo(r.claimedAt)}</div>
+          <div class="claimer-badge">
+            <div class="avatar">${memberEmoji(r.claimedBy)}</div>
+            <div>
+              <div class="claimer-badge-name">${escapeHtml(memberName(r.claimedBy))}さん${mine ? ' (あなた)' : ''}</div>
+              <div class="claimer-badge-status">🛒 買いに行きます・${timeAgo(r.claimedAt)}に立候補</div>
+            </div>
+          </div>
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
-            ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 買ってきた！</button>` : ''}
+            ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 購入しました</button>` : ''}
             ${mine ? `<button data-act="unclaim" data-id="${r.id}" class="ghost">↩️ やめる</button>` : ''}
           </div>
           ${commentThread(r)}
@@ -1308,6 +1420,7 @@
       $("btn-create-family").addEventListener("click", createFamily);
       $("btn-join-family").addEventListener("click", joinFamily);
       $("btn-add-request").addEventListener("click", addRequest);
+      $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
       $("btn-logout").addEventListener("click", signOut);
       $("btn-copy-code").addEventListener("click", async () => {
