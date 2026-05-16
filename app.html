@@ -867,16 +867,24 @@
     async function joinFamily() {
       const code = $("invite-code").value.trim().toUpperCase();
       if (!code) return showFamilyError("招待コードを入力してください");
-      const snap = await db.ref("invites/" + code).once("value");
-      const familyId = snap.val();
-      if (!familyId) return showFamilyError("招待コードが見つかりません");
-      const ts = now();
-      await db.ref(`families/${familyId}/members/${state.uid}`).set({
-        name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "member"
-      });
-      await db.ref("users/" + state.uid + "/familyId").set(familyId);
-      state.familyId = familyId;
-      attachFamilyListeners();
+      try {
+        const snap = await db.ref("invites/" + code).once("value");
+        const familyId = snap.val();
+        if (!familyId) return showFamilyError("招待コードが見つかりません");
+        const ts = now();
+        await db.ref(`families/${familyId}/members/${state.uid}`).set({
+          name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "member"
+        });
+        await db.ref("users/" + state.uid + "/familyId").set(familyId);
+        state.familyId = familyId;
+        attachFamilyListeners();
+      } catch (e) {
+        if (e && e.code === "PERMISSION_DENIED") {
+          showFamilyError("参加できませんでした（セキュリティルールを確認してください）");
+        } else {
+          showFamilyError("エラーが発生しました: " + (e && e.message || e));
+        }
+      }
     }
     function showFamilyError(msg) { const el = $("family-error"); el.textContent = msg; el.style.display = "block"; }
     function hideFamilyError() { $("family-error").style.display = "none"; }
