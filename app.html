@@ -123,6 +123,50 @@
       font-weight: 400;
     }
     button.icon-btn:hover, button.icon-btn:active { color: var(--danger); }
+
+    /* Comment thread */
+    .comment-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+    .comment-toggle {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .comment-toggle.has-unread {
+      background: #fff7ed;
+      color: #c2410c;
+      border-color: #fed7aa;
+      animation: pulse 1.2s infinite;
+    }
+    .comment-thread { margin-top: 10px; display: grid; gap: 8px; }
+    .comment-root { display: grid; gap: 4px; }
+    .comment-item { display: flex; gap: 8px; align-items: flex-start; }
+    .comment-item.reply {
+      margin-left: 28px;
+      padding-left: 10px;
+      border-left: 2px solid var(--line);
+    }
+    .comment-body { flex: 1; min-width: 0; }
+    .comment-author { font-size: 12px; font-weight: 700; }
+    .comment-text { font-size: 13px; color: var(--ink); word-break: break-all; margin-top: 2px; line-height: 1.5; }
+    .reply-btn {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      font-size: 11px;
+      padding: 2px 0;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+    .comment-input-row { display: flex; gap: 6px; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+    .comment-input-row input { flex: 1; padding: 6px 10px; font-size: 13px; }
+    .comment-input-row button { padding: 6px 12px; font-size: 12px; white-space: nowrap; }
+    .req.has-unread-comment { border-left-color: #f97316; }
     .pill {
       display: inline-block;
       font-size: 11px;
@@ -474,7 +518,7 @@
               </label>
             </div>
             <textarea id="new-memo" placeholder="メモ（任意・ブランド指定や注意点など）" maxlength="200"></textarea>
-            <button id="btn-add-request">依頼する</button>
+            <button id="btn-add-request">追加する</button>
           </div>
         </div>
 
@@ -533,7 +577,7 @@
     </div>
 
     <nav class="bottom-nav">
-      <button data-tab="requests" class="active">🧺 おつかい<span id="badge-requests" class="nav-badge" style="display:none;">0</span></button>
+      <button data-tab="requests" class="active">🛒 お買い物<span id="badge-requests" class="nav-badge" style="display:none;">0</span></button>
       <button data-tab="history">📊 履歴</button>
       <button data-tab="settings">⚙️ 設定</button>
     </nav>
@@ -563,23 +607,27 @@
       "👨","👩","👦","👧","👴","👵","🧑","🧒"
     ];
     const DIFF_LABEL = { normal: "ふつう", hard: "ちょっと大変", extreme: "めちゃ大変" };
-    const STATUS_LABEL = { open: "未受託", claimed: "買い物中", done: "完了" };
+    const STATUS_LABEL = { open: "未受託", claimed: "買いに行く", done: "完了" };
 
     // ===== State =====
     const state = {
       uid: null,
       email: null,
-      profile: null,            // { name, emoji }
+      profile: null,
       familyId: null,
-      family: null,             // { meta, members }
+      family: null,
       requests: {},
+      comments: {},
       stats: {},
       activeTab: "requests",
       profileEmoji: "🙂",
       settingsEmoji: "🙂",
       soundOn: localStorage.getItem("soundOn") !== "false",
       prevRequests: {},
-      muteNotifications: true   // suppress on initial load
+      prevComments: {},
+      expandedItems: new Set(),
+      unreadComments: new Set(),
+      muteNotifications: true
     };
 
     const $ = (id) => document.getElementById(id);
@@ -826,7 +874,112 @@
         state.stats = s.val() || {};
         renderMemberStats();
       });
+      // Comments
+      attach(db.ref(`families/${state.familyId}/comments`), "value", (s) => {
+        const next = s.val() || {};
+        if (!state.muteNotifications) {
+          Object.entries(next).forEach(([reqId, comments]) => {
+            const prev = state.prevComments[reqId] || {};
+            Object.entries(comments || {}).forEach(([cid, c]) => {
+              if (!prev[cid] && c.authorUid !== state.uid) {
+                const req = state.requests[reqId];
+                const reqName = req ? req.name : "アイテム";
+                showToast(`💬 ${escapeHtml(c.authorName)}さんが「${escapeHtml(reqName)}」にコメント`);
+              }
+            });
+          });
+        }
+        state.prevComments = JSON.parse(JSON.stringify(next));
+        state.comments = next;
+        updateUnreadComments();
+        renderRequests();
+      });
       showScreen("main");
+    }
+
+    // ===== Comments =====
+    function unreadKey(reqId) { return `${state.familyId}_${reqId}_lv`; }
+    function markCommentsSeen(reqId) {
+      localStorage.setItem(unreadKey(reqId), String(now()));
+      state.unreadComments.delete(reqId);
+    }
+    function updateUnreadComments() {
+      Object.entries(state.comments).forEach(([reqId, comments]) => {
+        const lastViewed = parseInt(localStorage.getItem(unreadKey(reqId)) || '0');
+        const hasNew = Object.values(comments || {}).some(c => c.createdAt > lastViewed && c.authorUid !== state.uid);
+        if (hasNew) state.unreadComments.add(reqId);
+        else state.unreadComments.delete(reqId);
+      });
+    }
+    function toggleComments(reqId) {
+      if (state.expandedItems.has(reqId)) {
+        state.expandedItems.delete(reqId);
+      } else {
+        state.expandedItems.add(reqId);
+        markCommentsSeen(reqId);
+      }
+      renderRequests();
+    }
+    async function postComment(reqId, text, parentId) {
+      if (!text.trim()) return;
+      const ref = db.ref(`families/${state.familyId}/comments/${reqId}`);
+      const cid = ref.push().key;
+      await ref.child(cid).set({
+        text: text.trim(),
+        authorUid: state.uid,
+        authorEmoji: state.profile.emoji,
+        authorName: state.profile.name,
+        createdAt: now(),
+        parentId: parentId || null
+      });
+      await familyRef().child(`requests/${reqId}`).update({ lastCommentAt: now() });
+    }
+    function commentThread(r) {
+      const reqId = r.id;
+      const expanded = state.expandedItems.has(reqId);
+      const allComments = state.comments[reqId] || {};
+      const commentList = Object.entries(allComments).map(([id, c]) => ({ id, ...c }));
+      const count = commentList.length;
+      const hasUnread = state.unreadComments.has(reqId);
+      let html = `<div class="comment-footer">
+        <button class="comment-toggle${hasUnread ? ' has-unread' : ''}" data-toggle="${reqId}">
+          💬 ${count > 0 ? count + '件のコメント' : 'コメントする'} ${hasUnread ? '🔴 ' : ''}${expanded ? '▲' : '▼'}
+        </button>`;
+      if (expanded) {
+        const roots = commentList.filter(c => !c.parentId).sort((a,b) => a.createdAt - b.createdAt);
+        const replies = commentList.filter(c => !!c.parentId);
+        html += `<div class="comment-thread">`;
+        if (roots.length === 0) html += `<p class="muted" style="font-size:12px;text-align:center;">まだコメントはありません</p>`;
+        roots.forEach(root => {
+          const rootReplies = replies.filter(rp => rp.parentId === root.id).sort((a,b) => a.createdAt - b.createdAt);
+          html += `<div class="comment-root">
+            <div class="comment-item">
+              <span class="avatar sm">${escapeHtml(root.authorEmoji)}</span>
+              <div class="comment-body">
+                <div class="comment-author">${escapeHtml(root.authorName)} <span class="tiny">${timeAgo(root.createdAt)}</span></div>
+                <div class="comment-text">${escapeHtml(root.text)}</div>
+                <button class="reply-btn" data-reply="${root.id}" data-name="${escapeHtml(root.authorName)}" data-req="${reqId}">↩️ 返信</button>
+              </div>
+            </div>`;
+          rootReplies.forEach(rep => {
+            html += `<div class="comment-item reply">
+              <span class="avatar sm">${escapeHtml(rep.authorEmoji)}</span>
+              <div class="comment-body">
+                <div class="comment-author">${escapeHtml(rep.authorName)} <span class="tiny">${timeAgo(rep.createdAt)}</span></div>
+                <div class="comment-text">${escapeHtml(rep.text)}</div>
+              </div>
+            </div>`;
+          });
+          html += `</div>`;
+        });
+        html += `<div class="comment-input-row" data-req="${reqId}" data-parent="">
+          <span class="avatar sm">${state.profile ? escapeHtml(state.profile.emoji) : '🙂'}</span>
+          <input class="comment-input" placeholder="コメントを追加..." />
+          <button class="comment-send">送信</button>
+        </div></div>`;
+      }
+      html += `</div>`;
+      return html;
     }
 
     // ===== Notification diff =====
@@ -843,11 +996,11 @@
         }
         if (before.status !== r.status) {
           if (r.status === "claimed" && r.claimedBy && r.claimedBy !== state.uid) {
-            showToast(`🛒 ${memberName(r.claimedBy)}さんが「${r.name}」を担当`);
+            showToast(`🙋 ${memberName(r.claimedBy)}さんが「${r.name}」に立候補しました`);
           } else if (r.status === "done" && r.completedBy && r.completedBy !== state.uid) {
-            showToast(`✅ ${memberName(r.completedBy)}さんが「${r.name}」を購入しました！`);
+            showToast(`✅ ${memberName(r.completedBy)}さんが「${r.name}」を買ってきました！`);
           } else if (r.status === "open" && before.status === "claimed") {
-            showToast(`↩️ 「${r.name}」が未受託に戻りました`);
+            showToast(`↩️ 「${r.name}」の担当が外れました`);
           }
         }
       });
@@ -925,20 +1078,14 @@
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const done = items.filter((r) => r.status === "done" && (r.completedAt || 0) >= todayStart.getTime()).sort((a,b) => b.completedAt - a.completedAt);
 
-      $("list-open").innerHTML = sectionHtml("🆕 未受託", open.length, open.length ? open.map(openCard).join("") : emptyHtml("依頼はありません。"));
-      $("list-claimed").innerHTML = claimed.length ? sectionHtml("🛒 買い物中", claimed.length, claimed.map(claimedCard).join("")) : "";
+      $("list-open").innerHTML = sectionHtml("📋 お買い物リスト", open.length, open.length ? open.map(openCard).join("") : emptyHtml("メモはありません。"));
+      $("list-claimed").innerHTML = claimed.length ? sectionHtml("🙋 買いに行く", claimed.length, claimed.map(claimedCard).join("")) : "";
       $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map(doneCard).join("")) : "";
 
       wireRequestButtons();
     }
     function sectionHtml(title, count, body) {
-      return `
-        <div class="section-header">
-          <h2>${title}</h2>
-          <span class="section-count">${count}</span>
-        </div>
-        ${body}
-      `;
+      return `<div class="section-header"><h2>${title}</h2><span class="section-count">${count}</span></div>${body}`;
     }
     function emptyHtml(msg) { return `<div class="empty">${msg}</div>`; }
     function timeAgo(ts) {
@@ -953,43 +1100,48 @@
       return day + "日前";
     }
     function openCard(r) {
+      const hasUnread = state.unreadComments.has(r.id);
       return `
-        <div class="req ${r.urgent ? 'urgent' : ''}">
+        <div class="req ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}">
           <div class="head">
             <span class="name">${escapeHtml(r.name)}</span>
             <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
-          <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが依頼 ・ ${timeAgo(r.requestedAt)}</div>
+          <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ ${timeAgo(r.requestedAt)}</div>
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
-            <button data-act="claim" data-id="${r.id}" class="success">🛒 私が買う</button>
+            <button data-act="claim" data-id="${r.id}" class="success">🙋 立候補する</button>
             ${r.requestedBy === state.uid ? `<button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>` : ''}
           </div>
+          ${commentThread(r)}
         </div>
       `;
     }
     function claimedCard(r) {
       const mine = r.claimedBy === state.uid;
+      const hasUnread = state.unreadComments.has(r.id);
       return `
-        <div class="req claimed ${r.urgent ? 'urgent' : ''}">
+        <div class="req claimed ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}">
           <div class="head">
             <span class="name">${escapeHtml(r.name)}</span>
             <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
-          <div class="meta">${memberEmoji(r.claimedBy)} ${escapeHtml(memberName(r.claimedBy))}さんが受託中 ・ ${timeAgo(r.claimedAt)}</div>
+          <div class="meta">${memberEmoji(r.claimedBy)} ${escapeHtml(memberName(r.claimedBy))}さんが買いに行く ・ ${timeAgo(r.claimedAt)}</div>
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
-            ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 買えた！</button>` : ''}
+            ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 買ってきた！</button>` : ''}
             ${mine ? `<button data-act="unclaim" data-id="${r.id}" class="ghost">↩️ やめる</button>` : ''}
           </div>
+          ${commentThread(r)}
         </div>
       `;
     }
     function doneCard(r) {
+      const hasUnread = state.unreadComments.has(r.id);
       return `
-        <div class="req done">
+        <div class="req done${hasUnread ? ' has-unread-comment' : ''}">
           <div class="head">
             <span class="name">${escapeHtml(r.name)}</span>
             <span class="pill s-done">✅完了</span>
@@ -999,6 +1151,7 @@
             <button data-act="reopen" data-id="${r.id}" class="ghost tiny-btn">↩️ 戻す</button>
             <button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>
           </div>
+          ${commentThread(r)}
         </div>
       `;
     }
@@ -1013,6 +1166,34 @@
           else if (act === "reopen") reopenRequest(id);
           else if (act === "delete") deleteRequest(id);
         });
+      });
+      document.querySelectorAll(".comment-toggle[data-toggle]").forEach((b) => {
+        b.addEventListener("click", () => toggleComments(b.dataset.toggle));
+      });
+      document.querySelectorAll(".reply-btn[data-reply]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const row = b.closest(".comment-thread").querySelector(`.comment-input-row[data-req="${b.dataset.req}"]`);
+          if (!row) return;
+          row.dataset.parent = b.dataset.reply;
+          const input = row.querySelector(".comment-input");
+          input.placeholder = `↩️ ${b.dataset.name}さんへ返信...`;
+          input.focus();
+        });
+      });
+      document.querySelectorAll(".comment-input-row").forEach((row) => {
+        const input = row.querySelector(".comment-input");
+        const send = row.querySelector(".comment-send");
+        const doSend = () => {
+          const text = input.value;
+          const parentId = row.dataset.parent || null;
+          postComment(row.dataset.req, text, parentId).then(() => {
+            input.value = "";
+            row.dataset.parent = "";
+            input.placeholder = "コメントを追加...";
+          });
+        };
+        send.addEventListener("click", doSend);
+        input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
       });
     }
 
