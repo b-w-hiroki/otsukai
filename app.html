@@ -3,696 +3,1109 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>おつかい農場ミッション</title>
+  <title>🧺 おうちのおつかい</title>
   <style>
     :root {
       --bg: #f7fbff;
       --card: #ffffff;
       --ink: #1f2a37;
       --muted: #6b7280;
-      --accent: #35b16f;
-      --accent-2: #5ea5ff;
-      --danger: #ef5350;
-      --coin: #ffca28;
-      --seed: #7bc96f;
-      --mush: #a879d5;
-      --meat: #f28b82;
+      --line: #e6ecf4;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --ok: #16a34a;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --urgent: #f43f5e;
+      --status-open: #2563eb;
+      --status-claimed: #f59e0b;
+      --status-done: #16a34a;
       --radius: 14px;
-      --shadow: 0 8px 24px rgba(31, 42, 55, 0.1);
+      --shadow: 0 8px 24px rgba(31, 42, 55, 0.08);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; }
     body {
-      margin: 0;
-      font-family: "Segoe UI", system-ui, sans-serif;
+      font-family: "Segoe UI", system-ui, "Hiragino Kaku Gothic ProN", sans-serif;
       color: var(--ink);
-      background: linear-gradient(180deg, #dff3ff 0%, #f5fbff 50%, #fffef8 100%);
+      background: linear-gradient(180deg, #eff6ff 0%, #f8fafc 60%, #fffef8 100%);
       min-height: 100vh;
     }
+    .screen { display: none; }
+    .screen.active { display: block; }
     .app {
       max-width: 760px;
       margin: 0 auto;
       padding: 12px 12px calc(84px + var(--safe-bottom));
     }
+    .center-pad {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 40px 16px;
+    }
     .topbar {
       position: sticky;
       top: 0;
       z-index: 20;
-      backdrop-filter: blur(6px);
-      background: rgba(255,255,255,0.75);
-      border-radius: 0 0 12px 12px;
-      padding: 10px;
-      margin: -12px -12px 10px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-    }
-    .title { font-size: 18px; font-weight: 700; margin: 0; }
-    .sub { color: var(--muted); font-size: 12px; margin-top: 4px; word-break: break-all; }
-    .resource-bar {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0,1fr));
+      backdrop-filter: blur(8px);
+      background: rgba(255,255,255,0.85);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
       gap: 8px;
-      margin-top: 10px;
     }
-    .res {
-      background: var(--card);
-      border-radius: 10px;
-      padding: 8px;
-      box-shadow: var(--shadow);
-      text-align: center;
-      font-size: 12px;
+    .topbar .title { font-size: 16px; font-weight: 700; flex: 1; min-width: 0; }
+    .topbar .family-name { font-size: 12px; color: var(--muted); }
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
     }
-    .res b { display: block; font-size: 14px; margin-top: 2px; }
-    .tab {
-      display: none;
-      animation: fade .2s ease;
-    }
-    .tab.active { display: block; }
-    @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+    .avatar.sm { width: 24px; height: 24px; font-size: 13px; }
     .card {
       background: var(--card);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 12px;
+      padding: 14px;
       margin-bottom: 12px;
     }
+    h1, h2, h3 { margin: 0 0 8px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 16px; }
+    h3 { font-size: 14px; color: var(--muted); margin-top: 4px; font-weight: 700; }
+    p { margin: 8px 0; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .tiny { font-size: 11px; color: var(--muted); }
     .row { display: flex; align-items: center; gap: 8px; }
     .row.wrap { flex-wrap: wrap; }
-    .grow { flex: 1; }
-    input, select, button {
+    .row.between { justify-content: space-between; }
+    .grow { flex: 1; min-width: 0; }
+    .grid { display: grid; gap: 8px; }
+    input, select, textarea, button {
       font: inherit;
       border-radius: 10px;
       border: 1px solid #dbe4ee;
       padding: 10px;
       background: #fff;
+      color: var(--ink);
     }
-    input, select { width: 100%; }
+    input, select, textarea { width: 100%; }
+    textarea { min-height: 60px; resize: vertical; }
     button {
       border: none;
-      background: var(--accent-2);
+      background: var(--accent);
       color: #fff;
       font-weight: 700;
       cursor: pointer;
+      padding: 10px 14px;
     }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
     button.secondary { background: #6b7280; }
-    button.warn { background: var(--danger); }
-    button.ghost {
-      background: #eef5ff;
-      color: #2156a3;
-      border: 1px solid #d6e7ff;
+    button.ghost { background: var(--accent-soft); color: #1d4ed8; }
+    button.outline { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+    button.warn { background: var(--warn); }
+    button.danger { background: var(--danger); }
+    button.success { background: var(--ok); }
+    button.tiny-btn { padding: 6px 10px; font-size: 12px; }
+    button.icon-btn {
+      background: transparent;
+      color: var(--muted);
+      padding: 4px 8px;
+      font-size: 18px;
+      font-weight: 400;
     }
-    .mission-item {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 10px;
-      align-items: center;
-      padding: 10px;
-      border-radius: 12px;
-      background: #f8fbff;
-      border: 1px solid #e9f2ff;
-      margin-bottom: 8px;
-    }
-    .mission-item.done { opacity: 0.6; text-decoration: line-through; }
+    button.icon-btn:hover, button.icon-btn:active { color: var(--danger); }
     .pill {
+      display: inline-block;
       font-size: 11px;
       border-radius: 999px;
       padding: 3px 8px;
       color: #fff;
       font-weight: 700;
     }
-    .p-normal { background: #4caf50; }
-    .p-hard { background: #ff9800; }
-    .p-extreme { background: #ef5350; }
-    .farm-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 10px;
+    .pill.diff-normal { background: #4caf50; }
+    .pill.diff-hard { background: #ff9800; }
+    .pill.diff-extreme { background: #ef5350; }
+    .pill.status { color: #fff; }
+    .pill.s-open { background: var(--status-open); }
+    .pill.s-claimed { background: var(--status-claimed); }
+    .pill.s-done { background: var(--status-done); }
+    .pill.urgent {
+      background: var(--urgent);
+      animation: pulse 1.2s infinite;
     }
-    .facility {
-      background: linear-gradient(180deg, #ffffff 0%, #f6fff9 100%);
-      border: 1px solid #dceee0;
-      border-radius: 12px;
-      padding: 10px;
-      min-height: 130px;
-      position: relative;
-      overflow: hidden;
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
     }
-    .facility.locked {
-      filter: grayscale(0.7);
-      opacity: 0.7;
-      background: #f3f4f6;
-      border-color: #e5e7eb;
+
+    /* Request list */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0 8px;
+      padding: 0 4px;
     }
-    .facility .emoji { font-size: 28px; }
-    .facility .name { font-weight: 700; font-size: 14px; }
-    .facility .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
-    .facility button { width: 100%; margin-top: 8px; padding: 8px; font-size: 12px; }
-    .sparkle {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      font-size: 18px;
-      animation: twinkle 1s infinite ease-in-out;
+    .section-header h2 { margin: 0; font-size: 14px; }
+    .section-count {
+      background: var(--accent-soft);
+      color: #1d4ed8;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
     }
-    @keyframes twinkle {
-      0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
-      50% { transform: scale(1.35) rotate(8deg); opacity: 1; }
-    }
-    .shop-item {
-      border: 1px solid #e6ecf4;
-      border-radius: 12px;
-      padding: 10px;
+    .req {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px;
       margin-bottom: 8px;
-      background: #fff;
+      border-left: 4px solid var(--status-open);
     }
+    .req.claimed { border-left-color: var(--status-claimed); }
+    .req.done { border-left-color: var(--status-done); opacity: 0.75; }
+    .req.urgent {
+      border-left-color: var(--urgent);
+      background: linear-gradient(90deg, #fff5f7 0%, #ffffff 30%);
+    }
+    .req .head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .req .name { font-weight: 700; font-size: 15px; flex: 1; min-width: 0; word-break: break-all; }
+    .req .meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .req .memo {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 6px 10px;
+      margin: 6px 0;
+      font-size: 13px;
+      color: #334155;
+    }
+    .req .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .req .actions button { padding: 6px 12px; font-size: 13px; }
+
+    /* Bottom nav */
     .bottom-nav {
       position: fixed;
       left: 0;
       right: 0;
       bottom: 0;
       padding: 8px 10px calc(8px + var(--safe-bottom));
-      background: rgba(255,255,255,0.95);
+      background: rgba(255,255,255,0.96);
       backdrop-filter: blur(8px);
-      border-top: 1px solid #e8edf5;
+      border-top: 1px solid var(--line);
       display: grid;
       grid-template-columns: repeat(3, minmax(0,1fr));
       gap: 8px;
       z-index: 30;
     }
     .bottom-nav button {
-      background: #eef2f7;
+      background: #f1f5f9;
       color: #334155;
       font-weight: 700;
       padding: 10px 4px;
+      font-size: 13px;
+      position: relative;
     }
     .bottom-nav button.active {
-      background: #dbeafe;
+      background: var(--accent-soft);
       color: #1d4ed8;
     }
+    .nav-badge {
+      position: absolute;
+      top: 4px;
+      right: 8px;
+      background: var(--urgent);
+      color: #fff;
+      font-size: 10px;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      font-weight: 700;
+    }
+
+    /* Toasts */
     .toast-wrap {
       position: fixed;
       right: 10px;
-      top: 80px;
+      top: 70px;
       z-index: 50;
       display: grid;
       gap: 8px;
       width: min(90vw, 320px);
+      pointer-events: none;
     }
     .toast {
       border-radius: 12px;
       background: #172554;
       color: #fff;
-      padding: 10px;
+      padding: 10px 12px;
       box-shadow: var(--shadow);
-      animation: slideIn .2s ease;
+      animation: slideIn .25s ease;
       font-size: 13px;
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
     }
+    .toast.urgent { background: var(--urgent); }
     @keyframes slideIn {
       from { transform: translateX(12px); opacity: 0; }
       to { transform: none; opacity: 1; }
     }
-    .modal-bg {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
+
+    /* Member chip */
+    .member-chip {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      z-index: 60;
-      padding: 14px;
+      gap: 4px;
+      background: #f1f5f9;
+      padding: 4px 10px 4px 4px;
+      border-radius: 999px;
+      font-size: 12px;
     }
-    .modal-bg.show { display: flex; }
-    .modal {
-      background: #fff;
-      border-radius: 14px;
-      padding: 14px;
-      width: min(94vw, 420px);
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+      font-size: 13px;
+    }
+
+    /* Tabs (main app sections) */
+    .tab { display: none; }
+    .tab.active { display: block; animation: fade .2s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+
+    /* Setup form */
+    .setup-form { display: grid; gap: 10px; }
+    .setup-form label { font-size: 13px; color: var(--muted); margin-bottom: -4px; }
+    .emoji-picker {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 4px;
+      padding: 8px;
+      background: #f8fafc;
+      border-radius: 10px;
+    }
+    .emoji-picker button {
+      background: transparent;
+      color: var(--ink);
+      font-size: 22px;
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .emoji-picker button.selected {
+      background: var(--accent-soft);
+    }
+
+    /* Stats */
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 12px;
       box-shadow: var(--shadow);
+      margin-bottom: 8px;
     }
-    .muted { color: var(--muted); font-size: 12px; }
-    .tiny { font-size: 11px; color: #6b7280; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    .stat-grid .stat b { display: block; font-size: 20px; color: var(--accent); }
+    .stat-grid .stat span { font-size: 11px; color: var(--muted); }
+
+    /* Banner */
+    .banner {
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #92400e;
+    }
+    .banner.error { background: #fee2e2; border-color: #fecaca; color: #991b1b; }
+    .banner code { background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <div class="app">
-    <div class="topbar">
-      <h1 class="title">🧺 おつかい農場ミッション</h1>
-      <div id="listInfo" class="sub"></div>
-      <div class="resource-bar">
-        <div class="res">🪙 コイン<b id="vCoin">0</b></div>
-        <div class="res">🌱 たねっこ<b id="vSeed">0</b></div>
-        <div class="res">🍄 きのこ<b id="vMush">0</b></div>
-        <div class="res">🍖 おにく<b id="vMeat">0</b></div>
-      </div>
-    </div>
-
-    <section id="tab-mission" class="tab active">
-      <div class="card">
-        <div class="row wrap">
-          <div class="grow"><input id="itemName" placeholder="品目を追加（例: 牛乳）" /></div>
-          <div style="width: 140px;">
-            <select id="itemDiff">
-              <option value="normal">ふつう</option>
-              <option value="hard">ちょっと大変</option>
-              <option value="extreme">めちゃ大変</option>
-            </select>
-          </div>
-          <div style="width: 120px;">
-            <select id="itemCat">
-              <option value="seed">🌱 たねっこ</option>
-              <option value="mush">🍄 きのこ</option>
-              <option value="meat">🍖 おにく</option>
-            </select>
-          </div>
-          <button id="btnAddItem" style="min-width:96px;">追加</button>
-        </div>
-        <p class="muted" style="margin:8px 0 0;">URL共有で同じリストを同時編集できます（#listId）。</p>
-      </div>
-      <div class="card">
-        <div class="row" style="justify-content: space-between;">
-          <b>ミッション一覧</b>
-          <span id="missionProgress" class="tiny"></span>
-        </div>
-        <div id="missionList" style="margin-top: 10px;"></div>
-      </div>
-    </section>
-
-    <section id="tab-farm" class="tab">
-      <div class="card">
-        <div class="row" style="justify-content: space-between;">
-          <b>🌾 にぎやか農場</b>
-          <span class="tiny">ミッション完了: <span id="vMissionDone">0</span>回</span>
-        </div>
-        <div id="farmGrid" class="farm-grid" style="margin-top:10px;"></div>
-      </div>
-    </section>
-
-    <section id="tab-shop" class="tab">
-      <div class="card">
-        <b>🛒 ショップ（強化）</b>
-        <p class="muted">施設レベルは1〜5。コイン消費で性能アップ。</p>
-        <div id="shopList"></div>
-      </div>
-      <div class="card">
-        <b>🔐 セキュリティ備考</b>
-        <p class="muted">本番運用時は Firebase Security Rules を必ず設定し、誰でも書き換え可能な状態を避けてください。</p>
-      </div>
-    </section>
-  </div>
-
-  <nav class="bottom-nav">
-    <button class="active" data-tab="mission">🧺 ミッション</button>
-    <button data-tab="farm">🚜 農場</button>
-    <button data-tab="shop">🏪 ショップ</button>
-  </nav>
-
+  <!-- Toasts (global) -->
   <div id="toasts" class="toast-wrap"></div>
 
-  <div id="offlineModal" class="modal-bg">
-    <div class="modal">
-      <h3 style="margin-top:0;">💤 留守中の収益</h3>
-      <p id="offlineText" style="margin: 8px 0;"></p>
-      <button id="closeOffline">OK</button>
+  <!-- Screen: Loading -->
+  <div id="screen-loading" class="screen active">
+    <div class="center-pad">
+      <h1>🧺 おうちのおつかい</h1>
+      <p class="muted">読み込み中…</p>
     </div>
+  </div>
+
+  <!-- Screen: Config error -->
+  <div id="screen-config" class="screen">
+    <div class="center-pad">
+      <h1>🧺 おうちのおつかい</h1>
+      <div class="banner error">
+        <b>Firebase設定が必要です</b>
+        <p><code>app.html</code> 内の <code>firebaseConfig</code> をご自身のFirebaseプロジェクトの値に置き換えてください。</p>
+        <p>必要なサービス: <b>Authentication</b>（Email/Password と Google）と <b>Realtime Database</b></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Auth -->
+  <div id="screen-auth" class="screen">
+    <div class="center-pad">
+      <h1>🧺 おうちのおつかい</h1>
+      <p class="muted">家族でリアルタイムにお買い物を依頼・受託できるアプリ</p>
+      <div class="card">
+        <h2>ログイン</h2>
+        <button id="btn-google" class="outline" style="width: 100%; margin-bottom: 8px;">
+          🅖 Googleでログイン
+        </button>
+        <p class="muted" style="text-align: center; margin: 12px 0;">または</p>
+        <div class="setup-form">
+          <input id="auth-email" type="email" placeholder="メールアドレス" autocomplete="email" />
+          <input id="auth-password" type="password" placeholder="パスワード（6文字以上）" autocomplete="current-password" />
+          <div class="row">
+            <button id="btn-signin" class="grow">ログイン</button>
+            <button id="btn-signup" class="ghost grow">新規登録</button>
+          </div>
+        </div>
+        <p id="auth-error" class="banner error" style="display:none;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Profile setup -->
+  <div id="screen-profile" class="screen">
+    <div class="center-pad">
+      <h1>👋 プロフィール</h1>
+      <p class="muted">家族の中での名前と絵文字を選んでください。</p>
+      <div class="card">
+        <div class="setup-form">
+          <label for="profile-name">名前</label>
+          <input id="profile-name" placeholder="例: パパ / ママ / たろう" maxlength="20" />
+          <label>絵文字アイコン</label>
+          <div id="emoji-picker" class="emoji-picker"></div>
+          <button id="btn-save-profile">保存して次へ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen: Family setup -->
+  <div id="screen-family" class="screen">
+    <div class="center-pad">
+      <h1>👨‍👩‍👧‍👦 家族グループ</h1>
+      <p class="muted">家族グループを新しく作るか、招待コードで参加しましょう。</p>
+      <div class="card">
+        <h2>新しく作る</h2>
+        <div class="setup-form">
+          <input id="family-name" placeholder="家族の名前（例: ○○家）" maxlength="20" />
+          <button id="btn-create-family">作成する</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>招待コードで参加</h2>
+        <div class="setup-form">
+          <input id="invite-code" placeholder="招待コード（6文字）" maxlength="8" style="text-transform:uppercase;" />
+          <button id="btn-join-family" class="ghost">参加する</button>
+        </div>
+      </div>
+      <p id="family-error" class="banner error" style="display:none;"></p>
+    </div>
+  </div>
+
+  <!-- Screen: Main app -->
+  <div id="screen-main" class="screen">
+    <div class="topbar">
+      <div class="avatar" id="my-avatar">🙂</div>
+      <div class="grow">
+        <div class="title" id="top-family-name">家族</div>
+        <div class="family-name" id="top-my-name">自分</div>
+      </div>
+    </div>
+
+    <div class="app">
+      <!-- Tab: Requests -->
+      <section id="tab-requests" class="tab active">
+        <div class="card">
+          <h2>📝 新しいおつかい</h2>
+          <div class="setup-form">
+            <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" />
+            <div class="row">
+              <select id="new-diff" style="flex:1;">
+                <option value="normal">ふつう</option>
+                <option value="hard">ちょっと大変</option>
+                <option value="extreme">めちゃ大変</option>
+              </select>
+              <label class="row" style="white-space:nowrap;">
+                <input type="checkbox" id="new-urgent" style="width:18px;height:18px;" />
+                <span>🔥 急ぎ</span>
+              </label>
+            </div>
+            <textarea id="new-memo" placeholder="メモ（任意・ブランド指定や注意点など）" maxlength="200"></textarea>
+            <button id="btn-add-request">依頼する</button>
+          </div>
+        </div>
+
+        <div id="list-open"></div>
+        <div id="list-claimed"></div>
+        <div id="list-done"></div>
+      </section>
+
+      <!-- Tab: History -->
+      <section id="tab-history" class="tab">
+        <div class="card">
+          <h2>📊 家族の貢献</h2>
+          <p class="muted">これまでの依頼・受託・完了の回数です。</p>
+          <div id="member-stats"></div>
+        </div>
+        <div class="card">
+          <h2>📜 完了履歴</h2>
+          <div id="history-list"></div>
+        </div>
+      </section>
+
+      <!-- Tab: Settings -->
+      <section id="tab-settings" class="tab">
+        <div class="card">
+          <h2>👤 プロフィール</h2>
+          <div class="setup-form">
+            <label>名前</label>
+            <input id="set-name" maxlength="20" />
+            <label>絵文字アイコン</label>
+            <div id="set-emoji-picker" class="emoji-picker"></div>
+            <button id="btn-update-profile">更新</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>👨‍👩‍👧‍👦 家族</h2>
+          <p><b id="set-family-name"></b></p>
+          <p class="muted">招待コード（家族を増やすときに共有）</p>
+          <div class="row">
+            <input id="set-invite-code" readonly style="font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px;" />
+            <button id="btn-copy-code" class="ghost tiny-btn" style="white-space:nowrap;">コピー</button>
+          </div>
+          <h3 style="margin-top:12px;">メンバー</h3>
+          <div id="member-list" class="row wrap"></div>
+        </div>
+        <div class="card">
+          <h2>🔔 通知</h2>
+          <label class="row">
+            <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
+            <span>サウンドを鳴らす</span>
+          </label>
+        </div>
+        <div class="card">
+          <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
+        </div>
+      </section>
+    </div>
+
+    <nav class="bottom-nav">
+      <button data-tab="requests" class="active">🧺 おつかい<span id="badge-requests" class="nav-badge" style="display:none;">0</span></button>
+      <button data-tab="history">📊 履歴</button>
+      <button data-tab="settings">⚙️ 設定</button>
+    </nav>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script>
-    // Firebase設定（ここを自分のプロジェクト値に置換）
+    // ===== Firebase config (set your own values) =====
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
+      apiKey: "AIzaSyCvG_SliXyI3grYhYS-GhFk-qCP1DMyGqI",
+      authDomain: "otsukai-app-4b62b.firebaseapp.com",
+      databaseURL: "https://otsukai-app-4b62b-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "otsukai-app-4b62b",
+      storageBucket: "otsukai-app-4b62b.firebasestorage.app",
+      messagingSenderId: "422978533670",
+      appId: "1:422978533670:web:aab3f42c2c9cea61ad29e7",
+      measurementId: "G-12RXRBWGVP"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
 
-    const DIFF_REWARD = {
-      normal: { coin: 50, mat: 2 },
-      hard: { coin: 100, mat: 4 },
-      extreme: { coin: 180, mat: 7 }
+    // ===== Constants =====
+    const EMOJI_CHOICES = [
+      "🙂","😊","😎","🥳","🤓","😺","🐶","🐰",
+      "🐻","🐼","🦊","🐯","🦁","🐸","🐵","🦄",
+      "👨","👩","👦","👧","👴","👵","🧑","🧒"
+    ];
+    const DIFF_LABEL = { normal: "ふつう", hard: "ちょっと大変", extreme: "めちゃ大変" };
+    const STATUS_LABEL = { open: "未受託", claimed: "買い物中", done: "完了" };
+
+    // ===== State =====
+    const state = {
+      uid: null,
+      email: null,
+      profile: null,            // { name, emoji }
+      familyId: null,
+      family: null,             // { meta, members }
+      requests: {},
+      stats: {},
+      activeTab: "requests",
+      profileEmoji: "🙂",
+      settingsEmoji: "🙂",
+      soundOn: localStorage.getItem("soundOn") !== "false",
+      prevRequests: {},
+      muteNotifications: true   // suppress on initial load
     };
-    const COMPLETE_BONUS = { coin: 300, seed: 6, mush: 4, meat: 4 };
-    const FACILITY_BASE = {
-      field: { name: "畑", emoji: "🌱", unlockAt: 0 },
-      market: { name: "市場", emoji: "🏪", unlockAt: 0 },
-      warehouse: { name: "倉庫", emoji: "📦", unlockAt: 0 },
-      ranch: { name: "牧場", emoji: "🐮", unlockAt: 10 },
-      kitchen: { name: "キッチン", emoji: "🍳", unlockAt: 20 }
-    };
-    const MAX_LEVEL = 5;
-    const FIELD_GROWTH_MS = [120 * 60 * 1000, 90 * 60 * 1000, 60 * 60 * 1000, 45 * 60 * 1000, 30 * 60 * 1000];
 
     const $ = (id) => document.getElementById(id);
-    const state = {
-      listId: "",
-      missions: {},
-      game: null,
-      activeTab: "mission",
-      renderedOffline: false
-    };
+    const now = () => Date.now();
+    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
 
-    function makeId() {
-      return Math.random().toString(36).slice(2, 10);
+    // ===== Firebase init =====
+    let auth, db;
+    if (isConfigured) {
+      firebase.initializeApp(firebaseConfig);
+      auth = firebase.auth();
+      db = firebase.database();
     }
-    function getListId() {
-      const hash = (location.hash || "").replace("#", "").trim();
-      if (hash) return hash;
-      const id = makeId();
-      location.hash = id;
-      return id;
-    }
-    function now() { return Date.now(); }
 
-    function defaultGame() {
-      return {
-        resources: { coin: 200, seed: 10, mush: 4, meat: 3, crop: 0 },
-        missionClearCount: 0,
-        missionCompleteBonusClaimed: false,
-        facilities: {
-          field: { level: 1, plantedAt: 0, readyAt: 0, plantedAmount: 0 },
-          market: { level: 1, lastCollectAt: now() },
-          warehouse: { level: 1 },
-          ranch: { level: 1 },
-          kitchen: { level: 1 }
-        },
-        lastSeenAt: now()
-      };
+    // ===== Screens =====
+    function showScreen(name) {
+      document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+      $("screen-" + name).classList.add("active");
     }
-    function getCapWarehouse(level) {
-      return 120 + (level - 1) * 80;
-    }
-    function marketCoinRatePerMin(level) {
-      return 2 + level * 2;
-    }
-    function calcUpgradeCost(level) {
-      return 150 * level;
-    }
-    function facilityUnlocked(key) {
-      return state.game.missionClearCount >= FACILITY_BASE[key].unlockAt;
-    }
-    function clampResources() {
-      const cap = getCapWarehouse(state.game.facilities.warehouse.level);
-      ["seed", "mush", "meat", "crop"].forEach((k) => {
-        state.game.resources[k] = Math.max(0, Math.min(cap, state.game.resources[k]));
-      });
-      state.game.resources.coin = Math.max(0, state.game.resources.coin);
-    }
-    function showToast(text) {
+
+    // ===== Toasts / Sound =====
+    function showToast(text, opts = {}) {
       const d = document.createElement("div");
-      d.className = "toast";
+      d.className = "toast" + (opts.urgent ? " urgent" : "");
       d.textContent = text;
       $("toasts").appendChild(d);
-      setTimeout(() => d.remove(), 2000);
+      setTimeout(() => { d.style.opacity = "0"; d.style.transition = "opacity .3s"; }, 2400);
+      setTimeout(() => d.remove(), 2800);
+      if (opts.sound !== false && state.soundOn) playBeep(opts.urgent);
     }
-    function saveGame() {
-      if (!state.listId || !state.game) return;
-      state.game.lastSeenAt = now();
-      db.ref("lists/" + state.listId + "/game").set(state.game);
-    }
-
-    function applyOfflineEarnings(showOnFarmOpen) {
-      const g = state.game;
-      const dtMin = Math.floor((now() - (g.lastSeenAt || now())) / 60000);
-      if (dtMin <= 0) return;
-      let coins = 0;
-      if (facilityUnlocked("market")) {
-        const level = g.facilities.market.level;
-        coins += dtMin * marketCoinRatePerMin(level);
-      }
-      if (coins > 0) {
-        g.resources.coin += coins;
-        if (showOnFarmOpen) {
-          $("offlineText").textContent = dtMin + "分の間に " + coins + "コイン獲得しました。";
-          $("offlineModal").classList.add("show");
-          state.renderedOffline = true;
+    let audioCtx;
+    function playBeep(urgent) {
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.type = "sine";
+        o.frequency.value = urgent ? 1200 : 880;
+        const t = audioCtx.currentTime;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + (urgent ? 0.45 : 0.28));
+        o.start(t);
+        o.stop(t + (urgent ? 0.5 : 0.3));
+        if (urgent) {
+          const o2 = audioCtx.createOscillator();
+          const g2 = audioCtx.createGain();
+          o2.connect(g2); g2.connect(audioCtx.destination);
+          o2.frequency.value = 1600;
+          g2.gain.setValueAtTime(0.0001, t + 0.2);
+          g2.gain.exponentialRampToValueAtTime(0.15, t + 0.22);
+          g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+          o2.start(t + 0.2);
+          o2.stop(t + 0.55);
         }
-      }
-      g.lastSeenAt = now();
-      saveGame();
+      } catch (e) { /* ignore */ }
     }
 
-    function difficultyLabel(diff) {
-      if (diff === "hard") return "ちょっと大変";
-      if (diff === "extreme") return "めちゃ大変";
-      return "ふつう";
+    // ===== Auth =====
+    function initAuthListener() {
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          state.uid = null;
+          showScreen("auth");
+          return;
+        }
+        state.uid = user.uid;
+        state.email = user.email;
+        await loadUserProfile();
+      });
     }
-    function diffPillClass(diff) {
-      if (diff === "hard") return "p-hard";
-      if (diff === "extreme") return "p-extreme";
-      return "p-normal";
+    async function signInEmail() {
+      const email = $("auth-email").value.trim();
+      const pw = $("auth-password").value;
+      hideAuthError();
+      try { await auth.signInWithEmailAndPassword(email, pw); }
+      catch (e) { showAuthError(authErrorJa(e)); }
     }
-    function materialByCategory(cat) {
-      if (cat === "mush") return "mush";
-      if (cat === "meat") return "meat";
-      return "seed";
+    async function signUpEmail() {
+      const email = $("auth-email").value.trim();
+      const pw = $("auth-password").value;
+      hideAuthError();
+      if (pw.length < 6) return showAuthError("パスワードは6文字以上で入力してください");
+      try { await auth.createUserWithEmailAndPassword(email, pw); }
+      catch (e) { showAuthError(authErrorJa(e)); }
     }
-    function renderTop() {
-      if (!state.game) return;
-      $("vCoin").textContent = Math.floor(state.game.resources.coin);
-      $("vSeed").textContent = state.game.resources.seed;
-      $("vMush").textContent = state.game.resources.mush;
-      $("vMeat").textContent = state.game.resources.meat;
-      $("vMissionDone").textContent = state.game.missionClearCount;
-      $("listInfo").textContent = "共有URL: " + location.href;
+    async function signInGoogle() {
+      hideAuthError();
+      try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+      catch (e) { showAuthError(authErrorJa(e)); }
     }
-    function renderMissions() {
-      const items = Object.entries(state.missions);
-      const done = items.filter(([,v]) => v.done).length;
-      $("missionProgress").textContent = done + " / " + items.length + " 完了";
-      const box = $("missionList");
-      if (!items.length) {
-        box.innerHTML = '<p class="muted">まだ品目がありません。上から追加してください。</p>';
+    function authErrorJa(e) {
+      const code = e && e.code;
+      const map = {
+        "auth/invalid-email": "メールアドレスの形式が正しくありません",
+        "auth/user-not-found": "ユーザーが見つかりません。新規登録してください",
+        "auth/wrong-password": "パスワードが違います",
+        "auth/email-already-in-use": "このメールはすでに登録されています",
+        "auth/weak-password": "パスワードが弱すぎます（6文字以上）",
+        "auth/popup-closed-by-user": "ログインがキャンセルされました",
+        "auth/network-request-failed": "ネットワークエラーが発生しました"
+      };
+      return map[code] || (e && e.message) || "ログインに失敗しました";
+    }
+    function showAuthError(msg) { const el = $("auth-error"); el.textContent = msg; el.style.display = "block"; }
+    function hideAuthError() { $("auth-error").style.display = "none"; }
+    async function signOut() {
+      detachListeners();
+      state.uid = null; state.profile = null; state.familyId = null; state.family = null;
+      state.requests = {}; state.stats = {}; state.prevRequests = {};
+      await auth.signOut();
+    }
+
+    // ===== User profile =====
+    async function loadUserProfile() {
+      const snap = await db.ref("users/" + state.uid).once("value");
+      const data = snap.val();
+      if (!data || !data.name) {
+        state.profile = null;
+        state.profileEmoji = "🙂";
+        renderEmojiPicker("emoji-picker", "profileEmoji");
+        $("profile-name").value = "";
+        showScreen("profile");
         return;
       }
-      box.innerHTML = "";
-      items.sort((a,b) => (a[1].createdAt || 0) - (b[1].createdAt || 0)).forEach(([id, m]) => {
-        const row = document.createElement("div");
-        row.className = "mission-item" + (m.done ? " done" : "");
-        row.innerHTML = `
-          <input type="checkbox" ${m.done ? "checked" : ""} data-id="${id}" style="width:20px;height:20px;">
-          <div>
-            <div><b>${escapeHtml(m.name || "品目")}</b></div>
-            <div class="tiny">素材: ${m.category === "mush" ? "🍄 きのこ" : m.category === "meat" ? "🍖 おにく" : "🌱 たねっこ"}</div>
-          </div>
-          <span class="pill ${diffPillClass(m.diff)}">${difficultyLabel(m.diff)}</span>
-        `;
-        box.appendChild(row);
-      });
-      box.querySelectorAll('input[type="checkbox"]').forEach((c) => {
-        c.addEventListener("change", () => toggleMission(c.dataset.id, c.checked));
-      });
+      state.profile = { name: data.name, emoji: data.emoji || "🙂" };
+      state.familyId = data.familyId || null;
+      if (!state.familyId) { showScreen("family"); return; }
+      attachFamilyListeners();
+    }
+    async function saveProfile() {
+      const name = $("profile-name").value.trim();
+      if (!name) return showToast("名前を入力してください");
+      const profile = { name, emoji: state.profileEmoji, email: state.email, updatedAt: now() };
+      await db.ref("users/" + state.uid).update(profile);
+      state.profile = { name, emoji: state.profileEmoji };
+      if (!state.familyId) showScreen("family");
+      else attachFamilyListeners();
+    }
+    async function updateProfileFromSettings() {
+      const name = $("set-name").value.trim();
+      if (!name) return showToast("名前を入力してください");
+      await db.ref("users/" + state.uid).update({ name, emoji: state.settingsEmoji });
+      if (state.familyId) {
+        await db.ref(`families/${state.familyId}/members/${state.uid}`).update({ name, emoji: state.settingsEmoji });
+      }
+      state.profile = { name, emoji: state.settingsEmoji };
+      renderTopbar();
+      showToast("プロフィールを更新しました");
     }
 
-    function renderFarm() {
-      const g = state.game;
-      const box = $("farmGrid");
-      box.innerHTML = "";
-      Object.keys(FACILITY_BASE).forEach((key) => {
-        const base = FACILITY_BASE[key];
-        const unlocked = facilityUnlocked(key);
-        const lv = g.facilities[key].level;
-        const div = document.createElement("div");
-        div.className = "facility" + (unlocked ? "" : " locked");
-        let meta = "Lv." + lv;
-        let action = "";
-        let sparkle = "";
-        if (!unlocked) {
-          meta = "ミッション" + base.unlockAt + "回で開放";
-        } else if (key === "field") {
-          const f = g.facilities.field;
-          if (f.readyAt && now() >= f.readyAt && f.plantedAmount > 0) {
-            meta += " / 収穫可能";
-            sparkle = '<div class="sparkle">✨</div>';
-            action = '<button data-act="harvest">収穫する</button>';
-          } else if (f.readyAt > now()) {
-            const left = Math.ceil((f.readyAt - now()) / 60000);
-            meta += " / 残り" + left + "分";
-            action = '<button data-act="plant">追加で植える</button>';
-          } else {
-            meta += " / 空き";
-            action = '<button data-act="plant">植える</button>';
+    // ===== Family =====
+    function genInviteCode() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      let s = "";
+      for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    }
+    async function createFamily() {
+      const name = $("family-name").value.trim();
+      if (!name) return showFamilyError("家族の名前を入力してください");
+      const familyId = db.ref("families").push().key;
+      let code = genInviteCode();
+      // try a few times to avoid collision
+      for (let i = 0; i < 5; i++) {
+        const exist = await db.ref("invites/" + code).once("value");
+        if (!exist.exists()) break;
+        code = genInviteCode();
+      }
+      const ts = now();
+      await db.ref("families/" + familyId).set({
+        meta: { name, createdAt: ts, inviteCode: code },
+        members: { [state.uid]: { name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "admin" } }
+      });
+      await db.ref("invites/" + code).set(familyId);
+      await db.ref("users/" + state.uid + "/familyId").set(familyId);
+      state.familyId = familyId;
+      attachFamilyListeners();
+    }
+    async function joinFamily() {
+      const code = $("invite-code").value.trim().toUpperCase();
+      if (!code) return showFamilyError("招待コードを入力してください");
+      const snap = await db.ref("invites/" + code).once("value");
+      const familyId = snap.val();
+      if (!familyId) return showFamilyError("招待コードが見つかりません");
+      const ts = now();
+      await db.ref(`families/${familyId}/members/${state.uid}`).set({
+        name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "member"
+      });
+      await db.ref("users/" + state.uid + "/familyId").set(familyId);
+      state.familyId = familyId;
+      attachFamilyListeners();
+    }
+    function showFamilyError(msg) { const el = $("family-error"); el.textContent = msg; el.style.display = "block"; }
+    function hideFamilyError() { $("family-error").style.display = "none"; }
+
+    // ===== Real-time listeners =====
+    const listenerRefs = [];
+    function attach(ref, event, cb) {
+      ref.on(event, cb);
+      listenerRefs.push({ ref, event, cb });
+    }
+    function detachListeners() {
+      listenerRefs.forEach(({ ref, event, cb }) => ref.off(event, cb));
+      listenerRefs.length = 0;
+    }
+    function familyRef() { return db.ref("families/" + state.familyId); }
+
+    function attachFamilyListeners() {
+      detachListeners();
+      state.prevRequests = {};
+      state.muteNotifications = true;
+      // Family meta + members
+      attach(familyRef().child("meta"), "value", (s) => {
+        state.family = state.family || {};
+        state.family.meta = s.val() || {};
+        renderTopbar();
+        renderSettings();
+      });
+      attach(familyRef().child("members"), "value", (s) => {
+        state.family = state.family || {};
+        state.family.members = s.val() || {};
+        renderTopbar();
+        renderSettings();
+        renderMemberStats();
+        renderRequests();
+        renderHistory();
+      });
+      // Requests
+      attach(familyRef().child("requests"), "value", (s) => {
+        const next = s.val() || {};
+        detectAndNotify(state.prevRequests, next);
+        state.prevRequests = next;
+        state.requests = next;
+        state.muteNotifications = false;
+        renderRequests();
+        renderHistory();
+        renderBadge();
+      });
+      // Stats
+      attach(familyRef().child("stats"), "value", (s) => {
+        state.stats = s.val() || {};
+        renderMemberStats();
+      });
+      showScreen("main");
+    }
+
+    // ===== Notification diff =====
+    function detectAndNotify(prev, next) {
+      if (state.muteNotifications) return;
+      Object.entries(next).forEach(([id, r]) => {
+        const before = prev[id];
+        const requesterName = memberName(r.requestedBy);
+        if (!before) {
+          if (r.requestedBy !== state.uid) {
+            showToast(`📣 ${requesterName}さんが依頼: ${r.name}`, { urgent: !!r.urgent });
           }
-        } else if (key === "market") {
-          const last = g.facilities.market.lastCollectAt || now();
-          const min = Math.max(0, Math.floor((now() - last) / 60000));
-          const coin = min * marketCoinRatePerMin(lv);
-          meta += " / 放置売上 +" + coin + "🪙";
-          action = '<button data-act="collectMarket">売上回収</button>';
-        } else if (key === "warehouse") {
-          meta += " / 容量 " + getCapWarehouse(lv);
-          action = '<button data-act="warehouseInfo">容量確認</button>';
-        } else if (key === "ranch") {
-          meta += " / おにく補助 +Lv";
-          action = '<button data-act="ranchInfo">確認</button>';
-        } else if (key === "kitchen") {
-          meta += " / きのこ加工 +Lv";
-          action = '<button data-act="kitchenInfo">確認</button>';
+          return;
         }
-        div.innerHTML = `
-          ${sparkle}
-          <div class="emoji">${base.emoji}</div>
-          <div class="name">${base.name}</div>
-          <div class="meta">${meta}</div>
-          ${unlocked ? action : ""}
-        `;
-        if (unlocked) {
-          div.querySelector("button")?.addEventListener("click", () => onFacilityAction(key, div.querySelector("button").dataset.act));
+        if (before.status !== r.status) {
+          if (r.status === "claimed" && r.claimedBy && r.claimedBy !== state.uid) {
+            showToast(`🛒 ${memberName(r.claimedBy)}さんが「${r.name}」を担当`);
+          } else if (r.status === "done" && r.completedBy && r.completedBy !== state.uid) {
+            showToast(`✅ ${memberName(r.completedBy)}さんが「${r.name}」を購入しました！`);
+          } else if (r.status === "open" && before.status === "claimed") {
+            showToast(`↩️ 「${r.name}」が未受託に戻りました`);
+          }
         }
-        box.appendChild(div);
       });
     }
-    function renderShop() {
-      const g = state.game;
-      const box = $("shopList");
-      box.innerHTML = "";
-      Object.keys(FACILITY_BASE).forEach((k) => {
-        const base = FACILITY_BASE[k];
-        const unlocked = facilityUnlocked(k);
-        const lv = g.facilities[k].level;
-        const cost = calcUpgradeCost(lv);
-        const maxed = lv >= MAX_LEVEL;
-        const d = document.createElement("div");
-        d.className = "shop-item";
-        d.innerHTML = `
-          <div class="row" style="justify-content:space-between;">
-            <div><b>${base.emoji} ${base.name}</b> <span class="tiny">Lv.${lv}</span></div>
-            <span class="tiny">${unlocked ? "開放済み" : "未開放"}</span>
+    function memberName(uid) {
+      if (!uid) return "";
+      const m = state.family && state.family.members && state.family.members[uid];
+      return m ? m.name : "誰か";
+    }
+    function memberEmoji(uid) {
+      const m = state.family && state.family.members && state.family.members[uid];
+      return m ? m.emoji : "👤";
+    }
+
+    // ===== Request CRUD =====
+    async function addRequest() {
+      const name = $("new-name").value.trim();
+      if (!name) return showToast("品名を入力してください");
+      const diff = $("new-diff").value;
+      const urgent = $("new-urgent").checked;
+      const memo = $("new-memo").value.trim();
+      const id = familyRef().child("requests").push().key;
+      const ts = now();
+      const req = { name, diff, urgent, status: "open", requestedBy: state.uid, requestedAt: ts };
+      if (memo) req.memo = memo;
+      await familyRef().child("requests/" + id).set(req);
+      await bumpStat("requestedCount");
+      $("new-name").value = "";
+      $("new-memo").value = "";
+      $("new-urgent").checked = false;
+      showToast("依頼しました 🧺", { sound: false });
+    }
+    async function claimRequest(id) {
+      await familyRef().child("requests/" + id).update({
+        status: "claimed", claimedBy: state.uid, claimedAt: now()
+      });
+      await bumpStat("claimedCount");
+    }
+    async function unclaimRequest(id) {
+      await familyRef().child("requests/" + id).update({
+        status: "open", claimedBy: null, claimedAt: null
+      });
+    }
+    async function completeRequest(id) {
+      await familyRef().child("requests/" + id).update({
+        status: "done", completedBy: state.uid, completedAt: now()
+      });
+      await bumpStat("completedCount");
+    }
+    async function reopenRequest(id) {
+      await familyRef().child("requests/" + id).update({
+        status: "open", completedBy: null, completedAt: null, claimedBy: null, claimedAt: null
+      });
+    }
+    async function deleteRequest(id) {
+      await familyRef().child("requests/" + id).remove();
+    }
+    async function bumpStat(field) {
+      const ref = familyRef().child(`stats/${state.uid}/${field}`);
+      await ref.transaction((v) => (v || 0) + 1);
+      await familyRef().child(`stats/${state.uid}/lastActiveAt`).set(now());
+    }
+
+    // ===== Rendering =====
+    function renderTopbar() {
+      if (!state.profile || !state.family || !state.family.meta) return;
+      $("top-family-name").textContent = state.family.meta.name || "家族";
+      $("top-my-name").textContent = state.profile.name + " として参加中";
+      $("my-avatar").textContent = state.profile.emoji || "🙂";
+    }
+    function renderRequests() {
+      const items = Object.entries(state.requests).map(([id, r]) => ({ id, ...r }));
+      const open = items.filter((r) => r.status === "open").sort((a,b) => (b.urgent?1:0) - (a.urgent?1:0) || a.requestedAt - b.requestedAt);
+      const claimed = items.filter((r) => r.status === "claimed").sort((a,b) => a.claimedAt - b.claimedAt);
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const done = items.filter((r) => r.status === "done" && (r.completedAt || 0) >= todayStart.getTime()).sort((a,b) => b.completedAt - a.completedAt);
+
+      $("list-open").innerHTML = sectionHtml("🆕 未受託", open.length, open.length ? open.map(openCard).join("") : emptyHtml("依頼はありません。"));
+      $("list-claimed").innerHTML = claimed.length ? sectionHtml("🛒 買い物中", claimed.length, claimed.map(claimedCard).join("")) : "";
+      $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map(doneCard).join("")) : "";
+
+      wireRequestButtons();
+    }
+    function sectionHtml(title, count, body) {
+      return `
+        <div class="section-header">
+          <h2>${title}</h2>
+          <span class="section-count">${count}</span>
+        </div>
+        ${body}
+      `;
+    }
+    function emptyHtml(msg) { return `<div class="empty">${msg}</div>`; }
+    function timeAgo(ts) {
+      if (!ts) return "";
+      const diff = now() - ts;
+      const min = Math.floor(diff / 60000);
+      if (min < 1) return "たった今";
+      if (min < 60) return min + "分前";
+      const hr = Math.floor(min / 60);
+      if (hr < 24) return hr + "時間前";
+      const day = Math.floor(hr / 24);
+      return day + "日前";
+    }
+    function openCard(r) {
+      return `
+        <div class="req ${r.urgent ? 'urgent' : ''}">
+          <div class="head">
+            <span class="name">${escapeHtml(r.name)}</span>
+            <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
+            ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
-          <div class="tiny" style="margin-top:6px;">
-            ${maxed ? "最大レベルです" : "強化コスト: " + cost + "コイン"}
+          <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが依頼 ・ ${timeAgo(r.requestedAt)}</div>
+          ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
+          <div class="actions">
+            <button data-act="claim" data-id="${r.id}" class="success">🛒 私が買う</button>
+            ${r.requestedBy === state.uid ? `<button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>` : ''}
           </div>
-          <button ${(!unlocked || maxed) ? "disabled" : ""} data-up="${k}" style="margin-top:8px;opacity:${(!unlocked || maxed) ? 0.5 : 1};">強化する</button>
+        </div>
+      `;
+    }
+    function claimedCard(r) {
+      const mine = r.claimedBy === state.uid;
+      return `
+        <div class="req claimed ${r.urgent ? 'urgent' : ''}">
+          <div class="head">
+            <span class="name">${escapeHtml(r.name)}</span>
+            <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
+            ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
+          </div>
+          <div class="meta">${memberEmoji(r.claimedBy)} ${escapeHtml(memberName(r.claimedBy))}さんが受託中 ・ ${timeAgo(r.claimedAt)}</div>
+          ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
+          <div class="actions">
+            ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 買えた！</button>` : ''}
+            ${mine ? `<button data-act="unclaim" data-id="${r.id}" class="ghost">↩️ やめる</button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+    function doneCard(r) {
+      return `
+        <div class="req done">
+          <div class="head">
+            <span class="name">${escapeHtml(r.name)}</span>
+            <span class="pill s-done">✅完了</span>
+          </div>
+          <div class="meta">${memberEmoji(r.completedBy)} ${escapeHtml(memberName(r.completedBy))}さんが完了 ・ ${timeAgo(r.completedAt)}</div>
+          <div class="actions">
+            <button data-act="reopen" data-id="${r.id}" class="ghost tiny-btn">↩️ 戻す</button>
+            <button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>
+          </div>
+        </div>
+      `;
+    }
+    function wireRequestButtons() {
+      document.querySelectorAll(".req button[data-act]").forEach((b) => {
+        b.addEventListener("click", () => {
+          const id = b.dataset.id;
+          const act = b.dataset.act;
+          if (act === "claim") claimRequest(id);
+          else if (act === "unclaim") unclaimRequest(id);
+          else if (act === "complete") completeRequest(id);
+          else if (act === "reopen") reopenRequest(id);
+          else if (act === "delete") deleteRequest(id);
+        });
+      });
+    }
+
+    function renderHistory() {
+      const items = Object.entries(state.requests)
+        .filter(([,r]) => r.status === "done")
+        .sort((a,b) => (b[1].completedAt || 0) - (a[1].completedAt || 0))
+        .slice(0, 50);
+      if (!items.length) {
+        $("history-list").innerHTML = emptyHtml("まだ完了履歴がありません。");
+        return;
+      }
+      $("history-list").innerHTML = items.map(([id, r]) => {
+        const d = new Date(r.completedAt || 0);
+        const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+        return `
+          <div class="row" style="padding:8px 4px; border-bottom: 1px solid var(--line);">
+            <span class="muted" style="width:48px;">${dateStr}</span>
+            <span class="grow">${escapeHtml(r.name)}</span>
+            <span class="tiny">${memberEmoji(r.requestedBy)}→${memberEmoji(r.completedBy)}</span>
+          </div>
         `;
-        box.appendChild(d);
+      }).join("");
+    }
+
+    function renderMemberStats() {
+      if (!state.family || !state.family.members) return;
+      const members = state.family.members;
+      const html = Object.entries(members).map(([uid, m]) => {
+        const s = state.stats[uid] || {};
+        return `
+          <div class="stat-card">
+            <div class="row">
+              <div class="avatar">${m.emoji || "👤"}</div>
+              <div class="grow"><b>${escapeHtml(m.name)}</b></div>
+              ${uid === state.uid ? '<span class="tiny">あなた</span>' : ''}
+            </div>
+            <div class="stat-grid">
+              <div class="stat"><b>${s.requestedCount || 0}</b><span>依頼</span></div>
+              <div class="stat"><b>${s.claimedCount || 0}</b><span>受託</span></div>
+              <div class="stat"><b>${s.completedCount || 0}</b><span>完了</span></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      $("member-stats").innerHTML = html;
+    }
+
+    function renderSettings() {
+      if (!state.profile || !state.family) return;
+      $("set-name").value = state.profile.name;
+      state.settingsEmoji = state.profile.emoji;
+      renderEmojiPicker("set-emoji-picker", "settingsEmoji");
+      $("set-family-name").textContent = (state.family.meta && state.family.meta.name) || "";
+      $("set-invite-code").value = (state.family.meta && state.family.meta.inviteCode) || "";
+      const members = (state.family && state.family.members) || {};
+      $("member-list").innerHTML = Object.entries(members).map(([uid, m]) => `
+        <span class="member-chip">
+          <span class="avatar sm">${m.emoji || "👤"}</span>
+          ${escapeHtml(m.name)}${uid === state.uid ? "（自分）" : ""}
+        </span>
+      `).join("");
+    }
+
+    function renderEmojiPicker(elId, stateKey) {
+      const cur = state[stateKey];
+      $(elId).innerHTML = EMOJI_CHOICES.map((e) => `
+        <button data-e="${e}" class="${e === cur ? 'selected' : ''}">${e}</button>
+      `).join("");
+      $(elId).querySelectorAll("button").forEach((b) => {
+        b.addEventListener("click", () => {
+          state[stateKey] = b.dataset.e;
+          $(elId).querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
+          b.classList.add("selected");
+        });
       });
-      box.querySelectorAll("button[data-up]").forEach((btn) => {
-        btn.addEventListener("click", () => upgradeFacility(btn.dataset.up));
-      });
-    }
-    function renderAll() {
-      clampResources();
-      renderTop();
-      renderMissions();
-      renderFarm();
-      renderShop();
     }
 
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
-    }
-
-    function addMission() {
-      const name = $("itemName").value.trim();
-      if (!name) return;
-      const diff = $("itemDiff").value;
-      const category = $("itemCat").value;
-      const id = db.ref().push().key;
-      db.ref("lists/" + state.listId + "/missions/" + id).set({
-        name, diff, category, done: false, createdAt: now()
-      });
-      $("itemName").value = "";
-    }
-
-    function allMissionsDone() {
-      const arr = Object.values(state.missions);
-      return arr.length > 0 && arr.every((m) => !!m.done);
-    }
-
-    function grantMissionReward(mission) {
-      const rw = DIFF_REWARD[mission.diff] || DIFF_REWARD.normal;
-      const mat = materialByCategory(mission.category);
-      state.game.resources.coin += rw.coin;
-      state.game.resources[mat] += rw.mat;
-      state.game.missionClearCount += 1;
-      showToast("+" + rw.coin + "コイン！ +" + rw.mat + (mat === "seed" ? "たねっこ" : mat === "mush" ? "きのこ" : "おにく"));
-      if (allMissionsDone() && !state.game.missionCompleteBonusClaimed) {
-        state.game.resources.coin += COMPLETE_BONUS.coin;
-        state.game.resources.seed += COMPLETE_BONUS.seed;
-        state.game.resources.mush += COMPLETE_BONUS.mush;
-        state.game.resources.meat += COMPLETE_BONUS.meat;
-        state.game.missionCompleteBonusClaimed = true;
-        showToast("ミッション完了ボーナス！ +" + COMPLETE_BONUS.coin + "コイン");
+    function renderBadge() {
+      const openCount = Object.values(state.requests).filter((r) => r.status === "open" && r.requestedBy !== state.uid).length;
+      const badge = $("badge-requests");
+      if (openCount > 0 && state.activeTab !== "requests") {
+        badge.textContent = openCount;
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
       }
+      document.title = (openCount > 0 ? `(${openCount}) ` : "") + "🧺 おうちのおつかい";
     }
 
-    function toggleMission(id, done) {
-      const m = state.missions[id];
-      if (!m) return;
-      db.ref("lists/" + state.listId + "/missions/" + id + "/done").set(done);
-      if (done && !m.done) {
-        grantMissionReward(m);
-        saveGame();
-      }
-      if (!done) {
-        state.game.missionCompleteBonusClaimed = false;
-        saveGame();
-      }
-    }
-
-    function onFacilityAction(key, act) {
-      if (key === "field" && act === "plant") {
-        const need = 2;
-        if (state.game.resources.seed < need) return showToast("たねっこ不足");
-        const f = state.game.facilities.field;
-        state.game.resources.seed -= need;
-        f.plantedAmount = Math.min(f.plantedAmount + 1, getCapWarehouse(state.game.facilities.warehouse.level));
-        const t = FIELD_GROWTH_MS[Math.max(0, f.level - 1)] || FIELD_GROWTH_MS[0];
-        f.plantedAt = now();
-        f.readyAt = now() + t;
-        showToast("畑に植えました 🌱");
-        saveGame();
-        renderAll();
-      }
-      if (key === "field" && act === "harvest") {
-        const f = state.game.facilities.field;
-        if (!(f.readyAt && now() >= f.readyAt && f.plantedAmount > 0)) return;
-        const gain = f.plantedAmount * (20 + f.level * 5);
-        state.game.resources.crop += f.plantedAmount;
-        state.game.resources.coin += gain;
-        showToast("収穫！ +" + gain + "コイン");
-        f.plantedAmount = 0; f.readyAt = 0; f.plantedAt = 0;
-        saveGame();
-        renderAll();
-      }
-      if (key === "market" && act === "collectMarket") {
-        const m = state.game.facilities.market;
-        const min = Math.max(0, Math.floor((now() - (m.lastCollectAt || now())) / 60000));
-        const coin = min * marketCoinRatePerMin(m.level);
-        if (coin > 0) {
-          state.game.resources.coin += coin;
-          showToast("市場売上 +" + coin + "コイン");
-        } else {
-          showToast("まだ売上はありません");
-        }
-        m.lastCollectAt = now();
-        saveGame();
-        renderAll();
-      }
-      if (act === "warehouseInfo") showToast("倉庫容量: " + getCapWarehouse(state.game.facilities.warehouse.level));
-      if (act === "ranchInfo") showToast("牧場は将来拡張予定");
-      if (act === "kitchenInfo") showToast("キッチンは将来拡張予定");
-    }
-
-    function upgradeFacility(key) {
-      if (!facilityUnlocked(key)) return;
-      const f = state.game.facilities[key];
-      if (f.level >= MAX_LEVEL) return;
-      const cost = calcUpgradeCost(f.level);
-      if (state.game.resources.coin < cost) return showToast("コイン不足");
-      state.game.resources.coin -= cost;
-      f.level += 1;
-      showToast(FACILITY_BASE[key].name + " をLv." + f.level + "に強化！");
-      saveGame();
-      renderAll();
-    }
-
+    // ===== Tabs =====
     function wireTabs() {
-      document.querySelectorAll(".bottom-nav button").forEach((btn) => {
+      document.querySelectorAll(".bottom-nav button[data-tab]").forEach((btn) => {
         btn.addEventListener("click", () => {
           document.querySelectorAll(".bottom-nav button").forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
@@ -700,53 +1113,49 @@
           state.activeTab = t;
           document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
           $("tab-" + t).classList.add("active");
-          if (t === "farm" && !state.renderedOffline) applyOfflineEarnings(true);
-          renderAll();
+          renderBadge();
         });
       });
     }
 
-    function bindRealtime() {
-      const base = db.ref("lists/" + state.listId);
-      base.child("missions").on("value", (snap) => {
-        state.missions = snap.val() || {};
-        renderMissions();
+    // ===== Init =====
+    function wireGlobalEvents() {
+      $("btn-google").addEventListener("click", signInGoogle);
+      $("btn-signin").addEventListener("click", signInEmail);
+      $("btn-signup").addEventListener("click", signUpEmail);
+      $("btn-save-profile").addEventListener("click", saveProfile);
+      $("btn-create-family").addEventListener("click", createFamily);
+      $("btn-join-family").addEventListener("click", joinFamily);
+      $("btn-add-request").addEventListener("click", addRequest);
+      $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
+      $("btn-logout").addEventListener("click", signOut);
+      $("btn-copy-code").addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText($("set-invite-code").value);
+          showToast("コピーしました 📋", { sound: false });
+        } catch (e) { showToast("コピー失敗"); }
       });
-      base.child("game").on("value", (snap) => {
-        state.game = snap.val() || defaultGame();
-        clampResources();
-        renderAll();
+      $("opt-sound").checked = state.soundOn;
+      $("opt-sound").addEventListener("change", (e) => {
+        state.soundOn = e.target.checked;
+        localStorage.setItem("soundOn", String(state.soundOn));
       });
+      $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addRequest(); });
+      $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
+      // Refresh time-ago labels periodically
+      setInterval(() => { if (state.activeTab === "requests") renderRequests(); }, 30000);
     }
 
-    function bootstrapIfNeeded() {
-      const base = db.ref("lists/" + state.listId);
-      base.child("game").once("value").then((snap) => {
-        if (!snap.exists()) return base.child("game").set(defaultGame());
-      });
-      base.child("meta").once("value").then((snap) => {
-        if (!snap.exists()) return base.child("meta").set({ createdAt: now() });
-      });
-    }
-
-    function start() {
-      state.listId = getListId();
+    function init() {
+      wireGlobalEvents();
       wireTabs();
-      $("btnAddItem").addEventListener("click", addMission);
-      $("itemName").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") addMission();
-      });
-      $("closeOffline").addEventListener("click", () => {
-        $("offlineModal").classList.remove("show");
-      });
-      bootstrapIfNeeded();
-      bindRealtime();
-      setInterval(() => {
-        if (!state.game) return;
-        renderFarm();
-      }, 15000);
+      if (!isConfigured) {
+        showScreen("config");
+        return;
+      }
+      initAuthListener();
     }
-    start();
+    init();
   </script>
 </body>
 </html>
