@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>おつかい農場ミッション</title>
+  <style>
+    :root {
+      --bg: #f7fbff;
+      --card: #ffffff;
+      --ink: #1f2a37;
+      --muted: #6b7280;
+      --accent: #35b16f;
+      --accent-2: #5ea5ff;
+      --danger: #ef5350;
+      --coin: #ffca28;
+      --seed: #7bc96f;
+      --mush: #a879d5;
+      --meat: #f28b82;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(31, 42, 55, 0.1);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(180deg, #dff3ff 0%, #f5fbff 50%, #fffef8 100%);
+      min-height: 100vh;
+    }
+    .app {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 12px 12px calc(84px + var(--safe-bottom));
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(6px);
+      background: rgba(255,255,255,0.75);
+      border-radius: 0 0 12px 12px;
+      padding: 10px;
+      margin: -12px -12px 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    .title { font-size: 18px; font-weight: 700; margin: 0; }
+    .sub { color: var(--muted); font-size: 12px; margin-top: 4px; word-break: break-all; }
+    .resource-bar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .res {
+      background: var(--card);
+      border-radius: 10px;
+      padding: 8px;
+      box-shadow: var(--shadow);
+      text-align: center;
+      font-size: 12px;
+    }
+    .res b { display: block; font-size: 14px; margin-top: 2px; }
+    .tab {
+      display: none;
+      animation: fade .2s ease;
+    }
+    .tab.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .row.wrap { flex-wrap: wrap; }
+    .grow { flex: 1; }
+    input, select, button {
+      font: inherit;
+      border-radius: 10px;
+      border: 1px solid #dbe4ee;
+      padding: 10px;
+      background: #fff;
+    }
+    input, select { width: 100%; }
+    button {
+      border: none;
+      background: var(--accent-2);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.secondary { background: #6b7280; }
+    button.warn { background: var(--danger); }
+    button.ghost {
+      background: #eef5ff;
+      color: #2156a3;
+      border: 1px solid #d6e7ff;
+    }
+    .mission-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 12px;
+      background: #f8fbff;
+      border: 1px solid #e9f2ff;
+      margin-bottom: 8px;
+    }
+    .mission-item.done { opacity: 0.6; text-decoration: line-through; }
+    .mission-item button.del {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid transparent;
+      font-size: 18px;
+      font-weight: 400;
+      padding: 4px 10px;
+      line-height: 1;
+    }
+    .mission-item button.del:active {
+      color: var(--danger);
+      background: #fff5f5;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    button.tiny-btn {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    .pill {
+      font-size: 11px;
+      border-radius: 999px;
+      padding: 3px 8px;
+      color: #fff;
+      font-weight: 700;
+    }
+    .p-normal { background: #4caf50; }
+    .p-hard { background: #ff9800; }
+    .p-extreme { background: #ef5350; }
+    .farm-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    .facility {
+      background: linear-gradient(180deg, #ffffff 0%, #f6fff9 100%);
+      border: 1px solid #dceee0;
+      border-radius: 12px;
+      padding: 10px;
+      min-height: 130px;
+      position: relative;
+      overflow: hidden;
+    }
+    .facility.locked {
+      filter: grayscale(0.7);
+      opacity: 0.7;
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+    }
+    .facility .emoji { font-size: 28px; }
+    .facility .name { font-weight: 700; font-size: 14px; }
+    .facility .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    .facility button { width: 100%; margin-top: 8px; padding: 8px; font-size: 12px; }
+    .sparkle {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      font-size: 18px;
+      animation: twinkle 1s infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+      50% { transform: scale(1.35) rotate(8deg); opacity: 1; }
+    }
+    .shop-item {
+      border: 1px solid #e6ecf4;
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .bottom-nav {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 10px calc(8px + var(--safe-bottom));
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid #e8edf5;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 8px;
+      z-index: 30;
+    }
+    .bottom-nav button {
+      background: #eef2f7;
+      color: #334155;
+      font-weight: 700;
+      padding: 10px 4px;
+    }
+    .bottom-nav button.active {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .toast-wrap {
+      position: fixed;
+      right: 10px;
+      top: 80px;
+      z-index: 50;
+      display: grid;
+      gap: 8px;
+      width: min(90vw, 320px);
+    }
+    .toast {
+      border-radius: 12px;
+      background: #172554;
+      color: #fff;
+      padding: 10px;
+      box-shadow: var(--shadow);
+      animation: slideIn .2s ease;
+      font-size: 13px;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(12px); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+      padding: 14px;
+    }
+    .modal-bg.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 14px;
+      width: min(94vw, 420px);
+      box-shadow: var(--shadow);
+    }
+    .muted { color: var(--muted); font-size: 12px; }
+    .tiny { font-size: 11px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <h1 class="title">🧺 おつかい農場ミッション</h1>
+      <div id="listInfo" class="sub"></div>
+      <div class="resource-bar">
+        <div class="res">🪙 コイン<b id="vCoin">0</b></div>
+        <div class="res">🌱 たねっこ<b id="vSeed">0</b></div>
+        <div class="res">🍄 きのこ<b id="vMush">0</b></div>
+        <div class="res">🍖 おにく<b id="vMeat">0</b></div>
+      </div>
+    </div>
+
+    <section id="tab-mission" class="tab active">
+      <div class="card">
+        <div class="row wrap">
+          <div class="grow"><input id="itemName" placeholder="品目を追加（例: 牛乳）" /></div>
+          <div style="width: 140px;">
+            <select id="itemDiff">
+              <option value="normal">ふつう</option>
+              <option value="hard">ちょっと大変</option>
+              <option value="extreme">めちゃ大変</option>
+            </select>
+          </div>
+          <div style="width: 120px;">
+            <select id="itemCat">
+              <option value="seed">🌱 たねっこ</option>
+              <option value="mush">🍄 きのこ</option>
+              <option value="meat">🍖 おにく</option>
+            </select>
+          </div>
+          <button id="btnAddItem" style="min-width:96px;">追加</button>
+        </div>
+        <p class="muted" style="margin:8px 0 0;">URL共有で同じリストを同時編集できます（#listId）。</p>
+      </div>
+      <div class="card">
+        <div class="row" style="justify-content: space-between;">
+          <b>ミッション一覧</b>
+          <div class="header-actions">
+            <span id="missionProgress" class="tiny"></span>
+            <button id="btnClearDone" class="ghost tiny-btn">完了済み削除</button>
+          </div>
+        </div>
+        <div id="missionList" style="margin-top: 10px;"></div>
+      </div>
+    </section>
+
+    <section id="tab-farm" class="tab">
+      <div class="card">
+        <div class="row" style="justify-content: space-between;">
+          <b>🌾 にぎやか農場</b>
+          <span class="tiny">ミッション完了: <span id="vMissionDone">0</span>回</span>
+        </div>
+        <div id="farmGrid" class="farm-grid" style="margin-top:10px;"></div>
+      </div>
+    </section>
+
+    <section id="tab-shop" class="tab">
+      <div class="card">
+        <b>🛒 ショップ（強化）</b>
+        <p class="muted">施設レベルは1〜5。コイン消費で性能アップ。</p>
+        <div id="shopList"></div>
+      </div>
+      <div class="card">
+        <b>🔐 セキュリティ備考</b>
+        <p class="muted">本番運用時は Firebase Security Rules を必ず設定し、誰でも書き換え可能な状態を避けてください。</p>
+      </div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="active" data-tab="mission">🧺 ミッション</button>
+    <button data-tab="farm">🚜 農場</button>
+    <button data-tab="shop">🏪 ショップ</button>
+  </nav>
+
+  <div id="toasts" class="toast-wrap"></div>
+
+  <div id="offlineModal" class="modal-bg">
+    <div class="modal">
+      <h3 style="margin-top:0;">💤 留守中の収益</h3>
+      <p id="offlineText" style="margin: 8px 0;"></p>
+      <button id="closeOffline">OK</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    // Firebase設定（ここを自分のプロジェクト値に置換）
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const DIFF_REWARD = {
+      normal: { coin: 50, mat: 2 },
+      hard: { coin: 100, mat: 4 },
+      extreme: { coin: 180, mat: 7 }
+    };
+    const COMPLETE_BONUS = { coin: 300, seed: 6, mush: 4, meat: 4 };
+    const FACILITY_BASE = {
+      field: { name: "畑", emoji: "🌱", unlockAt: 0 },
+      market: { name: "市場", emoji: "🏪", unlockAt: 0 },
+      warehouse: { name: "倉庫", emoji: "📦", unlockAt: 0 },
+      ranch: { name: "牧場", emoji: "🐮", unlockAt: 10 },
+      kitchen: { name: "キッチン", emoji: "🍳", unlockAt: 20 }
+    };
+    const MAX_LEVEL = 5;
+    const FIELD_GROWTH_MS = [120 * 60 * 1000, 90 * 60 * 1000, 60 * 60 * 1000, 45 * 60 * 1000, 30 * 60 * 1000];
+
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      listId: "",
+      missions: {},
+      game: null,
+      activeTab: "mission",
+      renderedOffline: false
+    };
+
+    function makeId() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+    function getListId() {
+      const hash = (location.hash || "").replace("#", "").trim();
+      if (hash) return hash;
+      const id = makeId();
+      location.hash = id;
+      return id;
+    }
+    function now() { return Date.now(); }
+
+    function defaultGame() {
+      return {
+        resources: { coin: 200, seed: 10, mush: 4, meat: 3, crop: 0 },
+        missionClearCount: 0,
+        missionCompleteBonusClaimed: false,
+        facilities: {
+          field: { level: 1, plantedAt: 0, readyAt: 0, plantedAmount: 0 },
+          market: { level: 1, lastCollectAt: now() },
+          warehouse: { level: 1 },
+          ranch: { level: 1, lastCollectAt: now() },
+          kitchen: { level: 1 }
+        },
+        lastSeenAt: now()
+      };
+    }
+    function ranchMeatRatePerMin(level) {
+      return level * 0.2;
+    }
+    function ranchAccumulatedMeat(level, lastCollectAt) {
+      const minutes = Math.max(0, (now() - (lastCollectAt || now())) / 60000);
+      return Math.floor(minutes * ranchMeatRatePerMin(level));
+    }
+    function kitchenCoinPerMushroom(level) {
+      return 30 + level * 15;
+    }
+    function migrateGameShape(g) {
+      if (!g) return;
+      g.resources = g.resources || {};
+      ["coin","seed","mush","meat","crop"].forEach((k) => {
+        if (typeof g.resources[k] !== "number") g.resources[k] = 0;
+      });
+      g.facilities = g.facilities || {};
+      Object.keys(FACILITY_BASE).forEach((k) => {
+        g.facilities[k] = g.facilities[k] || { level: 1 };
+        if (typeof g.facilities[k].level !== "number") g.facilities[k].level = 1;
+      });
+      if (!g.facilities.market.lastCollectAt) g.facilities.market.lastCollectAt = now();
+      if (!g.facilities.ranch.lastCollectAt) g.facilities.ranch.lastCollectAt = now();
+      if (typeof g.missionClearCount !== "number") g.missionClearCount = 0;
+      if (typeof g.missionCompleteBonusClaimed !== "boolean") g.missionCompleteBonusClaimed = false;
+    }
+    function getCapWarehouse(level) {
+      return 120 + (level - 1) * 80;
+    }
+    function marketCoinRatePerMin(level) {
+      return 2 + level * 2;
+    }
+    function calcUpgradeCost(level) {
+      return 150 * level;
+    }
+    function facilityUnlocked(key) {
+      return state.game.missionClearCount >= FACILITY_BASE[key].unlockAt;
+    }
+    function clampResources() {
+      const cap = getCapWarehouse(state.game.facilities.warehouse.level);
+      ["seed", "mush", "meat", "crop"].forEach((k) => {
+        state.game.resources[k] = Math.max(0, Math.min(cap, state.game.resources[k]));
+      });
+      state.game.resources.coin = Math.max(0, state.game.resources.coin);
+    }
+    function showToast(text) {
+      const d = document.createElement("div");
+      d.className = "toast";
+      d.textContent = text;
+      $("toasts").appendChild(d);
+      setTimeout(() => d.remove(), 2000);
+    }
+    function saveGame() {
+      if (!state.listId || !state.game) return;
+      state.game.lastSeenAt = now();
+      db.ref("lists/" + state.listId + "/game").set(state.game);
+    }
+
+    function applyOfflineEarnings(showOnFarmOpen) {
+      const g = state.game;
+      const dtMin = Math.floor((now() - (g.lastSeenAt || now())) / 60000);
+      if (dtMin <= 0) return;
+      let coins = 0;
+      if (facilityUnlocked("market")) {
+        const level = g.facilities.market.level;
+        coins += dtMin * marketCoinRatePerMin(level);
+      }
+      if (coins > 0) {
+        g.resources.coin += coins;
+        if (showOnFarmOpen) {
+          $("offlineText").textContent = dtMin + "分の間に " + coins + "コイン獲得しました。";
+          $("offlineModal").classList.add("show");
+          state.renderedOffline = true;
+        }
+      }
+      g.lastSeenAt = now();
+      saveGame();
+    }
+
+    function difficultyLabel(diff) {
+      if (diff === "hard") return "ちょっと大変";
+      if (diff === "extreme") return "めちゃ大変";
+      return "ふつう";
+    }
+    function diffPillClass(diff) {
+      if (diff === "hard") return "p-hard";
+      if (diff === "extreme") return "p-extreme";
+      return "p-normal";
+    }
+    function materialByCategory(cat) {
+      if (cat === "mush") return "mush";
+      if (cat === "meat") return "meat";
+      return "seed";
+    }
+    function renderTop() {
+      if (!state.game) return;
+      $("vCoin").textContent = Math.floor(state.game.resources.coin);
+      $("vSeed").textContent = state.game.resources.seed;
+      $("vMush").textContent = state.game.resources.mush;
+      $("vMeat").textContent = state.game.resources.meat;
+      $("vMissionDone").textContent = state.game.missionClearCount;
+      $("listInfo").textContent = "共有URL: " + location.href;
+    }
+    function renderMissions() {
+      const items = Object.entries(state.missions);
+      const done = items.filter(([,v]) => v.done).length;
+      $("missionProgress").textContent = done + " / " + items.length + " 完了";
+      const box = $("missionList");
+      if (!items.length) {
+        box.innerHTML = '<p class="muted">まだ品目がありません。上から追加してください。</p>';
+        return;
+      }
+      box.innerHTML = "";
+      items.sort((a,b) => (a[1].createdAt || 0) - (b[1].createdAt || 0)).forEach(([id, m]) => {
+        const row = document.createElement("div");
+        row.className = "mission-item" + (m.done ? " done" : "");
+        row.innerHTML = `
+          <input type="checkbox" ${m.done ? "checked" : ""} data-id="${id}" style="width:20px;height:20px;">
+          <div>
+            <div><b>${escapeHtml(m.name || "品目")}</b></div>
+            <div class="tiny">素材: ${m.category === "mush" ? "🍄 きのこ" : m.category === "meat" ? "🍖 おにく" : "🌱 たねっこ"}</div>
+          </div>
+          <span class="pill ${diffPillClass(m.diff)}">${difficultyLabel(m.diff)}</span>
+          <button class="del" data-del="${id}" aria-label="削除">×</button>
+        `;
+        box.appendChild(row);
+      });
+      box.querySelectorAll('input[type="checkbox"]').forEach((c) => {
+        c.addEventListener("change", () => toggleMission(c.dataset.id, c.checked));
+      });
+      box.querySelectorAll('button[data-del]').forEach((b) => {
+        b.addEventListener("click", () => deleteMission(b.dataset.del));
+      });
+    }
+
+    function renderFarm() {
+      const g = state.game;
+      const box = $("farmGrid");
+      box.innerHTML = "";
+      Object.keys(FACILITY_BASE).forEach((key) => {
+        const base = FACILITY_BASE[key];
+        const unlocked = facilityUnlocked(key);
+        const lv = g.facilities[key].level;
+        const div = document.createElement("div");
+        div.className = "facility" + (unlocked ? "" : " locked");
+        let meta = "Lv." + lv;
+        let action = "";
+        let sparkle = "";
+        if (!unlocked) {
+          meta = "ミッション" + base.unlockAt + "回で開放";
+        } else if (key === "field") {
+          const f = g.facilities.field;
+          if (f.readyAt && now() >= f.readyAt && f.plantedAmount > 0) {
+            meta += " / 収穫可能";
+            sparkle = '<div class="sparkle">✨</div>';
+            action = '<button data-act="harvest">収穫する</button>';
+          } else if (f.readyAt > now()) {
+            const left = Math.ceil((f.readyAt - now()) / 60000);
+            meta += " / 残り" + left + "分";
+            action = '<button data-act="plant">追加で植える</button>';
+          } else {
+            meta += " / 空き";
+            action = '<button data-act="plant">植える</button>';
+          }
+          meta += " / 在庫🌽" + (g.resources.crop || 0);
+        } else if (key === "market") {
+          const last = g.facilities.market.lastCollectAt || now();
+          const min = Math.max(0, Math.floor((now() - last) / 60000));
+          const coin = min * marketCoinRatePerMin(lv);
+          meta += " / 放置売上 +" + coin + "🪙";
+          action = '<button data-act="collectMarket">売上回収</button>';
+        } else if (key === "warehouse") {
+          meta += " / 容量 " + getCapWarehouse(lv);
+          action = '<button data-act="warehouseInfo">容量確認</button>';
+        } else if (key === "ranch") {
+          const r = g.facilities.ranch;
+          const accum = ranchAccumulatedMeat(lv, r.lastCollectAt);
+          meta += " / 放置生産 +" + accum + "🍖";
+          if (accum > 0) sparkle = '<div class="sparkle">✨</div>';
+          action = '<button data-act="collectRanch">おにく回収</button>';
+        } else if (key === "kitchen") {
+          const gain = kitchenCoinPerMushroom(lv);
+          meta += " / 1🍄 → " + gain + "🪙";
+          action = '<button data-act="cookKitchen">加工する</button>';
+        }
+        div.innerHTML = `
+          ${sparkle}
+          <div class="emoji">${base.emoji}</div>
+          <div class="name">${base.name}</div>
+          <div class="meta">${meta}</div>
+          ${unlocked ? action : ""}
+        `;
+        if (unlocked) {
+          div.querySelector("button")?.addEventListener("click", () => onFacilityAction(key, div.querySelector("button").dataset.act));
+        }
+        box.appendChild(div);
+      });
+    }
+    function renderShop() {
+      const g = state.game;
+      const box = $("shopList");
+      box.innerHTML = "";
+      Object.keys(FACILITY_BASE).forEach((k) => {
+        const base = FACILITY_BASE[k];
+        const unlocked = facilityUnlocked(k);
+        const lv = g.facilities[k].level;
+        const cost = calcUpgradeCost(lv);
+        const maxed = lv >= MAX_LEVEL;
+        const d = document.createElement("div");
+        d.className = "shop-item";
+        d.innerHTML = `
+          <div class="row" style="justify-content:space-between;">
+            <div><b>${base.emoji} ${base.name}</b> <span class="tiny">Lv.${lv}</span></div>
+            <span class="tiny">${unlocked ? "開放済み" : "未開放"}</span>
+          </div>
+          <div class="tiny" style="margin-top:6px;">
+            ${maxed ? "最大レベルです" : "強化コスト: " + cost + "コイン"}
+          </div>
+          <button ${(!unlocked || maxed) ? "disabled" : ""} data-up="${k}" style="margin-top:8px;opacity:${(!unlocked || maxed) ? 0.5 : 1};">強化する</button>
+        `;
+        box.appendChild(d);
+      });
+      box.querySelectorAll("button[data-up]").forEach((btn) => {
+        btn.addEventListener("click", () => upgradeFacility(btn.dataset.up));
+      });
+    }
+    function renderAll() {
+      clampResources();
+      renderTop();
+      renderMissions();
+      renderFarm();
+      renderShop();
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+    }
+
+    function addMission() {
+      const name = $("itemName").value.trim();
+      if (!name) return;
+      const diff = $("itemDiff").value;
+      const category = $("itemCat").value;
+      const id = db.ref().push().key;
+      db.ref("lists/" + state.listId + "/missions/" + id).set({
+        name, diff, category, done: false, createdAt: now()
+      });
+      $("itemName").value = "";
+    }
+
+    function allMissionsDone() {
+      const arr = Object.values(state.missions);
+      return arr.length > 0 && arr.every((m) => !!m.done);
+    }
+
+    function grantMissionReward(mission) {
+      const rw = DIFF_REWARD[mission.diff] || DIFF_REWARD.normal;
+      const mat = materialByCategory(mission.category);
+      state.game.resources.coin += rw.coin;
+      state.game.resources[mat] += rw.mat;
+      state.game.missionClearCount += 1;
+      showToast("+" + rw.coin + "コイン！ +" + rw.mat + (mat === "seed" ? "たねっこ" : mat === "mush" ? "きのこ" : "おにく"));
+      if (allMissionsDone() && !state.game.missionCompleteBonusClaimed) {
+        state.game.resources.coin += COMPLETE_BONUS.coin;
+        state.game.resources.seed += COMPLETE_BONUS.seed;
+        state.game.resources.mush += COMPLETE_BONUS.mush;
+        state.game.resources.meat += COMPLETE_BONUS.meat;
+        state.game.missionCompleteBonusClaimed = true;
+        showToast("ミッション完了ボーナス！ +" + COMPLETE_BONUS.coin + "コイン");
+      }
+    }
+
+    function deleteMission(id) {
+      const m = state.missions[id];
+      if (!m) return;
+      db.ref("lists/" + state.listId + "/missions/" + id).remove();
+      if (state.game) {
+        state.game.missionCompleteBonusClaimed = false;
+        saveGame();
+      }
+    }
+
+    function clearDoneMissions() {
+      const ids = Object.entries(state.missions).filter(([,m]) => m.done).map(([id]) => id);
+      if (!ids.length) return showToast("完了済みはありません");
+      const updates = {};
+      ids.forEach((id) => { updates["missions/" + id] = null; });
+      db.ref("lists/" + state.listId).update(updates);
+      if (state.game) {
+        state.game.missionCompleteBonusClaimed = false;
+        saveGame();
+      }
+      showToast(ids.length + "件 削除しました");
+    }
+
+    function toggleMission(id, done) {
+      const m = state.missions[id];
+      if (!m) return;
+      db.ref("lists/" + state.listId + "/missions/" + id + "/done").set(done);
+      if (done && !m.done) {
+        grantMissionReward(m);
+        saveGame();
+      }
+      if (!done) {
+        state.game.missionCompleteBonusClaimed = false;
+        saveGame();
+      }
+    }
+
+    function onFacilityAction(key, act) {
+      if (key === "field" && act === "plant") {
+        const need = 2;
+        if (state.game.resources.seed < need) return showToast("たねっこ不足");
+        const f = state.game.facilities.field;
+        state.game.resources.seed -= need;
+        f.plantedAmount = Math.min(f.plantedAmount + 1, getCapWarehouse(state.game.facilities.warehouse.level));
+        const t = FIELD_GROWTH_MS[Math.max(0, f.level - 1)] || FIELD_GROWTH_MS[0];
+        f.plantedAt = now();
+        f.readyAt = now() + t;
+        showToast("畑に植えました 🌱");
+        saveGame();
+        renderAll();
+      }
+      if (key === "field" && act === "harvest") {
+        const f = state.game.facilities.field;
+        if (!(f.readyAt && now() >= f.readyAt && f.plantedAmount > 0)) return;
+        const gain = f.plantedAmount * (20 + f.level * 5);
+        state.game.resources.crop += f.plantedAmount;
+        state.game.resources.coin += gain;
+        showToast("収穫！ +" + gain + "コイン");
+        f.plantedAmount = 0; f.readyAt = 0; f.plantedAt = 0;
+        saveGame();
+        renderAll();
+      }
+      if (key === "market" && act === "collectMarket") {
+        const m = state.game.facilities.market;
+        const min = Math.max(0, Math.floor((now() - (m.lastCollectAt || now())) / 60000));
+        const coin = min * marketCoinRatePerMin(m.level);
+        if (coin > 0) {
+          state.game.resources.coin += coin;
+          showToast("市場売上 +" + coin + "コイン");
+        } else {
+          showToast("まだ売上はありません");
+        }
+        m.lastCollectAt = now();
+        saveGame();
+        renderAll();
+      }
+      if (act === "warehouseInfo") showToast("倉庫容量: " + getCapWarehouse(state.game.facilities.warehouse.level));
+      if (key === "ranch" && act === "collectRanch") {
+        const r = state.game.facilities.ranch;
+        const meat = ranchAccumulatedMeat(r.level, r.lastCollectAt);
+        if (meat > 0) {
+          state.game.resources.meat += meat;
+          showToast("牧場 +" + meat + "🍖");
+        } else {
+          showToast("まだ生産されていません");
+        }
+        r.lastCollectAt = now();
+        saveGame();
+        renderAll();
+      }
+      if (key === "kitchen" && act === "cookKitchen") {
+        const k = state.game.facilities.kitchen;
+        if (state.game.resources.mush < 1) return showToast("きのこ不足");
+        const gain = kitchenCoinPerMushroom(k.level);
+        state.game.resources.mush -= 1;
+        state.game.resources.coin += gain;
+        showToast("加工！ 1🍄 → +" + gain + "🪙");
+        saveGame();
+        renderAll();
+      }
+    }
+
+    function upgradeFacility(key) {
+      if (!facilityUnlocked(key)) return;
+      const f = state.game.facilities[key];
+      if (f.level >= MAX_LEVEL) return;
+      const cost = calcUpgradeCost(f.level);
+      if (state.game.resources.coin < cost) return showToast("コイン不足");
+      state.game.resources.coin -= cost;
+      f.level += 1;
+      showToast(FACILITY_BASE[key].name + " をLv." + f.level + "に強化！");
+      saveGame();
+      renderAll();
+    }
+
+    function wireTabs() {
+      document.querySelectorAll(".bottom-nav button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".bottom-nav button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          const t = btn.dataset.tab;
+          state.activeTab = t;
+          document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+          $("tab-" + t).classList.add("active");
+          if (t === "farm" && !state.renderedOffline) applyOfflineEarnings(true);
+          renderAll();
+        });
+      });
+    }
+
+    function bindRealtime() {
+      const base = db.ref("lists/" + state.listId);
+      base.child("missions").on("value", (snap) => {
+        state.missions = snap.val() || {};
+        renderMissions();
+      });
+      base.child("game").on("value", (snap) => {
+        state.game = snap.val() || defaultGame();
+        migrateGameShape(state.game);
+        clampResources();
+        renderAll();
+      });
+    }
+
+    function bootstrapIfNeeded() {
+      const base = db.ref("lists/" + state.listId);
+      base.child("game").once("value").then((snap) => {
+        if (!snap.exists()) return base.child("game").set(defaultGame());
+      });
+      base.child("meta").once("value").then((snap) => {
+        if (!snap.exists()) return base.child("meta").set({ createdAt: now() });
+      });
+    }
+
+    function start() {
+      state.listId = getListId();
+      wireTabs();
+      $("btnAddItem").addEventListener("click", addMission);
+      $("itemName").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") addMission();
+      });
+      $("btnClearDone").addEventListener("click", clearDoneMissions);
+      $("closeOffline").addEventListener("click", () => {
+        $("offlineModal").classList.remove("show");
+      });
+      bootstrapIfNeeded();
+      bindRealtime();
+      setInterval(() => {
+        if (!state.game) return;
+        renderFarm();
+      }, 15000);
+    }
+    start();
+  </script>
+</body>
+</html>
