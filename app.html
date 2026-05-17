@@ -554,9 +554,45 @@
     }
     .sheet-close:hover { background: var(--border); color: var(--ink); box-shadow: none; transform: none; }
 
-    /* ======= Improved empty state ======= */
+    /* ======= Empty state ======= */
     .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13px; line-height: 1.9; }
     .empty-icon { font-size: 48px; margin-bottom: 10px; opacity: 0.45; }
+
+    /* ======= How-to empty state ======= */
+    .howto-wrap {
+      padding: 8px 0 28px;
+      animation: reqIn .4s cubic-bezier(0.34,1.2,0.64,1) both;
+    }
+    .howto-title {
+      text-align: center; font-size: 13px; font-weight: 700;
+      letter-spacing: 0.5px; color: var(--muted);
+      text-transform: uppercase; margin-bottom: 14px;
+    }
+    .howto-steps {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .howto-step {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.80);
+      border-radius: var(--r-md);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-card);
+      animation: reqIn .45s cubic-bezier(0.34,1.2,0.64,1) both;
+      animation-delay: calc(var(--i,0) * 0.07s);
+    }
+    .howto-num {
+      flex-shrink: 0;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
+      color: #fff; font-size: 14px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.28);
+    }
+    .howto-text { flex: 1; }
+    .howto-text strong { display: block; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+    .howto-text span { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+    .howto-emoji { font-size: 22px; flex-shrink: 0; }
 
     /* ======= Shortcut area in list ======= */
     .shortcut-area { margin-bottom: 4px; padding: 10px 14px; background: var(--glass); backdrop-filter: blur(12px); border-radius: var(--r-md); box-shadow: var(--shadow-card); border: 1px solid rgba(255,255,255,0.88); }
@@ -1355,7 +1391,7 @@
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const done = items.filter((r) => r.status === "done" && (r.completedAt || 0) >= todayStart.getTime()).sort((a,b) => b.completedAt - a.completedAt);
 
-      $("list-open").innerHTML = sectionHtml("📋 お買い物リスト", open.length, open.length ? open.map((r,i) => openCard(r,i)).join("") : emptyHtml("メモはありません。"));
+      $("list-open").innerHTML = sectionHtml("📋 お買い物リスト", open.length, open.length ? open.map((r,i) => openCard(r,i)).join("") : howtoHtml());
       $("list-claimed").innerHTML = claimed.length ? sectionHtml("🙋 買いに行く", claimed.length, claimed.map((r,i) => claimedCard(r,i)).join("")) : "";
       $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map((r,i) => doneCard(r,i)).join("")) : "";
 
@@ -1365,6 +1401,37 @@
       return `<div class="section-header"><h2>${title}</h2><span class="section-count">${count}</span></div>${body}`;
     }
     function emptyHtml(msg) { return `<div class="empty">${msg}</div>`; }
+    function howtoHtml() {
+      return `<div class="howto-wrap">
+        <div class="howto-title">はじめかた</div>
+        <div class="howto-steps">
+          <div class="howto-step" style="--i:0">
+            <div class="howto-num">1</div>
+            <div class="howto-text">
+              <strong>＋ をタップして追加</strong>
+              <span>品名・メモ・難易度を入れて送信</span>
+            </div>
+            <div class="howto-emoji">🛒</div>
+          </div>
+          <div class="howto-step" style="--i:1">
+            <div class="howto-num">2</div>
+            <div class="howto-text">
+              <strong>家族が「買ってくる！」と立候補</strong>
+              <span>リアルタイムで誰が動いてるか一目でわかる</span>
+            </div>
+            <div class="howto-emoji">🙋</div>
+          </div>
+          <div class="howto-step" style="--i:2">
+            <div class="howto-num">3</div>
+            <div class="howto-text">
+              <strong>買ったら完了マーク</strong>
+              <span>履歴に記録されて貢献度もわかる</span>
+            </div>
+            <div class="howto-emoji">✅</div>
+          </div>
+        </div>
+      </div>`;
+    }
     function timeAgo(ts) {
       if (!ts) return "";
       const diff = now() - ts;
