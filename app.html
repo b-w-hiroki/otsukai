@@ -594,6 +594,47 @@
     .howto-text span { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
     .howto-emoji { font-size: 22px; flex-shrink: 0; }
 
+    /* ======= How-to button ======= */
+    .howto-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--pri-soft); border: 1.5px solid var(--pri-mid);
+      color: var(--pri); font-size: 15px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0; box-shadow: none; transform: none;
+      transition: background .15s, box-shadow .15s;
+      flex-shrink: 0;
+    }
+    .howto-btn:hover { background: var(--pri-mid); box-shadow: none; transform: none; }
+
+    /* ======= How-to modal ======= */
+    .howto-modal-backdrop {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(15,12,50,0.48);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    .howto-modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .howto-modal {
+      position: fixed; left: 50%; top: 50%; z-index: 51;
+      transform: translate(-50%, -54%) scale(0.94);
+      opacity: 0; pointer-events: none;
+      background: var(--surface);
+      border-radius: var(--r-xl);
+      padding: 20px;
+      width: calc(100% - 40px); max-width: 420px;
+      box-shadow: var(--shadow-deep);
+      transition: transform .32s cubic-bezier(0.34,1.2,0.64,1), opacity .25s ease;
+    }
+    .howto-modal.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1; pointer-events: auto;
+    }
+    .howto-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
     /* ======= Shortcut area in list ======= */
     .shortcut-area { margin-bottom: 4px; padding: 10px 14px; background: var(--glass); backdrop-filter: blur(12px); border-radius: var(--r-md); box-shadow: var(--shadow-card); border: 1px solid rgba(255,255,255,0.88); }
 
@@ -704,6 +745,7 @@
         <div class="title" id="top-family-name">家族</div>
         <div class="family-name" id="top-my-name">自分</div>
       </div>
+      <button id="btn-howto" class="howto-btn" style="display:none;" aria-label="使い方">？</button>
     </div>
 
     <div class="app">
@@ -783,6 +825,41 @@
         <span class="nav-label">設定</span>
       </button>
     </nav>
+
+    <!-- How-to modal -->
+    <div id="howto-modal-backdrop" class="howto-modal-backdrop"></div>
+    <div id="howto-modal" class="howto-modal" role="dialog" aria-label="使い方">
+      <div class="howto-modal-header">
+        <div class="sheet-title">💡 使い方</div>
+        <button id="btn-howto-close" class="sheet-close">✕</button>
+      </div>
+      <div class="howto-steps" style="margin-top:14px;">
+        <div class="howto-step" style="--i:0">
+          <div class="howto-num">1</div>
+          <div class="howto-text">
+            <strong>＋ をタップして追加</strong>
+            <span>品名・メモ・難易度を入れて送信</span>
+          </div>
+          <div class="howto-emoji">🛒</div>
+        </div>
+        <div class="howto-step" style="--i:1">
+          <div class="howto-num">2</div>
+          <div class="howto-text">
+            <strong>家族が「買ってくる！」と立候補</strong>
+            <span>リアルタイムで誰が動いてるか一目でわかる</span>
+          </div>
+          <div class="howto-emoji">🙋</div>
+        </div>
+        <div class="howto-step" style="--i:2">
+          <div class="howto-num">3</div>
+          <div class="howto-text">
+            <strong>買ったら完了マーク</strong>
+            <span>履歴に記録されて貢献度もわかる</span>
+          </div>
+          <div class="howto-emoji">✅</div>
+        </div>
+      </div>
+    </div>
 
     <!-- FAB -->
     <button id="fab-add" class="fab" aria-label="おつかいを追加">
@@ -1267,6 +1344,16 @@
       return m ? m.emoji : "👤";
     }
 
+    // ===== How-to modal =====
+    function openHowto() {
+      $("howto-modal").classList.add("open");
+      $("howto-modal-backdrop").classList.add("open");
+    }
+    function closeHowto() {
+      $("howto-modal").classList.remove("open");
+      $("howto-modal-backdrop").classList.remove("open");
+    }
+
     // ===== Bottom sheet =====
     function openSheet() {
       $("sheet-add").classList.add("open");
@@ -1391,7 +1478,9 @@
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const done = items.filter((r) => r.status === "done" && (r.completedAt || 0) >= todayStart.getTime()).sort((a,b) => b.completedAt - a.completedAt);
 
-      $("list-open").innerHTML = sectionHtml("📋 お買い物リスト", open.length, open.length ? open.map((r,i) => openCard(r,i)).join("") : howtoHtml());
+      const hasAny = open.length + claimed.length + done.length > 0;
+      $("btn-howto").style.display = hasAny ? "" : "none";
+      $("list-open").innerHTML = sectionHtml("📋 お買い物リスト", open.length, open.length ? open.map((r,i) => openCard(r,i)).join("") : (hasAny ? "" : howtoHtml()));
       $("list-claimed").innerHTML = claimed.length ? sectionHtml("🙋 買いに行く", claimed.length, claimed.map((r,i) => claimedCard(r,i)).join("")) : "";
       $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map((r,i) => doneCard(r,i)).join("")) : "";
 
@@ -1659,6 +1748,9 @@
       $("btn-save-profile").addEventListener("click", saveProfile);
       $("btn-create-family").addEventListener("click", createFamily);
       $("btn-join-family").addEventListener("click", joinFamily);
+      $("btn-howto").addEventListener("click", openHowto);
+      $("btn-howto-close").addEventListener("click", closeHowto);
+      $("howto-modal-backdrop").addEventListener("click", closeHowto);
       $("fab-add").addEventListener("click", openSheet);
       $("btn-sheet-close").addEventListener("click", closeSheet);
       $("sheet-backdrop").addEventListener("click", closeSheet);
