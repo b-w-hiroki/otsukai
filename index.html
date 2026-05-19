@@ -505,14 +505,16 @@
       transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
       font-size: 0;
     }
-    /* バー中央を盛り上げてFABを抱えるクレードル */
-    .fab::before {
-      content: ""; position: absolute; z-index: -1;
-      left: 50%; top: 50%; transform: translate(-50%, -50%);
+    /* バー中央を盛り上げてFABを抱えるクレードル（FABの背面に描画） */
+    .bottom-nav::before {
+      content: ""; position: absolute;
+      left: 50%; top: 0; transform: translate(-50%, -50%);
       width: 92px; height: 92px; border-radius: 50%;
       background: var(--surface);
       box-shadow: 0 -5px 14px rgba(30,27,75,0.07);
+      pointer-events: none;
     }
+    .bottom-nav.no-fab::before { display: none; }
     .fab:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 16px 32px rgba(99,102,241,0.56); }
     .fab:active { transform: scale(0.93); }
     .fab.hidden { visibility: hidden; }
@@ -1742,7 +1744,9 @@
           document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
           $("tab-" + t).classList.add("active");
           closeSheet();
-          $("fab-add").classList.toggle("hidden", t !== "requests");
+          const onRequests = t === "requests";
+          $("fab-add").classList.toggle("hidden", !onRequests);
+          document.querySelector(".bottom-nav").classList.toggle("no-fab", !onRequests);
           renderBadge();
         });
       });
