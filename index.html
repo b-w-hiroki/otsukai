@@ -491,31 +491,31 @@
     /* ======= Topbar ======= */
     .topbar .title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 
-    /* ======= FAB (中央ノッチ・クレードル) ======= */
+    /* ======= FAB (フッター組み込み・控えめに盛り上げ) ======= */
     .fab {
       position: relative;
       justify-self: center; align-self: start;
-      margin-top: -40px; margin-bottom: 0;
-      width: 62px; height: 62px; border-radius: 50%;
+      margin-top: -20px; margin-bottom: 0;
+      width: 56px; height: 56px; border-radius: 50%;
       background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
       color: #fff; border: none; cursor: pointer; z-index: 25;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 10px 22px rgba(99,102,241,0.5), 0 4px 10px rgba(0,0,0,0.2),
+      box-shadow: 0 6px 14px rgba(99,102,241,0.42), 0 2px 6px rgba(0,0,0,0.16),
                   inset 0 1px 0 rgba(255,255,255,0.26);
       transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
       font-size: 0;
     }
-    /* バー中央を盛り上げてFABを抱えるクレードル（FABの背面に描画） */
+    /* バー中央を控えめに盛り上げてFABを抱えるクレードル（FABの背面に描画） */
     .bottom-nav::before {
       content: ""; position: absolute;
-      left: 50%; top: 0; transform: translate(-50%, -50%);
-      width: 92px; height: 92px; border-radius: 50%;
+      left: 50%; top: 16px; transform: translate(-50%, -50%);
+      width: 72px; height: 72px; border-radius: 50%;
       background: var(--surface);
-      box-shadow: 0 -5px 14px rgba(30,27,75,0.07);
+      box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
       pointer-events: none;
     }
     .bottom-nav.no-fab::before { display: none; }
-    .fab:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 16px 32px rgba(99,102,241,0.56); }
+    .fab:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 10px 22px rgba(99,102,241,0.5); }
     .fab:active { transform: scale(0.93); }
     .fab.hidden { visibility: hidden; }
     .fab-icon {
@@ -833,7 +833,7 @@
         <span class="nav-label">履歴</span>
       </button>
       <button id="fab-add" class="fab" aria-label="おつかいを追加">
-        <span class="fab-icon" style="font-size:36px;line-height:1;font-weight:300;">+</span>
+        <span class="fab-icon" style="font-size:32px;line-height:1;font-weight:300;">+</span>
       </button>
       <button data-tab="settings" style="grid-column:5;">
         <span class="nav-icon">⚙️</span>
