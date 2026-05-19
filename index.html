@@ -657,6 +657,15 @@
     /* ======= Shortcut area in list ======= */
     .shortcut-area { margin-bottom: 4px; padding: 10px 14px; background: var(--glass); backdrop-filter: blur(12px); border-radius: var(--r-md); box-shadow: var(--shadow-card); border: 1px solid rgba(255,255,255,0.88); }
 
+    /* ======= Request hints (budget / brand) ======= */
+    .req-hints { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+    .req-hint {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 11px; color: var(--ink-2); font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-full); padding: 3px 10px;
+    }
+
     /* ======= Stock Management ======= */
     .stock-item {
       background: var(--surface);
@@ -974,7 +983,14 @@
               <span>🔥 急ぎ</span>
             </label>
           </div>
-          <textarea id="new-memo" placeholder="メモ（任意・ブランド指定や注意点など）" maxlength="200"></textarea>
+          <textarea id="new-memo" placeholder="メモ（任意・その他注意点など）" maxlength="200"></textarea>
+          <div class="row" style="gap:8px;">
+            <div style="flex:1; position:relative;">
+              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
+              <input id="new-budget" type="number" min="0" max="9999999" placeholder="予算上限（円）" style="padding-left:26px;" />
+            </div>
+            <input id="new-brand" placeholder="🏷️ ブランド・メーカー" maxlength="40" style="flex:1.4;" />
+          </div>
           <div class="row" style="gap:8px;">
             <button id="btn-add-request" style="flex:1;">追加する</button>
             <button id="btn-add-shortcut" class="ghost" style="white-space:nowrap;" title="入力内容をショートカット登録">⭐ 登録</button>
@@ -1487,14 +1503,20 @@
       const diff = $("new-diff").value;
       const urgent = $("new-urgent").checked;
       const memo = $("new-memo").value.trim();
+      const budget = parseInt($("new-budget").value, 10);
+      const brand = $("new-brand").value.trim();
       const id = familyRef().child("requests").push().key;
       const ts = now();
       const req = { name, diff, urgent, status: "open", requestedBy: state.uid, requestedAt: ts };
       if (memo) req.memo = memo;
+      if (budget > 0) req.budget = budget;
+      if (brand) req.brand = brand;
       await familyRef().child("requests/" + id).set(req);
       await bumpStat("requestedCount");
       $("new-name").value = "";
       $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
       $("new-urgent").checked = false;
       closeSheet();
       showToast("追加しました 🛒", { sound: false });
@@ -1741,6 +1763,14 @@
         </div>
       </div>`;
     }
+    function reqHints(r) {
+      const parts = [];
+      if (r.budget) parts.push(`💰 ${Number(r.budget).toLocaleString()}円以下で`);
+      if (r.brand)  parts.push(`🏷️ ${escapeHtml(r.brand)}`);
+      if (!parts.length) return "";
+      return `<div class="req-hints">${parts.map((p) => `<span class="req-hint">${p}</span>`).join("")}</div>`;
+    }
+
     function timeAgo(ts) {
       if (!ts) return "";
       const diff = now() - ts;
@@ -1762,6 +1792,7 @@
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
           <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ ${timeAgo(r.requestedAt)}</div>
+          ${reqHints(r)}
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
             <button data-act="claim" data-id="${r.id}" class="success">🙋 立候補する</button>
@@ -1788,6 +1819,7 @@
               <div class="claimer-badge-status">🛒 買いに行きます・${timeAgo(r.claimedAt)}に立候補</div>
             </div>
           </div>
+          ${reqHints(r)}
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
             ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 購入しました</button>` : ''}
