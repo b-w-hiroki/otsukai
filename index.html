@@ -4,6 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <title>🧺 おうちのおつかい</title>
+  <meta name="description" content="家族でおつかいを依頼・分担できるアプリ" />
+  <meta name="theme-color" content="#6366f1" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="おつかい" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
   <style>
@@ -514,10 +523,8 @@
       box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
       pointer-events: none;
     }
-    .bottom-nav.no-fab::before { display: none; }
     .fab:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 10px 22px rgba(99,102,241,0.5); }
     .fab:active { transform: scale(0.93); }
-    .fab.hidden { visibility: hidden; }
     .fab-icon {
       font-size: 30px; line-height: 1; font-weight: 300;
       transition: transform .3s cubic-bezier(0.34,1.56,0.64,1);
@@ -1744,9 +1751,6 @@
           document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
           $("tab-" + t).classList.add("active");
           closeSheet();
-          const onRequests = t === "requests";
-          $("fab-add").classList.toggle("hidden", !onRequests);
-          document.querySelector(".bottom-nav").classList.toggle("no-fab", !onRequests);
           renderBadge();
         });
       });
@@ -1797,6 +1801,13 @@
       initAuthListener();
     }
     init();
+
+    // PWA: Service Worker 登録（ホーム画面追加・オフライン対応）
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
