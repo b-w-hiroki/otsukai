@@ -657,6 +657,56 @@
     /* ======= Shortcut area in list ======= */
     .shortcut-area { margin-bottom: 4px; padding: 10px 14px; background: var(--glass); backdrop-filter: blur(12px); border-radius: var(--r-md); box-shadow: var(--shadow-card); border: 1px solid rgba(255,255,255,0.88); }
 
+    /* ======= Stock Management ======= */
+    .stock-item {
+      background: var(--surface);
+      border-radius: var(--r-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 2px 14px rgba(99,102,241,0.07);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+      animation: reqIn 0.32s cubic-bezier(0.34,1.4,0.64,1) backwards;
+      animation-delay: calc(var(--i,0) * 0.04s);
+    }
+    .stock-level-btn {
+      flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%;
+      border: none; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+      transition: transform .18s, box-shadow .18s;
+    }
+    .stock-level-btn:hover { transform: scale(1.12); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+    .stock-level-btn:active { transform: scale(0.88); }
+    .stock-level-btn.ok  { background: #d1fae5; }
+    .stock-level-btn.low { background: #fef3c7; }
+    .stock-level-btn.out { background: #fee2e2; animation: urgentPulse 1.8s ease-in-out infinite; }
+    .stock-name { flex: 1; min-width: 0; font-weight: 700; font-size: 15px; color: var(--ink); word-break: break-all; }
+    .stock-add-btn {
+      flex-shrink: 0; padding: 5px 10px; font-size: 11px;
+      background: var(--pri-soft); color: var(--pri);
+      border: 1.5px solid var(--pri-mid); border-radius: var(--r-full);
+      box-shadow: none; font-weight: 700; white-space: nowrap;
+    }
+    .stock-add-btn:hover:not(:disabled) { background: #e5e4fa; box-shadow: none; transform: none; }
+    .stock-delete-btn {
+      flex-shrink: 0; background: transparent; border: none;
+      color: var(--muted); font-size: 16px; padding: 0;
+      box-shadow: none; width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .15s, background .15s;
+    }
+    .stock-delete-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(--c-urgent-soft); transform: none; box-shadow: none; }
+    .stock-level-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .slp-btn {
+      background: var(--surface-2); color: var(--ink-2);
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      padding: 8px 4px; font-size: 12px; font-weight: 700;
+      box-shadow: none; transition: background .12s, border-color .12s;
+    }
+    .slp-btn:hover:not(:disabled) { background: var(--pri-soft); border-color: var(--pri-mid); color: var(--pri); transform: none; box-shadow: none; }
+    .slp-btn.active { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
+
   </style>
 </head>
 <body>
@@ -793,6 +843,18 @@
         </div>
       </section>
 
+      <!-- Tab: Stock -->
+      <section id="tab-stock" class="tab">
+        <div id="stock-out-section"></div>
+        <div id="stock-low-section"></div>
+        <div id="stock-ok-section"></div>
+        <div id="stock-empty" class="empty" style="display:none;">
+          <div class="empty-icon">📦</div>
+          <b>ストックがまだありません</b><br>
+          ＋ をタップして登録しましょう
+        </div>
+      </section>
+
       <!-- Tab: Settings -->
       <section id="tab-settings" class="tab">
         <div class="card">
@@ -842,6 +904,11 @@
       <button id="fab-add" class="fab" aria-label="おつかいを追加">
         <span class="fab-icon" style="font-size:32px;line-height:1;font-weight:300;">+</span>
       </button>
+      <button data-tab="stock">
+        <span class="nav-icon">📦</span>
+        <span class="nav-label">ストック</span>
+        <span id="badge-stock" class="nav-badge" style="display:none;">0</span>
+      </button>
       <button data-tab="settings" style="grid-column:5;">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">設定</span>
@@ -883,8 +950,10 @@
       </div>
     </div>
 
-    <!-- Add sheet -->
+    <!-- Sheet backdrop (shared) -->
     <div id="sheet-backdrop" class="sheet-backdrop"></div>
+
+    <!-- Add sheet -->
     <div id="sheet-add" class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-content">
@@ -910,6 +979,26 @@
             <button id="btn-add-request" style="flex:1;">追加する</button>
             <button id="btn-add-shortcut" class="ghost" style="white-space:nowrap;" title="入力内容をショートカット登録">⭐ 登録</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock add sheet -->
+    <div id="stock-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">📦 ストックを登録</div>
+          <button id="btn-stock-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div class="setup-form">
+          <input id="stock-name" placeholder="商品名（例: シャンプー、醤油）" maxlength="40" />
+          <div class="stock-level-picker">
+            <button class="slp-btn active" data-lvl="ok">🟢 たっぷり</button>
+            <button class="slp-btn" data-lvl="low">🟡 少ない</button>
+            <button class="slp-btn" data-lvl="out">🔴 切れた</button>
+          </div>
+          <button id="btn-add-stock">追加する</button>
         </div>
       </div>
     </div>
@@ -960,7 +1049,8 @@
       expandedItems: new Set(),
       unreadComments: new Set(),
       muteNotifications: true,
-      shortcuts: {}
+      shortcuts: {},
+      stocks: {}
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1072,7 +1162,7 @@
     async function signOut() {
       detachListeners();
       state.uid = null; state.profile = null; state.familyId = null; state.family = null;
-      state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {};
+      state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
       await auth.signOut();
     }
 
@@ -1239,6 +1329,12 @@
       attach(familyRef().child("shortcuts"), "value", (s) => {
         state.shortcuts = s.val() || {};
         renderShortcuts();
+      });
+      // Stocks
+      attach(familyRef().child("stocks"), "value", (s) => {
+        state.stocks = s.val() || {};
+        renderStocks();
+        renderStockBadge();
       });
       showScreen("main");
     }
@@ -1479,6 +1575,113 @@
       const ref = familyRef().child(`stats/${state.uid}/${field}`);
       await ref.transaction((v) => (v || 0) + 1);
       await familyRef().child(`stats/${state.uid}/lastActiveAt`).set(now());
+    }
+
+    // ===== Stock Management =====
+    const STOCK_LEVEL = {
+      ok:  { emoji: "🟢", label: "たっぷり" },
+      low: { emoji: "🟡", label: "少ない" },
+      out: { emoji: "🔴", label: "切れた" }
+    };
+    const STOCK_NEXT = { ok: "low", low: "out", out: "ok" };
+    let stockAddLevel = "ok";
+
+    function openStockSheet() {
+      stockAddLevel = "ok";
+      document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
+      $("stock-name").value = "";
+      $("stock-sheet").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+      $("fab-add").classList.add("open");
+      setTimeout(() => $("stock-name").focus(), 350);
+    }
+    function closeStockSheet() {
+      $("stock-sheet").classList.remove("open");
+      $("sheet-backdrop").classList.remove("open");
+      $("fab-add").classList.remove("open");
+    }
+    async function addStock() {
+      const name = $("stock-name").value.trim();
+      if (!name) return showToast("商品名を入力してください");
+      const id = familyRef().child("stocks").push().key;
+      await familyRef().child("stocks/" + id).set({
+        name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now()
+      });
+      closeStockSheet();
+      showToast("登録しました 📦", { sound: false });
+    }
+    async function updateStockLevel(id, level) {
+      await familyRef().child(`stocks/${id}`).update({ level, updatedBy: state.uid, updatedAt: now() });
+    }
+    async function deleteStock(id) {
+      await familyRef().child("stocks/" + id).remove();
+    }
+    async function addStockToRequest(s) {
+      const id = familyRef().child("requests").push().key;
+      const req = { name: s.name, diff: "normal", urgent: s.level === "out", status: "open", requestedBy: state.uid, requestedAt: now() };
+      await familyRef().child("requests/" + id).set(req);
+      await bumpStat("requestedCount");
+      showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
+    }
+    function stockCard(s, i) {
+      const lvl = STOCK_LEVEL[s.level] || STOCK_LEVEL.ok;
+      const showAdd = s.level === "out" || s.level === "low";
+      return `
+        <div class="stock-item" style="--i:${i}">
+          <button class="stock-level-btn ${s.level}" data-sid="${s.id}" data-act="cycle" title="タップでレベルを変更">
+            ${lvl.emoji}
+          </button>
+          <span class="stock-name">${escapeHtml(s.name)}</span>
+          ${showAdd ? `<button class="stock-add-btn" data-sid="${s.id}" data-act="add-req">🛒 買う</button>` : ""}
+          <button class="stock-delete-btn" data-sid="${s.id}" data-act="delete" aria-label="削除">×</button>
+        </div>`;
+    }
+    function renderStocks() {
+      const items = Object.entries(state.stocks).map(([id, s]) => ({ id, ...s }));
+      const empty = $("stock-empty");
+      if (!empty) return;
+      if (items.length === 0) {
+        empty.style.display = "";
+        $("stock-out-section").innerHTML = "";
+        $("stock-low-section").innerHTML = "";
+        $("stock-ok-section").innerHTML = "";
+        return;
+      }
+      empty.style.display = "none";
+      const byLevel = { out: [], low: [], ok: [] };
+      items.forEach((s) => { (byLevel[s.level] || byLevel.ok).push(s); });
+      Object.values(byLevel).forEach((arr) => arr.sort((a, b) => a.name.localeCompare(b.name, "ja")));
+      $("stock-out-section").innerHTML = byLevel.out.length
+        ? sectionHtml("🔴 切れてる", byLevel.out.length, byLevel.out.map((s, i) => stockCard(s, i)).join("")) : "";
+      $("stock-low-section").innerHTML = byLevel.low.length
+        ? sectionHtml("🟡 残り少ない", byLevel.low.length, byLevel.low.map((s, i) => stockCard(s, i)).join("")) : "";
+      $("stock-ok-section").innerHTML = byLevel.ok.length
+        ? sectionHtml("🟢 たっぷりある", byLevel.ok.length, byLevel.ok.map((s, i) => stockCard(s, i)).join("")) : "";
+      wireStockButtons();
+    }
+    function wireStockButtons() {
+      document.querySelectorAll(".stock-item [data-act]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.sid;
+          const act = btn.dataset.act;
+          const s = state.stocks[id];
+          if (!s) return;
+          if (act === "cycle")   updateStockLevel(id, STOCK_NEXT[s.level] || "ok");
+          else if (act === "add-req") addStockToRequest(s);
+          else if (act === "delete")  deleteStock(id);
+        });
+      });
+    }
+    function renderStockBadge() {
+      const badge = $("badge-stock");
+      if (!badge) return;
+      const urgentCount = Object.values(state.stocks).filter((s) => s.level === "out" || s.level === "low").length;
+      if (urgentCount > 0 && state.activeTab !== "stock") {
+        badge.textContent = urgentCount;
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
+      }
     }
 
     // ===== Rendering =====
@@ -1751,7 +1954,9 @@
           document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
           $("tab-" + t).classList.add("active");
           closeSheet();
+          closeStockSheet();
           renderBadge();
+          renderStockBadge();
         });
       });
     }
@@ -1767,9 +1972,12 @@
       $("btn-howto").addEventListener("click", openHowto);
       $("btn-howto-close").addEventListener("click", closeHowto);
       $("howto-modal-backdrop").addEventListener("click", closeHowto);
-      $("fab-add").addEventListener("click", openSheet);
+      $("fab-add").addEventListener("click", () => {
+        if (state.activeTab === "stock") openStockSheet();
+        else openSheet();
+      });
       $("btn-sheet-close").addEventListener("click", closeSheet);
-      $("sheet-backdrop").addEventListener("click", closeSheet);
+      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); });
       $("btn-add-request").addEventListener("click", addRequest);
       $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
@@ -1787,6 +1995,15 @@
       });
       $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addRequest(); });
       $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
+      $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
+      $("btn-add-stock").addEventListener("click", addStock);
+      $("stock-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addStock(); });
+      document.querySelectorAll(".slp-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          stockAddLevel = btn.dataset.lvl;
+          document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        });
+      });
       // Refresh time-ago labels periodically
       setInterval(() => { if (state.activeTab === "requests") renderRequests(); }, 30000);
     }
