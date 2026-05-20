@@ -2027,6 +2027,12 @@
       });
       $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addRequest(); });
       $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        closeSheet();
+        closeStockSheet();
+        closeHowto();
+      });
       $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
       $("btn-add-stock").addEventListener("click", addStock);
       $("stock-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addStock(); });
