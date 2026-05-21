@@ -151,8 +151,9 @@
       border-bottom: 1px solid var(--border);
       padding: 10px 16px; display: flex; align-items: center; gap: 10px;
     }
-    .topbar .title { font-size: 15px; font-weight: 800; flex: 1; min-width: 0; letter-spacing: -0.4px; }
+    .topbar .title { font-size: 15px; font-weight: 800; flex: 1; min-width: 0; letter-spacing: -0.4px; display: flex; align-items: center; gap: 5px; }
     .topbar .family-name { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .role-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: var(--pri-light, rgba(99,102,241,0.12)); color: var(--pri); letter-spacing: 0; white-space: nowrap; }
 
     /* ======= Avatar ======= */
     .avatar {
@@ -891,8 +892,7 @@
     <div class="topbar">
       <div class="avatar" id="my-avatar">🙂</div>
       <div class="grow">
-        <div class="title" id="top-family-name">家族</div>
-        <div class="family-name" id="top-my-name" style="display:none;"></div>
+        <div class="title" id="top-family-name"><span id="top-family-text">家族</span><span id="top-role-badge" class="role-badge" style="display:none;"></span></div>
       </div>
       <button id="btn-howto" class="howto-btn" style="display:none;" aria-label="使い方">？</button>
     </div>
@@ -2151,15 +2151,15 @@
     const ROLE_LABEL = { parent: "保護者", child: "こども" };
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
-      $("top-family-name").textContent = state.family.meta.name || "家族";
+      $("top-family-text").textContent = state.family.meta.name || "家族";
       $("my-avatar").textContent = state.profile.emoji || "🙂";
+      const badge = $("top-role-badge");
       const roleLabel = state.myRole ? ROLE_LABEL[state.myRole] : null;
-      const nameEl = $("top-my-name");
       if (roleLabel) {
-        nameEl.textContent = state.profile.name + "（" + roleLabel + "）";
-        nameEl.style.display = "";
+        badge.textContent = roleLabel;
+        badge.style.display = "";
       } else {
-        nameEl.style.display = "none";
+        badge.style.display = "none";
       }
     }
     function renderRequests() {
