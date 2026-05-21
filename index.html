@@ -892,6 +892,7 @@
       <div class="avatar" id="my-avatar">🙂</div>
       <div class="grow">
         <div class="title" id="top-family-name">家族</div>
+        <div class="family-name" id="top-my-name" style="display:none;"></div>
       </div>
       <button id="btn-howto" class="howto-btn" style="display:none;" aria-label="使い方">？</button>
     </div>
@@ -2147,11 +2148,19 @@
     }
 
     // ===== Rendering =====
+    const ROLE_LABEL = { parent: "保護者", child: "こども" };
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
       $("top-family-name").textContent = state.family.meta.name || "家族";
-      $("top-my-name").textContent = state.profile.name;
       $("my-avatar").textContent = state.profile.emoji || "🙂";
+      const roleLabel = state.myRole ? ROLE_LABEL[state.myRole] : null;
+      const nameEl = $("top-my-name");
+      if (roleLabel) {
+        nameEl.textContent = state.profile.name + "（" + roleLabel + "）";
+        nameEl.style.display = "";
+      } else {
+        nameEl.style.display = "none";
+      }
     }
     function renderRequests() {
       const items = Object.entries(state.requests).map(([id, r]) => ({ id, ...r }));
