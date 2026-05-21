@@ -384,7 +384,7 @@
       border: 1px solid rgba(255,255,255,0.92);
       border-radius: var(--r-xl);
       box-shadow: var(--shadow-float);
-      display: grid; grid-template-columns: repeat(6, minmax(0,1fr));
+      display: grid; grid-template-columns: repeat(5, minmax(0,1fr));
       align-items: center; gap: 4px; z-index: 30;
     }
     .bottom-nav button[data-tab] {
@@ -517,7 +517,7 @@
     /* バー中央を控えめに盛り上げてFABを抱えるクレードル（FABの背面に描画） */
     .bottom-nav::before {
       content: ""; position: absolute;
-      left: calc(100% / 12 * 5); top: 16px; transform: translate(-50%, -50%);
+      left: 50%; top: 16px; transform: translate(-50%, -50%);
       width: 72px; height: 72px; border-radius: 50%;
       background: var(--surface);
       box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
@@ -716,6 +716,26 @@
     .slp-btn:hover:not(:disabled) { background: var(--pri-soft); border-color: var(--pri-mid); color: var(--pri); transform: none; box-shadow: none; }
     .slp-btn.active { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
 
+    /* ======= Segmented control ======= */
+    .seg-control {
+      display: flex; gap: 3px;
+      background: var(--surface-2); border-radius: var(--r-full);
+      padding: 3px; margin-bottom: 14px;
+      border: 1.5px solid var(--border);
+    }
+    .seg-btn {
+      flex: 1; padding: 8px 6px; border-radius: var(--r-full);
+      background: transparent; border: none; box-shadow: none;
+      color: var(--muted); font-size: 13px; font-weight: 700;
+      transition: background .18s, color .18s; letter-spacing: -0.1px;
+    }
+    .seg-btn:hover:not(:disabled) { background: var(--border); color: var(--ink-2); transform: none; box-shadow: none; }
+    .seg-btn.active {
+      background: var(--surface); color: var(--pri);
+      box-shadow: 0 1px 6px rgba(99,102,241,0.14);
+    }
+    .seg-btn.active:hover:not(:disabled) { transform: none; }
+
     /* ======= Mission styles ======= */
     .mission-card {
       background: var(--surface);
@@ -872,26 +892,34 @@
     <div class="app">
       <!-- Tab: Requests -->
       <section id="tab-requests" class="tab active">
-        <div id="shortcut-area" class="shortcut-area" style="display:none;">
-          <div class="shortcut-area-label">⚡ よく買うもの（タップで即追加）</div>
-          <div id="shortcut-chips" class="shortcut-chips"></div>
+        <!-- セグメント切り替え -->
+        <div class="seg-control">
+          <button class="seg-btn active" data-seg="list">🛒 お買い物リスト</button>
+          <button class="seg-btn" data-seg="history">📊 履歴</button>
         </div>
 
-        <div id="list-open"></div>
-        <div id="list-claimed"></div>
-        <div id="list-done"></div>
-      </section>
-
-      <!-- Tab: History -->
-      <section id="tab-history" class="tab">
-        <div class="card">
-          <h2>📊 家族の貢献</h2>
-          <p class="muted">これまでの依頼・受託・完了の回数です。</p>
-          <div id="member-stats"></div>
+        <!-- リストビュー -->
+        <div id="requests-list-view">
+          <div id="shortcut-area" class="shortcut-area" style="display:none;">
+            <div class="shortcut-area-label">⚡ よく買うもの（タップで即追加）</div>
+            <div id="shortcut-chips" class="shortcut-chips"></div>
+          </div>
+          <div id="list-open"></div>
+          <div id="list-claimed"></div>
+          <div id="list-done"></div>
         </div>
-        <div class="card">
-          <h2>📜 完了履歴</h2>
-          <div id="history-list"></div>
+
+        <!-- 履歴ビュー -->
+        <div id="requests-history-view" style="display:none;">
+          <div class="card">
+            <h2>📊 家族の貢献</h2>
+            <p class="muted">これまでの依頼・受託・完了の回数です。</p>
+            <div id="member-stats"></div>
+          </div>
+          <div class="card">
+            <h2>📜 完了履歴</h2>
+            <div id="history-list"></div>
+          </div>
         </div>
       </section>
 
@@ -970,24 +998,20 @@
         <span class="nav-label">お買い物</span>
         <span id="badge-requests" class="nav-badge" style="display:none;">0</span>
       </button>
-      <button data-tab="history">
-        <span class="nav-icon">📊</span>
-        <span class="nav-label">履歴</span>
-      </button>
-      <button id="fab-add" class="fab" aria-label="追加">
-        <span class="fab-icon" style="font-size:32px;line-height:1;font-weight:300;">+</span>
-      </button>
       <button data-tab="missions">
         <span class="nav-icon">🎯</span>
         <span class="nav-label">ミッション</span>
         <span id="badge-missions" class="nav-badge" style="display:none;">0</span>
+      </button>
+      <button id="fab-add" class="fab" aria-label="追加">
+        <span class="fab-icon" style="font-size:32px;line-height:1;font-weight:300;">+</span>
       </button>
       <button data-tab="stock">
         <span class="nav-icon">📦</span>
         <span class="nav-label">ストック</span>
         <span id="badge-stock" class="nav-badge" style="display:none;">0</span>
       </button>
-      <button data-tab="settings" style="grid-column:6;">
+      <button data-tab="settings">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">設定</span>
       </button>
@@ -2326,6 +2350,19 @@
       document.title = (openCount > 0 ? `(${openCount}) ` : "") + "🧺 おうちのおつかい";
     }
 
+    // ===== Segmented control (requests sub-tab) =====
+    let reqSubTab = "list";
+    function wireSegControl() {
+      document.querySelectorAll(".seg-btn[data-seg]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          reqSubTab = btn.dataset.seg;
+          document.querySelectorAll(".seg-btn[data-seg]").forEach(b => b.classList.toggle("active", b === btn));
+          $("requests-list-view").style.display = reqSubTab === "list" ? "" : "none";
+          $("requests-history-view").style.display = reqSubTab === "history" ? "" : "none";
+        });
+      });
+    }
+
     // ===== Tabs =====
     function wireTabs() {
       document.querySelectorAll(".bottom-nav button[data-tab]").forEach((btn) => {
@@ -2413,6 +2450,7 @@
     function init() {
       wireGlobalEvents();
       wireTabs();
+      wireSegControl();
       if (!isConfigured) {
         showScreen("config");
         return;
