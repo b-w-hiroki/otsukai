@@ -1028,7 +1028,7 @@
         <span id="badge-missions" class="nav-badge" style="display:none;">0</span>
       </button>
       <button id="fab-add" class="fab" aria-label="追加">
-        <span class="fab-icon" style="font-size:32px;line-height:1;font-weight:300;">+</span>
+        <span class="fab-icon" style="font-size:38px;line-height:1;font-weight:300;">+</span>
       </button>
       <!-- ストック: パッケージ箱 -->
       <button data-tab="stock">
@@ -1473,15 +1473,23 @@
         renderMissions();
       });
       // Requests
+      let _lastRequestsJson = "";
       attach(familyRef().child("requests"), "value", (s) => {
         const next = s.val() || {};
-        detectAndNotify(state.prevRequests, next);
-        state.prevRequests = next;
-        state.requests = next;
+        const nextJson = JSON.stringify(next);
+        const changed = nextJson !== _lastRequestsJson;
+        _lastRequestsJson = nextJson;
+        if (changed) {
+          detectAndNotify(state.prevRequests, next);
+          state.prevRequests = next;
+          state.requests = next;
+        }
         state.muteNotifications = false;
-        renderRequests();
-        renderHistory();
-        renderBadge();
+        if (changed) {
+          renderRequests();
+          renderHistory();
+          renderBadge();
+        }
       });
       // Stats
       attach(familyRef().child("stats"), "value", (s) => {
@@ -2221,7 +2229,7 @@
             <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
-          <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ ${timeAgo(r.requestedAt)}</div>
+          <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ <span data-timeago="${r.requestedAt}">${timeAgo(r.requestedAt)}</span></div>
           ${reqHints(r)}
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
@@ -2246,7 +2254,7 @@
             <div class="avatar">${memberEmoji(r.claimedBy)}</div>
             <div>
               <div class="claimer-badge-name">${escapeHtml(memberName(r.claimedBy))}さん${mine ? ' (あなた)' : ''}</div>
-              <div class="claimer-badge-status">🛒 買いに行きます・${timeAgo(r.claimedAt)}に立候補</div>
+              <div class="claimer-badge-status">🛒 買いに行きます・<span data-timeago="${r.claimedAt}">${timeAgo(r.claimedAt)}</span>に立候補</div>
             </div>
           </div>
           ${reqHints(r)}
@@ -2267,7 +2275,7 @@
             <span class="name">${escapeHtml(r.name)}</span>
             <span class="pill s-done">✅完了</span>
           </div>
-          <div class="meta">${memberEmoji(r.completedBy)} ${escapeHtml(memberName(r.completedBy))}さんが完了 ・ ${timeAgo(r.completedAt)}</div>
+          <div class="meta">${memberEmoji(r.completedBy)} ${escapeHtml(memberName(r.completedBy))}さんが完了 ・ <span data-timeago="${r.completedAt}">${timeAgo(r.completedAt)}</span></div>
           <div class="actions">
             <button data-act="reopen" data-id="${r.id}" class="ghost tiny-btn">↩️ 戻す</button>
             <button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>
@@ -2505,8 +2513,13 @@
           document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b === btn));
         });
       });
-      // Refresh time-ago labels periodically
-      setInterval(() => { if (state.activeTab === "requests") renderRequests(); }, 30000);
+      // 「X分前」ラベルを5分おきに静かに更新（アニメーションなし）
+      setInterval(() => {
+        document.querySelectorAll("[data-timeago]").forEach(el => {
+          const ts = parseInt(el.dataset.timeago, 10);
+          if (ts) el.textContent = timeAgo(ts);
+        });
+      }, 60000);
     }
 
     function init() {
