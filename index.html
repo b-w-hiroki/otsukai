@@ -384,7 +384,7 @@
       border: 1px solid rgba(255,255,255,0.92);
       border-radius: var(--r-xl);
       box-shadow: var(--shadow-float);
-      display: grid; grid-template-columns: repeat(5, minmax(0,1fr));
+      display: grid; grid-template-columns: repeat(6, minmax(0,1fr));
       align-items: center; gap: 4px; z-index: 30;
     }
     .bottom-nav button[data-tab] {
@@ -517,7 +517,7 @@
     /* バー中央を控えめに盛り上げてFABを抱えるクレードル（FABの背面に描画） */
     .bottom-nav::before {
       content: ""; position: absolute;
-      left: 50%; top: 16px; transform: translate(-50%, -50%);
+      left: calc(100% / 12 * 5); top: 16px; transform: translate(-50%, -50%);
       width: 72px; height: 72px; border-radius: 50%;
       background: var(--surface);
       box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
@@ -716,6 +716,49 @@
     .slp-btn:hover:not(:disabled) { background: var(--pri-soft); border-color: var(--pri-mid); color: var(--pri); transform: none; box-shadow: none; }
     .slp-btn.active { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
 
+    /* ======= Mission styles ======= */
+    .mission-card {
+      background: var(--surface);
+      border-radius: var(--r-md);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 2px 14px rgba(99,102,241,0.07);
+      padding: 14px 14px 12px 18px;
+      margin-bottom: 8px; border: 1px solid var(--border);
+      position: relative; overflow: hidden;
+      animation: reqIn 0.36s cubic-bezier(0.34,1.4,0.64,1) backwards;
+      animation-delay: calc(var(--i,0) * 0.05s);
+    }
+    .mission-card::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 4px;
+      background: linear-gradient(to bottom, var(--c-claimed), rgba(245,158,11,0.28));
+    }
+    .mission-card.pending::before {
+      background: linear-gradient(to bottom, var(--c-done), rgba(16,185,129,0.28));
+    }
+    .mission-title { font-weight: 700; font-size: 15px; color: var(--ink); word-break: break-all; }
+    .mission-reward-label { font-size: 13px; color: #b45309; font-weight: 700; }
+    .mission-progress-bar {
+      height: 8px; background: var(--border); border-radius: var(--r-full); overflow: hidden; margin: 6px 0;
+    }
+    .mission-progress-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--c-claimed), var(--c-done));
+      border-radius: var(--r-full); transition: width .4s cubic-bezier(0.34,1.2,0.64,1);
+    }
+
+    /* Role picker */
+    .role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .role-btn {
+      padding: 14px 8px; border-radius: var(--r-md);
+      background: var(--surface-2); border: 2px solid var(--border);
+      color: var(--ink-2); font-size: 13px; font-weight: 700;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer; box-shadow: none; transition: border-color .15s, background .15s;
+    }
+    .role-btn:hover:not(:disabled) { background: var(--pri-soft); border-color: var(--pri-mid); color: var(--pri); transform: none; box-shadow: none; }
+    .role-btn.selected { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
+    .role-btn .role-icon { font-size: 30px; }
+
   </style>
 </head>
 <body>
@@ -864,6 +907,11 @@
         </div>
       </section>
 
+      <!-- Tab: Missions -->
+      <section id="tab-missions" class="tab">
+        <div id="missions-content"></div>
+      </section>
+
       <!-- Tab: Settings -->
       <section id="tab-settings" class="tab">
         <div class="card">
@@ -895,6 +943,22 @@
           </label>
         </div>
         <div class="card">
+          <h2>🎯 ミッションの役割</h2>
+          <p class="muted" id="role-current-label" style="font-size:12px;"></p>
+          <div class="role-picker">
+            <button class="role-btn" id="role-btn-parent" data-role="parent">
+              <span class="role-icon">👨‍👩‍👧</span>
+              <span>親</span>
+              <span class="tiny">ミッションを作る</span>
+            </button>
+            <button class="role-btn" id="role-btn-child" data-role="child">
+              <span class="role-icon">👧</span>
+              <span>子ども</span>
+              <span class="tiny">ミッションをこなす</span>
+            </button>
+          </div>
+        </div>
+        <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
         </div>
       </section>
@@ -910,15 +974,20 @@
         <span class="nav-icon">📊</span>
         <span class="nav-label">履歴</span>
       </button>
-      <button id="fab-add" class="fab" aria-label="おつかいを追加">
+      <button id="fab-add" class="fab" aria-label="追加">
         <span class="fab-icon" style="font-size:32px;line-height:1;font-weight:300;">+</span>
+      </button>
+      <button data-tab="missions">
+        <span class="nav-icon">🎯</span>
+        <span class="nav-label">ミッション</span>
+        <span id="badge-missions" class="nav-badge" style="display:none;">0</span>
       </button>
       <button data-tab="stock">
         <span class="nav-icon">📦</span>
         <span class="nav-label">ストック</span>
         <span id="badge-stock" class="nav-badge" style="display:none;">0</span>
       </button>
-      <button data-tab="settings" style="grid-column:5;">
+      <button data-tab="settings" style="grid-column:6;">
         <span class="nav-icon">⚙️</span>
         <span class="nav-label">設定</span>
       </button>
@@ -1018,6 +1087,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Mission create sheet (parent only) -->
+    <div id="mission-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">🎯 ミッションを作成</div>
+          <button id="btn-mission-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div class="setup-form">
+          <input id="mission-title-input" placeholder="ミッション名（例: お手伝い、勉強）" maxlength="40" />
+          <div class="row" style="gap:8px;">
+            <div style="flex:1;position:relative;">
+              <input id="mission-target" type="number" min="1" max="999" placeholder="クリア回数" />
+            </div>
+            <div style="flex:1;position:relative;">
+              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
+              <input id="mission-reward-input" type="number" min="1" max="99999" placeholder="おこづかい（円）" style="padding-left:26px;" />
+            </div>
+          </div>
+          <p class="muted" style="font-size:11px;margin-top:-4px;">※ クリア回数達成でおこづかいが発生します</p>
+          <button id="btn-add-mission">ミッションを作成する</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -1066,7 +1160,10 @@
       unreadComments: new Set(),
       muteNotifications: true,
       shortcuts: {},
-      stocks: {}
+      stocks: {},
+      missions: {},
+      missionLogs: {},
+      myRole: null
     };
 
     const $ = (id) => document.getElementById(id);
@@ -1179,6 +1276,7 @@
       detachListeners();
       state.uid = null; state.profile = null; state.familyId = null; state.family = null;
       state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
+      state.missions = {}; state.missionLogs = {}; state.myRole = null;
       await auth.signOut();
     }
 
@@ -1299,11 +1397,14 @@
       attach(familyRef().child("members"), "value", (s) => {
         state.family = state.family || {};
         state.family.members = s.val() || {};
+        const myMember = (s.val() || {})[state.uid];
+        state.myRole = myMember ? (myMember.memberRole || null) : null;
         renderTopbar();
         renderSettings();
         renderMemberStats();
         renderRequests();
         renderHistory();
+        renderMissions();
       });
       // Requests
       attach(familyRef().child("requests"), "value", (s) => {
@@ -1351,6 +1452,18 @@
         state.stocks = s.val() || {};
         renderStocks();
         renderStockBadge();
+      });
+      // Missions
+      attach(familyRef().child("missions"), "value", (s) => {
+        state.missions = s.val() || {};
+        renderMissions();
+        renderMissionBadge();
+      });
+      // Mission logs
+      attach(familyRef().child("missionLogs"), "value", (s) => {
+        state.missionLogs = s.val() || {};
+        renderMissions();
+        renderMissionBadge();
       });
       showScreen("main");
     }
@@ -1706,6 +1819,237 @@
       }
     }
 
+    // ===== Mission Management =====
+    function openMissionSheet() {
+      $("mission-title-input").value = "";
+      $("mission-target").value = "";
+      $("mission-reward-input").value = "";
+      $("mission-sheet").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+      $("fab-add").classList.add("open");
+      setTimeout(() => $("mission-title-input").focus(), 350);
+    }
+    function closeMissionSheet() {
+      $("mission-sheet").classList.remove("open");
+      $("sheet-backdrop").classList.remove("open");
+      $("fab-add").classList.remove("open");
+    }
+    async function saveMyRole(role) {
+      if (!state.familyId) return;
+      await familyRef().child(`members/${state.uid}/memberRole`).set(role);
+      state.myRole = role;
+      renderMissions();
+      renderSettings();
+      showToast(role === "parent" ? "👨‍👩‍👧 親として設定しました" : "👧 子どもとして設定しました", { sound: false });
+    }
+    async function addMission() {
+      const title = $("mission-title-input").value.trim();
+      const targetCount = parseInt($("mission-target").value, 10);
+      const reward = parseInt($("mission-reward-input").value, 10);
+      if (!title) return showToast("ミッション名を入力してください");
+      if (!targetCount || targetCount < 1) return showToast("クリア回数を入力してください");
+      if (!reward || reward < 1) return showToast("おこづかい金額を入力してください");
+      const mid = familyRef().child("missions").push().key;
+      await familyRef().child("missions/" + mid).set({
+        title, targetCount, reward,
+        createdBy: state.uid, createdAt: now(), status: "active"
+      });
+      closeMissionSheet();
+      showToast("ミッションを作成しました 🎯", { sound: false });
+    }
+    async function doMissionStep(mid) {
+      const ref = familyRef().child(`missionLogs/${mid}/${state.uid}/count`);
+      await ref.transaction((v) => (v || 0) + 1);
+      showToast("やった！ ⭐", { sound: false });
+    }
+    async function requestReward(mid) {
+      await familyRef().child(`missionLogs/${mid}/${state.uid}`).update({
+        claimPending: true, claimedAt: now()
+      });
+      showToast("おこづかいを申請しました！🙏", { sound: false });
+    }
+    async function confirmPaid(mid, uid) {
+      await familyRef().child(`missionLogs/${mid}/${uid}`).update({
+        paid: true, paidAt: now(), claimPending: false
+      });
+      // Reset count so mission can continue
+      await familyRef().child(`missionLogs/${mid}/${uid}/count`).set(0);
+      await familyRef().child(`missionLogs/${mid}/${uid}/paid`).set(false);
+      showToast("支払い完了！おつかれさま 💰");
+    }
+    async function archiveMission(mid) {
+      await familyRef().child(`missions/${mid}/status`).set("archived");
+      showToast("ミッションを終了しました");
+    }
+
+    function renderMissions() {
+      const el = $("missions-content");
+      if (!el || !state.profile) return;
+      const role = state.myRole;
+      if (!role) {
+        el.innerHTML = `
+          <div class="card" style="text-align:center; padding:24px 20px;">
+            <div style="font-size:48px;margin-bottom:12px;">🎯</div>
+            <h2 style="margin-bottom:8px;">親子ミッション</h2>
+            <p class="muted" style="margin-bottom:16px;">まずあなたの役割を選んでください</p>
+            <div class="role-picker">
+              <button class="role-btn" data-role-pick="parent">
+                <span class="role-icon">👨‍👩‍👧</span>
+                <span>親</span>
+                <span class="tiny">ミッションを作る</span>
+              </button>
+              <button class="role-btn" data-role-pick="child">
+                <span class="role-icon">👧</span>
+                <span>子ども</span>
+                <span class="tiny">ミッションをこなす</span>
+              </button>
+            </div>
+          </div>`;
+        el.querySelectorAll(".role-btn[data-role-pick]").forEach(btn => {
+          btn.addEventListener("click", () => saveMyRole(btn.dataset.rolePick));
+        });
+        return;
+      }
+      const activeMissions = Object.entries(state.missions)
+        .filter(([, m]) => m.status === "active")
+        .map(([mid, m]) => ({ mid, ...m }))
+        .sort((a, b) => a.createdAt - b.createdAt);
+      if (role === "parent") {
+        renderMissionsParent(el, activeMissions);
+      } else {
+        renderMissionsChild(el, activeMissions);
+      }
+      wireMissionButtons();
+    }
+
+    function renderMissionsParent(el, missions) {
+      const children = Object.entries((state.family && state.family.members) || {})
+        .filter(([, m]) => m.memberRole === "child")
+        .map(([uid, m]) => ({ uid, ...m }));
+      if (!missions.length) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><b>ミッションがまだありません</b><br>＋ をタップしてミッションを作りましょう</div>`;
+        return;
+      }
+      el.innerHTML = sectionHtml("🎯 アクティブなミッション", missions.length,
+        missions.map((m, i) => missionCardParent(m, children, i)).join(""));
+    }
+
+    function missionCardParent(m, children, i) {
+      const logs = state.missionLogs[m.mid] || {};
+      let childrenHtml = "";
+      if (!children.length) {
+        childrenHtml = `<p class="muted" style="font-size:12px;margin-top:8px;">子どもがまだ役割設定していません</p>`;
+      } else {
+        childrenHtml = children.map(child => {
+          const log = logs[child.uid] || {};
+          const count = log.count || 0;
+          const pct = Math.min(100, Math.round(count / m.targetCount * 100));
+          const claimPending = log.claimPending && !log.paid;
+          return `<div style="margin-top:10px;">
+            <div class="row between" style="margin-bottom:2px;">
+              <span style="font-size:12px;font-weight:700;">${escapeHtml(child.emoji || "👤")} ${escapeHtml(child.name)}</span>
+              <span class="tiny">${count} / ${m.targetCount}回</span>
+            </div>
+            <div class="mission-progress-bar"><div class="mission-progress-fill" style="width:${pct}%"></div></div>
+            ${claimPending ? `<div class="row" style="margin-top:6px;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:12px;color:var(--c-done);font-weight:700;">💰 おこづかい申請中！</span>
+              <button class="tiny-btn success" data-act="confirm-paid" data-mid="${m.mid}" data-uid="${child.uid}">支払い確認 ✅</button>
+            </div>` : ""}
+          </div>`;
+        }).join("");
+      }
+      return `<div class="mission-card" style="--i:${i}">
+        <div class="row between" style="margin-bottom:4px;">
+          <span class="mission-title">${escapeHtml(m.title)}</span>
+          <button class="icon-btn" data-act="archive" data-mid="${m.mid}" aria-label="終了" title="ミッション終了">✕</button>
+        </div>
+        <div class="row" style="gap:12px;">
+          <span class="mission-reward-label">💰 ${Number(m.reward).toLocaleString()}円</span>
+          <span class="tiny">🔄 ${m.targetCount}回でクリア</span>
+        </div>
+        ${childrenHtml}
+      </div>`;
+    }
+
+    function renderMissionsChild(el, missions) {
+      if (!missions.length) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><b>ミッションがまだありません</b><br>親にミッションを作ってもらいましょう</div>`;
+        return;
+      }
+      el.innerHTML = sectionHtml("🎯 ミッション一覧", missions.length,
+        missions.map((m, i) => missionCardChild(m, i)).join(""));
+    }
+
+    function missionCardChild(m, i) {
+      const log = (state.missionLogs[m.mid] || {})[state.uid] || {};
+      const count = log.count || 0;
+      const pct = Math.min(100, Math.round(count / m.targetCount * 100));
+      const done = count >= m.targetCount;
+      const claimPending = !!(log.claimPending && !log.paid);
+      let actionHtml = "";
+      if (claimPending) {
+        actionHtml = `<span style="color:var(--muted);font-size:13px;font-weight:600;">⏳ 親の確認待ち…</span>`;
+      } else if (done) {
+        actionHtml = `<button class="success" data-act="request-reward" data-mid="${m.mid}">🎉 おこづかい申請！</button>`;
+      } else {
+        actionHtml = `<button class="ghost" data-act="do-step" data-mid="${m.mid}">⭐ やった！（+1）</button>`;
+      }
+      return `<div class="mission-card${claimPending ? " pending" : ""}" style="--i:${i}">
+        <div class="mission-title" style="margin-bottom:4px;">${escapeHtml(m.title)}</div>
+        <div class="row" style="gap:12px;margin-bottom:8px;">
+          <span class="mission-reward-label">💰 ${Number(m.reward).toLocaleString()}円</span>
+          <span class="tiny">🔄 ${m.targetCount}回でクリア</span>
+        </div>
+        <div class="row between" style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px;">
+          <span>${count} / ${m.targetCount}回 完了</span>
+          <span>${pct}%</span>
+        </div>
+        <div class="mission-progress-bar" style="margin-bottom:10px;">
+          <div class="mission-progress-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="actions">${actionHtml}</div>
+      </div>`;
+    }
+
+    function wireMissionButtons() {
+      document.querySelectorAll(".mission-card [data-act]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const { act, mid, uid } = btn.dataset;
+          if (act === "do-step") doMissionStep(mid);
+          else if (act === "request-reward") requestReward(mid);
+          else if (act === "confirm-paid") confirmPaid(mid, uid);
+          else if (act === "archive") archiveMission(mid);
+        });
+      });
+    }
+
+    function renderMissionBadge() {
+      const badge = $("badge-missions");
+      if (!badge) return;
+      let count = 0;
+      if (state.myRole === "parent") {
+        Object.entries(state.missionLogs).forEach(([mid, logs]) => {
+          const m = state.missions[mid];
+          if (!m || m.status !== "active") return;
+          Object.values(logs || {}).forEach(log => {
+            if (log.claimPending && !log.paid) count++;
+          });
+        });
+      } else if (state.myRole === "child") {
+        Object.entries(state.missions).forEach(([mid, m]) => {
+          if (m.status !== "active") return;
+          const log = (state.missionLogs[mid] || {})[state.uid] || {};
+          if ((log.count || 0) >= m.targetCount && !log.claimPending && !log.paid) count++;
+        });
+      }
+      if (count > 0 && state.activeTab !== "missions") {
+        badge.textContent = count;
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
     // ===== Rendering =====
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
@@ -1947,6 +2291,13 @@
           ${escapeHtml(m.name)}${uid === state.uid ? "（自分）" : ""}
         </span>
       `).join("");
+      // Update role picker highlight
+      const role = state.myRole;
+      const roleLabelEl = $("role-current-label");
+      if (roleLabelEl) roleLabelEl.textContent = role === "parent" ? "現在: 親" : role === "child" ? "現在: 子ども" : "未設定";
+      document.querySelectorAll(".role-btn[data-role]").forEach(btn => {
+        btn.classList.toggle("selected", btn.dataset.role === role);
+      });
     }
 
     function renderEmojiPicker(elId, stateKey) {
@@ -1987,8 +2338,10 @@
           $("tab-" + t).classList.add("active");
           closeSheet();
           closeStockSheet();
+          closeMissionSheet();
           renderBadge();
           renderStockBadge();
+          renderMissionBadge();
         });
       });
     }
@@ -2006,10 +2359,12 @@
       $("howto-modal-backdrop").addEventListener("click", closeHowto);
       $("fab-add").addEventListener("click", () => {
         if (state.activeTab === "stock") openStockSheet();
+        else if (state.activeTab === "missions" && state.myRole === "parent") openMissionSheet();
+        else if (state.activeTab === "missions") { /* child: nothing */ }
         else openSheet();
       });
       $("btn-sheet-close").addEventListener("click", closeSheet);
-      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); });
+      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); });
       $("btn-add-request").addEventListener("click", addRequest);
       $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
@@ -2031,11 +2386,20 @@
         if (e.key !== "Escape") return;
         closeSheet();
         closeStockSheet();
+        closeMissionSheet();
         closeHowto();
       });
       $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
       $("btn-add-stock").addEventListener("click", addStock);
       $("stock-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addStock(); });
+      // Mission sheet
+      $("btn-mission-sheet-close").addEventListener("click", closeMissionSheet);
+      $("btn-add-mission").addEventListener("click", addMission);
+      $("mission-title-input").addEventListener("keydown", (e) => { if (e.key === "Enter") $("mission-target").focus(); });
+      // Settings role buttons
+      document.querySelectorAll(".role-btn[data-role]").forEach(btn => {
+        btn.addEventListener("click", () => saveMyRole(btn.dataset.role));
+      });
       document.querySelectorAll(".slp-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           stockAddLevel = btn.dataset.lvl;
