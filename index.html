@@ -2151,7 +2151,7 @@
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
       $("top-family-name").textContent = state.family.meta.name || "家族";
-      $("top-my-name").textContent = state.profile.name + " として参加中";
+      $("top-my-name").textContent = state.profile.name;
       $("my-avatar").textContent = state.profile.emoji || "🙂";
     }
     function renderRequests() {
