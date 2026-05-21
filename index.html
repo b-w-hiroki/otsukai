@@ -690,7 +690,7 @@
     .stock-level-btn.ok  { background: #d1fae5; }
     .stock-level-btn.low { background: #fef3c7; }
     .stock-level-btn.out { background: #fee2e2; animation: urgentPulse 1.8s ease-in-out infinite; }
-    .stock-name { flex: 1; min-width: 0; font-weight: 700; font-size: 15px; color: var(--ink); word-break: break-all; }
+    .stock-name { font-weight: 700; font-size: 15px; color: var(--ink); word-break: break-all; }
     .stock-add-btn {
       flex-shrink: 0; padding: 5px 10px; font-size: 11px;
       background: var(--pri-soft); color: var(--pri);
@@ -698,6 +698,13 @@
       box-shadow: none; font-weight: 700; white-space: nowrap;
     }
     .stock-add-btn:hover:not(:disabled) { background: #e5e4fa; box-shadow: none; transform: none; }
+    .stock-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .stock-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+    .stock-meta-chip {
+      font-size: 10px; color: var(--ink-2); font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-full); padding: 2px 8px; white-space: nowrap;
+    }
     .stock-delete-btn {
       flex-shrink: 0; background: transparent; border: none;
       color: var(--muted); font-size: 16px; padding: 0;
@@ -1102,6 +1109,11 @@
         </div>
         <div class="setup-form">
           <input id="stock-name" placeholder="商品名（例: シャンプー、醤油）" maxlength="40" />
+          <input id="stock-memo" placeholder="こだわり・メモ（任意）例: 国産・無添加" maxlength="60" />
+          <div style="position:relative;">
+            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
+            <input id="stock-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
+          </div>
           <div class="stock-level-picker">
             <button class="slp-btn active" data-lvl="ok">🟢 たっぷり</button>
             <button class="slp-btn" data-lvl="low">🟡 少ない</button>
@@ -1749,6 +1761,8 @@
       stockAddLevel = "ok";
       document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
       $("stock-name").value = "";
+      $("stock-memo").value = "";
+      $("stock-budget").value = "";
       $("stock-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
       $("fab-add").classList.add("open");
@@ -1762,10 +1776,13 @@
     async function addStock() {
       const name = $("stock-name").value.trim();
       if (!name) return showToast("商品名を入力してください");
+      const memo = $("stock-memo").value.trim();
+      const budget = parseInt($("stock-budget").value, 10);
       const id = familyRef().child("stocks").push().key;
-      await familyRef().child("stocks/" + id).set({
-        name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now()
-      });
+      const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
+      if (memo) item.memo = memo;
+      if (budget > 0) item.budget = budget;
+      await familyRef().child("stocks/" + id).set(item);
       closeStockSheet();
       showToast("登録しました 📦", { sound: false });
     }
@@ -1773,11 +1790,17 @@
       await familyRef().child(`stocks/${id}`).update({ level, updatedBy: state.uid, updatedAt: now() });
     }
     async function deleteStock(id) {
+      const s = state.stocks[id];
+      if (!s) return;
+      if (!confirm(`「${s.name}」をストックから削除しますか？\n\n一度削除すると元に戻せません。`)) return;
       await familyRef().child("stocks/" + id).remove();
+      showToast(`「${s.name}」を削除しました`, { sound: false });
     }
     async function addStockToRequest(s) {
       const id = familyRef().child("requests").push().key;
       const req = { name: s.name, diff: "normal", urgent: s.level === "out", status: "open", requestedBy: state.uid, requestedAt: now() };
+      if (s.budget > 0) req.budget = s.budget;
+      if (s.memo) req.brand = s.memo;
       await familyRef().child("requests/" + id).set(req);
       await bumpStat("requestedCount");
       showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
@@ -1785,12 +1808,21 @@
     function stockCard(s, i) {
       const lvl = STOCK_LEVEL[s.level] || STOCK_LEVEL.ok;
       const showAdd = s.level === "out" || s.level === "low";
+      const metaChips = [];
+      if (s.budget > 0) metaChips.push(`💰 ${Number(s.budget).toLocaleString()}円以下`);
+      if (s.memo) metaChips.push(`📝 ${escapeHtml(s.memo)}`);
+      const metaHtml = metaChips.length
+        ? `<div class="stock-meta">${metaChips.map(c => `<span class="stock-meta-chip">${c}</span>`).join("")}</div>`
+        : "";
       return `
         <div class="stock-item" style="--i:${i}">
           <button class="stock-level-btn ${s.level}" data-sid="${s.id}" data-act="cycle" title="タップでレベルを変更">
             ${lvl.emoji}
           </button>
-          <span class="stock-name">${escapeHtml(s.name)}</span>
+          <div class="stock-info">
+            <span class="stock-name">${escapeHtml(s.name)}</span>
+            ${metaHtml}
+          </div>
           ${showAdd ? `<button class="stock-add-btn" data-sid="${s.id}" data-act="add-req">🛒 買う</button>` : ""}
           <button class="stock-delete-btn" data-sid="${s.id}" data-act="delete" aria-label="削除">×</button>
         </div>`;
