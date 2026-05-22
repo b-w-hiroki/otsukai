@@ -374,7 +374,7 @@
       border: none; box-shadow: none; font-size: 10px;
     }
     .bottom-nav button .nav-icon { font-size: 22px; line-height: 1; transition: transform .28s cubic-bezier(0.34,1.6,0.64,1); display: flex; align-items: center; justify-content: center; }
-    .bottom-nav button .nav-icon svg { width: 29px; height: 29px; display: block; flex-shrink: 0; }
+    .bottom-nav button .nav-icon svg { width: 23px; height: 23px; display: block; flex-shrink: 0; }
     .bottom-nav button .nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1px; }
     .bottom-nav button.active { color: var(--pri); background: var(--pri-soft); }
     .bottom-nav button.active .nav-icon { transform: scale(1.18) translateY(-1px); }
@@ -483,8 +483,8 @@
     .fab {
       position: relative;
       justify-self: center; align-self: start;
-      margin-top: -28px; margin-bottom: 0;
-      width: 73px; height: 73px; border-radius: 50%;
+      margin-top: -22px; margin-bottom: 0;
+      width: 58px; height: 58px; border-radius: 50%;
       background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
       color: #fff; border: none; cursor: pointer; z-index: 25;
       display: flex; align-items: center; justify-content: center;
@@ -496,8 +496,8 @@
     /* バー中央を控えめに盛り上げてFABを抱えるクレードル（FABの背面に描画） */
     .bottom-nav::before {
       content: ""; position: absolute;
-      left: 50%; top: 16px; transform: translate(-50%, -50%);
-      width: 94px; height: 94px; border-radius: 50%;
+      left: 50%; top: 13px; transform: translate(-50%, -50%);
+      width: 75px; height: 75px; border-radius: 50%;
       background: var(--surface);
       box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
       pointer-events: none;
@@ -710,10 +710,10 @@
       border: 1.5px solid var(--border);
     }
     .seg-btn {
-      flex: 1; padding: 8px 6px; border-radius: var(--r-full);
+      flex: 1; padding: 7px 4px; border-radius: var(--r-full);
       background: transparent; border: none; box-shadow: none;
-      color: var(--muted); font-size: 13px; font-weight: 700;
-      transition: background .18s, color .18s; letter-spacing: -0.1px;
+      color: var(--muted); font-size: 12px; font-weight: 700;
+      transition: background .18s, color .18s; letter-spacing: -0.2px;
     }
     .seg-btn:hover:not(:disabled) { background: var(--border); color: var(--ink-2); transform: none; box-shadow: none; }
     .seg-btn.active {
@@ -751,6 +751,30 @@
       background: linear-gradient(to right, var(--c-claimed), var(--c-done));
       border-radius: var(--r-full); transition: width .4s cubic-bezier(0.34,1.2,0.64,1);
     }
+
+    /* ======= Stock photo upload ======= */
+    .stock-photo-upload {
+      display: block; cursor: pointer;
+      border: 2px dashed var(--border); border-radius: var(--r-md);
+      overflow: hidden; min-height: 80px;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, background .15s;
+    }
+    .stock-photo-upload:hover { border-color: var(--pri); background: var(--pri-soft); }
+    .stock-photo-placeholder { font-size: 13px; font-weight: 600; color: var(--muted); padding: 20px; }
+    .stock-photo-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: calc(var(--r-md) - 2px); display: block; }
+    .stock-img { width: 48px; height: 48px; object-fit: cover; border-radius: var(--r-sm); flex-shrink: 0; }
+
+    /* ======= Assignee badge ======= */
+    .assignee-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 700; color: #92400e;
+      background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: var(--r-full); padding: 3px 10px;
+      margin: 2px 0 6px;
+    }
+    .req.assigned-to-me { border-color: rgba(245,158,11,0.4); }
+    .req.assigned-to-me::before { background: linear-gradient(to bottom, #f59e0b, rgba(245,158,11,0.28)); }
 
     /* Role picker */
     .role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
@@ -879,17 +903,22 @@
       <section id="tab-requests" class="tab active">
         <!-- セグメント切り替え -->
         <div class="seg-control">
-          <button class="seg-btn active" data-seg="list">🛒 お買い物リスト</button>
+          <button class="seg-btn active" data-seg="list">🛒 買い物リスト</button>
+          <button class="seg-btn" data-seg="going">🏃 買いに行く</button>
           <button class="seg-btn" data-seg="history">📊 履歴</button>
         </div>
 
-        <!-- リストビュー -->
+        <!-- 買い物リスト（未担当） -->
         <div id="requests-list-view">
           <div id="shortcut-area" class="shortcut-area" style="display:none;">
             <div class="shortcut-area-label">⚡ よく買うもの（タップで即追加）</div>
             <div id="shortcut-chips" class="shortcut-chips"></div>
           </div>
           <div id="list-open"></div>
+        </div>
+
+        <!-- 買いに行く（担当中・完了） -->
+        <div id="requests-going-view" style="display:none;">
           <div id="list-claimed"></div>
           <div id="list-done"></div>
         </div>
@@ -1005,7 +1034,7 @@
         <span id="badge-missions" class="nav-badge" style="display:none;">0</span>
       </button>
       <button id="fab-add" class="fab" aria-label="追加">
-        <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:34px;height:34px;display:block;">
+        <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:27px;height:27px;display:block;">
           <line x1="12" y1="4" x2="12" y2="20"/>
           <line x1="4" y1="12" x2="20" y2="12"/>
         </svg>
@@ -1082,24 +1111,33 @@
         </div>
         <div class="setup-form">
           <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" />
-          <div class="row">
-            <select id="new-diff" style="flex:1;">
-              <option value="normal">ふつう</option>
-              <option value="hard">ちょっと大変</option>
-              <option value="extreme">めちゃ大変</option>
-            </select>
-            <label class="row" style="white-space:nowrap;">
+          <div class="row" style="gap:8px;">
+            <div style="flex:1;">
+              <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">手間</label>
+              <select id="new-diff" style="width:100%;">
+                <option value="normal">ふつう</option>
+                <option value="hard">💪 ちょっと大変</option>
+                <option value="extreme">😅 めちゃ大変</option>
+              </select>
+            </div>
+            <label class="row" style="white-space:nowrap;align-self:flex-end;padding-bottom:11px;">
               <input type="checkbox" id="new-urgent" style="width:18px;height:18px;" />
               <span>🔥 急ぎ</span>
             </label>
           </div>
-          <textarea id="new-memo" placeholder="メモ（任意・その他注意点など）" maxlength="200"></textarea>
           <div class="row" style="gap:8px;">
             <div style="flex:1; position:relative;">
               <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
-              <input id="new-budget" type="number" min="0" max="9999999" placeholder="予算上限（円）" style="padding-left:26px;" />
+              <input id="new-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
             </div>
-            <input id="new-brand" placeholder="🏷️ ブランド・メーカー" maxlength="40" style="flex:1.4;" />
+            <input id="new-brand" placeholder="🏷️ ブランド指定（任意）" maxlength="40" style="flex:1.4;" />
+          </div>
+          <textarea id="new-memo" placeholder="📝 メモ・注意点（任意）" maxlength="200"></textarea>
+          <div>
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">担当者を指名（任意）</label>
+            <select id="new-assignee" style="width:100%;">
+              <option value="">👥 誰でもOK</option>
+            </select>
           </div>
           <div class="row" style="gap:8px;">
             <button id="btn-add-request" style="flex:1;">追加する</button>
@@ -1123,6 +1161,16 @@
           <div style="position:relative;">
             <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
             <input id="stock-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
+          </div>
+          <!-- 写真アップロード -->
+          <div>
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">商品写真（任意）</label>
+            <label id="stock-photo-label" class="stock-photo-upload">
+              <input type="file" id="stock-photo-input" accept="image/*" style="display:none;" />
+              <span id="stock-photo-preview-wrap">
+                <span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>
+              </span>
+            </label>
           </div>
           <div class="stock-level-picker">
             <button class="slp-btn active" data-lvl="ok">🟢 たっぷり</button>
@@ -1163,6 +1211,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script>
     // ===== Firebase config (set your own values) =====
     const firebaseConfig = {
@@ -1183,7 +1232,7 @@
       "🐻","🐼","🦊","🐯","🦁","🐸","🐵","🦄",
       "👨","👩","👦","👧","👴","👵","🧑","🧒"
     ];
-    const DIFF_LABEL = { normal: "ふつう", hard: "ちょっと大変", extreme: "めちゃ大変" };
+    const DIFF_LABEL = { normal: "ふつう", hard: "💪 ちょっと大変", extreme: "😅 めちゃ大変" };
     const STATUS_LABEL = { open: "未受託", claimed: "買いに行く", done: "完了" };
 
     // ===== State =====
@@ -1652,6 +1701,17 @@
 
     // ===== Bottom sheet =====
     function openSheet() {
+      // 指名セレクトにメンバー一覧を注入
+      const sel = $("new-assignee");
+      sel.innerHTML = '<option value="">👥 誰でもOK（指名なし）</option>';
+      const members = state.family && state.family.members ? state.family.members : {};
+      Object.entries(members).forEach(([uid, m]) => {
+        if (uid === state.uid) return; // 自分は除外
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = (m.emoji || "👤") + " " + (m.name || "メンバー") + "に頼む";
+        sel.appendChild(opt);
+      });
       $("sheet-add").classList.add("open");
       $("sheet-backdrop").classList.add("open");
       $("fab-add").classList.add("open");
@@ -1674,10 +1734,12 @@
       const brand = $("new-brand").value.trim();
       const id = familyRef().child("requests").push().key;
       const ts = now();
+      const assignedTo = $("new-assignee").value;
       const req = { name, diff, urgent, status: "open", requestedBy: state.uid, requestedAt: ts };
       if (memo) req.memo = memo;
       if (budget > 0) req.budget = budget;
       if (brand) req.brand = brand;
+      if (assignedTo) req.assignedTo = assignedTo;
       await familyRef().child("requests/" + id).set(req);
       await bumpStat("requestedCount");
       $("new-name").value = "";
@@ -1685,6 +1747,7 @@
       $("new-budget").value = "";
       $("new-brand").value = "";
       $("new-urgent").checked = false;
+      $("new-assignee").value = "";
       closeSheet();
       showToast("追加しました 🛒", { sound: false });
     }
@@ -1781,6 +1844,8 @@
       $("stock-name").value = "";
       $("stock-memo").value = "";
       $("stock-budget").value = "";
+      $("stock-photo-input").value = "";
+      $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
       $("stock-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
       $("fab-add").classList.add("open");
@@ -1791,15 +1856,42 @@
       $("sheet-backdrop").classList.remove("open");
       $("fab-add").classList.remove("open");
     }
+    // 写真プレビュー
+    document.addEventListener("DOMContentLoaded", () => {
+      $("stock-photo-input").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          $("stock-photo-preview-wrap").innerHTML = `<img class="stock-photo-preview" src="${ev.target.result}" alt="プレビュー" />`;
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    async function uploadStockPhoto(file, stockId) {
+      const storage = firebase.storage();
+      const ref = storage.ref(`families/${state.familyId}/stocks/${stockId}`);
+      await ref.put(file);
+      return await ref.getDownloadURL();
+    }
     async function addStock() {
       const name = $("stock-name").value.trim();
       if (!name) return showToast("商品名を入力してください");
       const memo = $("stock-memo").value.trim();
       const budget = parseInt($("stock-budget").value, 10);
+      const photoFile = $("stock-photo-input").files[0];
       const id = familyRef().child("stocks").push().key;
       const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
       if (memo) item.memo = memo;
       if (budget > 0) item.budget = budget;
+      if (photoFile) {
+        showToast("写真をアップロード中...", { sound: false });
+        try {
+          item.photoUrl = await uploadStockPhoto(photoFile, id);
+        } catch (e) {
+          showToast("写真のアップロードに失敗しました");
+        }
+      }
       await familyRef().child("stocks/" + id).set(item);
       closeStockSheet();
       showToast("登録しました 📦", { sound: false });
@@ -1837,6 +1929,7 @@
           <button class="stock-level-btn ${s.level}" data-sid="${s.id}" data-act="cycle" title="タップでレベルを変更">
             ${lvl.emoji}
           </button>
+          ${s.photoUrl ? `<img class="stock-img" src="${escapeHtml(s.photoUrl)}" alt="${escapeHtml(s.name)}" />` : ""}
           <div class="stock-info">
             <span class="stock-name">${escapeHtml(s.name)}</span>
             ${metaHtml}
@@ -2148,9 +2241,15 @@
 
       const hasAny = open.length + claimed.length + done.length > 0;
       $("btn-howto").style.display = hasAny ? "" : "none";
-      $("list-open").innerHTML = sectionHtml("📋 お買い物リスト", open.length, open.length ? open.map((r,i) => openCard(r,i)).join("") : (hasAny ? "" : howtoHtml()));
-      $("list-claimed").innerHTML = claimed.length ? sectionHtml("🙋 買いに行く", claimed.length, claimed.map((r,i) => claimedCard(r,i)).join("")) : "";
+      $("list-open").innerHTML = open.length ? open.map((r,i) => openCard(r,i)).join("") : (hasAny ? '<div class="empty"><div class="empty-icon">🎉</div>全部担当済みです！</div>' : howtoHtml());
+      $("list-claimed").innerHTML = claimed.length ? claimed.map((r,i) => claimedCard(r,i)).join("") : '<div class="empty"><div class="empty-icon">🏪</div>買いに行っている人はいません</div>';
       $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map((r,i) => doneCard(r,i)).join("")) : "";
+
+      // 「買いに行く」タブのバッジ
+      const goingBtn = document.querySelector('.seg-btn[data-seg="going"]');
+      if (goingBtn) {
+        goingBtn.textContent = claimed.length > 0 ? `🏃 買いに行く (${claimed.length})` : "🏃 買いに行く";
+      }
 
       wireRequestButtons();
     }
@@ -2210,18 +2309,24 @@
     }
     function openCard(r, i = 0) {
       const hasUnread = state.unreadComments.has(r.id);
+      const isAssignedToMe = r.assignedTo === state.uid;
+      const assignedName = r.assignedTo ? memberName(r.assignedTo) : null;
+      const assignedEmoji = r.assignedTo ? memberEmoji(r.assignedTo) : null;
+      const claimLabel = isAssignedToMe ? "✋ 担当する（指名されました）" : "🙋 立候補する";
+      const claimClass = isAssignedToMe ? "warn" : "success";
       return `
-        <div class="req ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}" style="--i:${i}">
+        <div class="req ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}${isAssignedToMe ? ' assigned-to-me' : ''}" style="--i:${i}">
           <div class="head">
             <span class="name">${escapeHtml(r.name)}</span>
-            <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
+            ${r.diff && r.diff !== "normal" ? `<span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>` : ""}
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
+          ${assignedName ? `<div class="assignee-badge">📌 ${assignedEmoji} <b>${escapeHtml(assignedName)}</b> さんにお願い</div>` : ""}
           <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ <span data-timeago="${r.requestedAt}">${timeAgo(r.requestedAt)}</span></div>
           ${reqHints(r)}
           ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
           <div class="actions">
-            <button data-act="claim" data-id="${r.id}" class="success">🙋 立候補する</button>
+            <button data-act="claim" data-id="${r.id}" class="${claimClass}">${claimLabel}</button>
             ${r.requestedBy === state.uid ? `<button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>` : ''}
           </div>
           ${commentThread(r)}
@@ -2235,7 +2340,7 @@
         <div class="req claimed ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}" style="--i:${i}">
           <div class="head">
             <span class="name">${escapeHtml(r.name)}</span>
-            <span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>
+            ${r.diff && r.diff !== "normal" ? `<span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>` : ""}
             ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
           </div>
           <div class="claimer-badge">
@@ -2416,6 +2521,7 @@
           reqSubTab = btn.dataset.seg;
           document.querySelectorAll(".seg-btn[data-seg]").forEach(b => b.classList.toggle("active", b === btn));
           $("requests-list-view").style.display = reqSubTab === "list" ? "" : "none";
+          $("requests-going-view").style.display = reqSubTab === "going" ? "" : "none";
           $("requests-history-view").style.display = reqSubTab === "history" ? "" : "none";
         });
       });
