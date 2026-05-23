@@ -1395,6 +1395,7 @@
     };
 
     const expandedGroups = new Set(["group-open", "group-mine"]);
+    let editingRequestId = null;
 
     const $ = (id) => document.getElementById(id);
     const now = () => Date.now();
@@ -1835,6 +1836,18 @@
     }
 
     // ===== Bottom sheet =====
+    function resetSheetToAddMode() {
+      editingRequestId = null;
+      document.querySelector("#sheet-add .sheet-title").textContent = "🛍️ おつかいを追加";
+      $("btn-add-request").textContent = "追加する";
+      $("new-name").value = "";
+      $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
+      $("new-urgent").checked = false;
+      $("new-diff").value = "normal";
+      $("new-assignee").value = "";
+    }
     function openSheet() {
       // 指名セレクトにメンバー一覧を注入
       const sel = $("new-assignee");
@@ -1856,6 +1869,7 @@
       $("sheet-add").classList.remove("open");
       $("sheet-backdrop").classList.remove("open");
       $("fab-add").classList.remove("open");
+      resetSheetToAddMode();
     }
 
     // ===== Request CRUD =====
@@ -1885,6 +1899,54 @@
       $("new-assignee").value = "";
       closeSheet();
       showToast("追加しました 🛒", { sound: false });
+    }
+    function openEditSheet(r) {
+      editingRequestId = r.id;
+      // メンバーセレクトを再構築
+      const sel = $("new-assignee");
+      sel.innerHTML = '<option value="">👥 誰でもOK（指名なし）</option>';
+      const members = state.family && state.family.members ? state.family.members : {};
+      Object.entries(members).forEach(([uid, m]) => {
+        if (uid === state.uid) return;
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = (m.emoji || "👤") + " " + (m.name || "メンバー") + "に頼む";
+        sel.appendChild(opt);
+      });
+      // フィールドに既存値を注入
+      $("new-name").value = r.name || "";
+      $("new-diff").value = r.diff || "normal";
+      $("new-urgent").checked = !!r.urgent;
+      $("new-memo").value = r.memo || "";
+      $("new-budget").value = r.budget > 0 ? r.budget : "";
+      $("new-brand").value = r.brand || "";
+      $("new-assignee").value = r.assignedTo || "";
+      // 編集モード UI
+      document.querySelector("#sheet-add .sheet-title").textContent = "✏️ おつかいを編集";
+      $("btn-add-request").textContent = "更新する";
+      $("sheet-add").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+      $("fab-add").classList.add("open");
+      setTimeout(() => $("new-name").focus(), 350);
+    }
+    async function updateRequest() {
+      if (!editingRequestId) return;
+      const name = $("new-name").value.trim();
+      if (!name) return showToast("品名を入力してください");
+      const diff = $("new-diff").value;
+      const urgent = $("new-urgent").checked;
+      const memo = $("new-memo").value.trim();
+      const budget = parseInt($("new-budget").value, 10);
+      const brand = $("new-brand").value.trim();
+      const assignedTo = $("new-assignee").value;
+      const updates = { name, diff, urgent };
+      updates.memo = memo || null;
+      updates.budget = budget > 0 ? budget : null;
+      updates.brand = brand || null;
+      updates.assignedTo = assignedTo || null;
+      await familyRef().child("requests/" + editingRequestId).update(updates);
+      closeSheet();
+      showToast("更新しました ✏️");
     }
     async function addShortcut() {
       const name = $("new-name").value.trim();
@@ -2490,11 +2552,13 @@
         const isAssigned = r.assignedTo === state.uid;
         actHtml = `<button class="${isAssigned ? 'warn' : 'success'} rc-btn" data-act="claim" data-id="${r.id}">${isAssigned ? "✋担当" : "🙋買うよ"}</button>`;
         if (r.requestedBy === state.uid) {
+          actHtml += `<button class="ghost rc-btn" data-act="edit" data-id="${r.id}" aria-label="編集">✏️</button>`;
           actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
         }
       } else if (mine) {
         actHtml = `<button class="success rc-btn" data-act="complete" data-id="${r.id}">✅完了</button>
-                   <button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">やめる</button>`;
+                   <button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">やめる</button>
+                   <button class="ghost rc-btn" data-act="edit" data-id="${r.id}" aria-label="編集">✏️</button>`;
       }
 
       const commentBtnClass = `rc-comment-btn${hasUnread ? ' has-unread' : ''}`;
@@ -2763,6 +2827,10 @@
           else if (act === "complete") completeRequest(id);
           else if (act === "reopen") reopenRequest(id);
           else if (act === "delete") deleteRequest(id);
+          else if (act === "edit") {
+            const r = state.requests[id];
+            if (r) openEditSheet(r);
+          }
         });
       });
       document.querySelectorAll("[data-toggle]").forEach((b) => {
@@ -2984,7 +3052,7 @@
       });
       $("btn-sheet-close").addEventListener("click", closeSheet);
       $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); });
-      $("btn-add-request").addEventListener("click", addRequest);
+      $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else addRequest(); });
       $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
       $("btn-logout").addEventListener("click", signOut);
@@ -2999,7 +3067,7 @@
         state.soundOn = e.target.checked;
         localStorage.setItem("soundOn", String(state.soundOn));
       });
-      $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addRequest(); });
+      $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else addRequest(); } });
       $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
       document.addEventListener("keydown", (e) => {
         if (e.key !== "Escape") return;
