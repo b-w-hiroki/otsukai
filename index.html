@@ -878,6 +878,9 @@
       padding: 10px 12px 10px 14px; min-height: 54px;
     }
     .req-row-name-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .req-row-name-col.editable { cursor: pointer; }
+    .req-row-name-col.editable:active { opacity: 0.7; }
+    .edit-hint { font-size: 10px; color: var(--muted); font-weight: 600; margin-top: 1px; }
     .req-row-name {
       font-weight: 700; font-size: 18px;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2555,6 +2558,8 @@
         pillsHtml = `<span class="pill s-done" style="font-size:12px;padding:2px 8px;">✅</span>`;
       }
 
+      const canEdit = r.requestedBy === state.uid && !isDone;
+
       let actHtml = "";
       if (isDone) {
         actHtml = `<button class="ghost rc-btn" data-act="reopen" data-id="${r.id}">↩️</button>`;
@@ -2565,13 +2570,11 @@
         const isAssigned = r.assignedTo === state.uid;
         actHtml = `<button class="${isAssigned ? 'warn' : 'success'} rc-btn" data-act="claim" data-id="${r.id}">${isAssigned ? "✋担当" : "🙋買うよ"}</button>`;
         if (r.requestedBy === state.uid) {
-          actHtml += `<button class="ghost rc-btn" data-act="edit" data-id="${r.id}" aria-label="編集">✏️</button>`;
           actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
         }
       } else if (mine) {
         actHtml = `<button class="success rc-btn" data-act="complete" data-id="${r.id}">✅完了</button>
-                   <button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">やめる</button>
-                   <button class="ghost rc-btn" data-act="edit" data-id="${r.id}" aria-label="編集">✏️</button>`;
+                   <button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">やめる</button>`;
       }
 
       const commentBtnClass = `rc-comment-btn${hasUnread ? ' has-unread' : ''}`;
@@ -2629,9 +2632,10 @@
 
       return `<div class="${rowClass}" style="--i:${i}">
         <div class="req-row-main">
-          <div class="req-row-name-col">
+          <div class="req-row-name-col${canEdit ? ' editable' : ''}"${canEdit ? ` data-edit-id="${r.id}"` : ''}>
             <span class="req-row-name">${escapeHtml(r.name)}</span>
             ${hintsHtml}
+            ${canEdit ? `<span class="edit-hint">✏️ タップして編集</span>` : ''}
           </div>
           <div class="req-row-meta">${claimerHtml}${pillsHtml}</div>
           <div class="req-row-actions">${actHtml}</div>
@@ -2840,10 +2844,6 @@
           else if (act === "complete") completeRequest(id);
           else if (act === "reopen") reopenRequest(id);
           else if (act === "delete") deleteRequest(id);
-          else if (act === "edit") {
-            const r = state.requests[id];
-            if (r) openEditSheet(r);
-          }
         });
       });
       document.querySelectorAll("[data-toggle]").forEach((b) => {
@@ -2873,6 +2873,13 @@
         };
         send.addEventListener("click", doSend);
         input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
+      });
+      // 名前コラムタップで編集
+      document.querySelectorAll(".req-row-name-col[data-edit-id]").forEach((col) => {
+        col.addEventListener("click", () => {
+          const r = state.requests[col.dataset.editId];
+          if (r) openEditSheet(r);
+        });
       });
     }
 
