@@ -800,32 +800,39 @@
     .role-btn .role-icon { font-size: 30px; }
 
     /* ======= Shortcut float button ======= */
+    @keyframes shortcut-pulse {
+      0%,100% { box-shadow: 0 4px 24px rgba(245,158,11,0.50), 0 2px 8px rgba(0,0,0,0.14); }
+      50%      { box-shadow: 0 6px 32px rgba(245,158,11,0.75), 0 2px 8px rgba(0,0,0,0.14); }
+    }
     .shortcut-float-wrap {
       position: fixed;
       left: 12px;
+      right: 12px;
       bottom: calc(var(--nav-height) + 10px);
       z-index: 29;
+      display: flex;
+      justify-content: center;
     }
     .shortcut-float-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 45%, #d97706 100%);
       border: none;
-      border-radius: var(--r-full); padding: 13px 22px;
-      font-size: 15px; font-weight: 800; color: #fff;
-      cursor: pointer; letter-spacing: -0.2px;
-      box-shadow: 0 4px 20px rgba(245,158,11,0.45), 0 2px 8px rgba(0,0,0,0.14);
-      transition: filter .12s, box-shadow .12s, transform .1s;
+      border-radius: 16px; padding: 17px 24px;
+      font-size: 17px; font-weight: 800; color: #fff;
+      cursor: pointer; letter-spacing: 0.2px;
+      animation: shortcut-pulse 2.4s ease-in-out infinite;
+      transition: filter .12s, transform .1s;
     }
-    .shortcut-float-btn:hover:not(:disabled) { filter: brightness(1.07); box-shadow: 0 6px 24px rgba(245,158,11,0.55), 0 3px 10px rgba(0,0,0,0.16); transform: translateY(-1px); }
-    .shortcut-float-btn:active { filter: brightness(0.95); transform: translateY(0); }
-    .shortcut-float-btn.open { filter: brightness(0.93); box-shadow: 0 2px 10px rgba(245,158,11,0.35), 0 1px 4px rgba(0,0,0,0.10); }
+    .shortcut-float-btn:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-2px); animation-play-state: paused; }
+    .shortcut-float-btn:active { filter: brightness(0.94); transform: translateY(0); animation-play-state: paused; }
+    .shortcut-float-btn.open { filter: brightness(0.93); animation-play-state: paused; box-shadow: 0 2px 10px rgba(245,158,11,0.30); }
     .shortcut-panel {
       display: none;
       position: absolute;
       bottom: calc(100% + 10px);
       left: 0;
-      min-width: 280px;
-      max-width: calc(100vw - 24px);
+      right: 0;
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--r-md); padding: 14px 16px;
       box-shadow: var(--shadow-deep);
@@ -1164,7 +1171,7 @@
 
     <!-- Shortcut float button (fixed above footer, requests tab only) -->
     <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
-      <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:18px;line-height:1;">⚡</span> よく買うもの</button>
+      <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:22px;line-height:1;">⚡</span><span>よく買うもの</span></button>
       <div id="shortcut-panel" class="shortcut-panel">
         <div id="shortcut-chips" class="shortcut-chips"></div>
       </div>
