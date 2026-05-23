@@ -799,25 +799,32 @@
 
     /* ======= Shortcut float button ======= */
     .shortcut-float-wrap {
-      position: sticky; top: 0; z-index: 10;
-      padding: 10px 0 4px;
-      background: var(--bg);
+      position: fixed;
+      right: 16px;
+      bottom: calc(var(--nav-height) + 8px);
+      z-index: 29;
     }
     .shortcut-float-btn {
       display: inline-flex; align-items: center; gap: 6px;
       background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: var(--r-full); padding: 6px 14px;
+      border-radius: var(--r-full); padding: 8px 16px;
       font-size: 13px; font-weight: 700; color: var(--ink-2);
-      cursor: pointer; box-shadow: var(--shadow-card);
-      transition: background .12s, border-color .12s, color .12s;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
+      transition: background .12s, border-color .12s, color .12s, box-shadow .12s;
     }
-    .shortcut-float-btn:hover:not(:disabled) { background: var(--pri-soft); border-color: var(--pri-mid); color: var(--pri); transform: none; box-shadow: var(--shadow-card); }
-    .shortcut-float-btn.open { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); box-shadow: none; }
+    .shortcut-float-btn:hover:not(:disabled) { background: var(--pri-soft); border-color: var(--pri-mid); color: var(--pri); transform: none; box-shadow: var(--shadow-float); }
+    .shortcut-float-btn.open { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); }
     .shortcut-panel {
       display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 0;
+      min-width: 260px;
+      max-width: calc(100vw - 32px);
       background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--r-md); padding: 12px 14px;
-      margin-top: 6px; box-shadow: var(--shadow-card);
+      box-shadow: var(--shadow-deep);
       animation: fadeUp .18s ease;
     }
     .shortcut-panel.open { display: block; }
@@ -1020,12 +1027,6 @@
     <div class="app">
       <!-- Tab: Requests -->
       <section id="tab-requests" class="tab active">
-        <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
-          <button id="btn-shortcut-toggle" class="shortcut-float-btn">⚡ よく買うもの</button>
-          <div id="shortcut-panel" class="shortcut-panel">
-            <div id="shortcut-chips" class="shortcut-chips"></div>
-          </div>
-        </div>
         <div id="list-open"></div>
         <div id="list-claimed"></div>
         <div id="list-done"></div>
@@ -1156,6 +1157,14 @@
         <span class="nav-label">設定</span>
       </button>
     </nav>
+
+    <!-- Shortcut float button (fixed above footer, requests tab only) -->
+    <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
+      <button id="btn-shortcut-toggle" class="shortcut-float-btn">⚡ よく買うもの</button>
+      <div id="shortcut-panel" class="shortcut-panel">
+        <div id="shortcut-chips" class="shortcut-chips"></div>
+      </div>
+    </div>
 
     <!-- How-to modal -->
     <div id="howto-modal-backdrop" class="howto-modal-backdrop"></div>
@@ -1891,14 +1900,21 @@
       await bumpStat("requestedCount");
       showToast(`🛒 「${s.name}」を追加しました`);
     }
+    function updateShortcutVisibility() {
+      const wrap = $("shortcut-float-wrap");
+      if (!wrap) return;
+      const hasShortcuts = Object.keys(state.shortcuts).length > 0;
+      const onRequests = state.activeTab === "requests";
+      wrap.style.display = (hasShortcuts && onRequests) ? "block" : "none";
+    }
     function renderShortcuts() {
       const wrap = $("shortcut-float-wrap");
       const btn = $("btn-shortcut-toggle");
       const chips = $("shortcut-chips");
       if (!wrap || !btn || !chips) return;
       const entries = Object.entries(state.shortcuts);
-      if (!entries.length) { wrap.style.display = "none"; return; }
-      wrap.style.display = "block";
+      updateShortcutVisibility();
+      if (!entries.length) return;
       btn.innerHTML = `⚡ よく買うもの <span style="background:var(--pri-soft);color:var(--pri);border-radius:99px;padding:1px 8px;font-size:11px;font-weight:800;">${entries.length}</span>`;
       chips.innerHTML = entries.map(([id, s]) => `
         <button class="shortcut-chip" data-sid="${id}">
@@ -2462,13 +2478,13 @@
       if (isDone) {
         actHtml = `<button class="ghost rc-btn" data-act="reopen" data-id="${r.id}">↩️</button>`;
         if (r.requestedBy === state.uid) {
-          actHtml += `<button class="icon-btn" data-act="delete" data-id="${r.id}" style="font-size:14px;padding:2px 6px;" aria-label="削除">×</button>`;
+          actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
         }
       } else if (!isClaimed) {
         const isAssigned = r.assignedTo === state.uid;
         actHtml = `<button class="${isAssigned ? 'warn' : 'success'} rc-btn" data-act="claim" data-id="${r.id}">${isAssigned ? "✋担当" : "🙋買うよ"}</button>`;
         if (r.requestedBy === state.uid) {
-          actHtml += `<button class="icon-btn" data-act="delete" data-id="${r.id}" style="font-size:14px;padding:2px 6px;" aria-label="削除">×</button>`;
+          actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
         }
       } else if (mine) {
         actHtml = `<button class="success rc-btn" data-act="complete" data-id="${r.id}">✅完了</button>
@@ -2919,6 +2935,8 @@
           closeSheet();
           closeStockSheet();
           closeMissionSheet();
+          closeShortcutPanel();
+          updateShortcutVisibility();
           renderBadge();
           renderStockBadge();
           renderMissionBadge();
