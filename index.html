@@ -797,6 +797,80 @@
     .role-btn.selected { background: var(--pri-soft); border-color: var(--pri); color: var(--pri); box-shadow: 0 0 0 1px var(--pri); }
     .role-btn .role-icon { font-size: 30px; }
 
+    /* ======= Collapsible groups ======= */
+    .req-group { margin-bottom: 2px; }
+    .req-group-hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 4px 6px; cursor: pointer;
+      user-select: none; -webkit-user-select: none;
+    }
+    .req-group-hdr h2 {
+      margin: 0; font-size: 10px; font-weight: 800;
+      color: var(--muted); text-transform: uppercase; letter-spacing: 1px; flex: 1;
+    }
+    .req-group-hdr::after { content: ''; flex: none; }
+    .req-group-chevron {
+      color: var(--muted); font-size: 11px;
+      transition: transform .2s ease; display: inline-block;
+    }
+    .req-group.closed .req-group-chevron { transform: rotate(-90deg); }
+    .req-group.closed .req-group-body { display: none; }
+
+    /* ======= Compact request row ======= */
+    .req-row {
+      background: var(--surface);
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 4px; position: relative; overflow: hidden;
+    }
+    .req-row::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--c-open);
+    }
+    .req-row.claimed::before { background: var(--c-claimed); }
+    .req-row.done { opacity: 0.52; }
+    .req-row.done .req-row-name { text-decoration: line-through; color: var(--muted); }
+    .req-row.done::before { background: var(--c-done); }
+    .req-row.urgent::before { background: var(--c-urgent); }
+    .req-row.has-unread-comment { border-color: rgba(251,146,60,0.45); }
+    .req-row.has-unread-comment::before { background: #f97316; }
+    .req-row-main {
+      display: flex; align-items: center; gap: 6px;
+      padding: 9px 10px 9px 14px; min-height: 46px;
+    }
+    .req-row-name {
+      font-weight: 700; font-size: 14px; flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      letter-spacing: -0.2px; color: var(--ink);
+    }
+    .req-row-meta {
+      display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+    }
+    .req-row-claimer {
+      font-size: 11px; color: var(--muted); font-weight: 600; white-space: nowrap;
+    }
+    .req-row-actions {
+      display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+    }
+    .rc-btn {
+      padding: 5px 10px; font-size: 12px; border-radius: var(--r-full);
+      font-weight: 700; white-space: nowrap; letter-spacing: -0.1px;
+    }
+    .rc-comment-btn {
+      padding: 4px 7px; font-size: 12px;
+      background: transparent; color: var(--muted);
+      border: 1.5px solid var(--border); border-radius: var(--r-full);
+      cursor: pointer; box-shadow: none; font-weight: 600;
+      transition: background .12s, color .12s; white-space: nowrap;
+    }
+    .rc-comment-btn.has-unread { color: #c2410c; border-color: #fed7aa; background: #fff7ed; }
+    .rc-comment-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--pri); border-color: var(--pri-mid); transform: none; box-shadow: none; }
+    .req-row-comment-body {
+      padding: 8px 12px 10px 14px;
+      border-top: 1px solid var(--border);
+    }
+
   </style>
 </head>
 <body>
@@ -1256,6 +1330,8 @@
       missionLogs: {},
       myRole: null
     };
+
+    const expandedGroups = new Set(["group-open", "group-mine"]);
 
     const $ = (id) => document.getElementById(id);
     const now = () => Date.now();
@@ -2228,20 +2304,181 @@
         badge.style.display = "none";
       }
     }
+    // ===== Collapsible group helper =====
+    function groupHtml(groupId, title, count, bodyHtml) {
+      const isOpen = expandedGroups.has(groupId);
+      return `<div class="req-group${isOpen ? '' : ' closed'}" data-group="${groupId}">
+        <div class="req-group-hdr" data-group-toggle="${groupId}">
+          <h2>${title}</h2>
+          <span class="section-count">${count}</span>
+          <span class="req-group-chevron">▼</span>
+        </div>
+        <div class="req-group-body">${bodyHtml}</div>
+      </div>`;
+    }
+
+    // ===== Compact card =====
+    function compactCard(r, i = 0) {
+      const isDone = r.status === "done";
+      const isClaimed = r.status === "claimed";
+      const mine = r.claimedBy === state.uid;
+      const hasUnread = state.unreadComments.has(r.id);
+      const expanded = state.expandedItems.has(r.id);
+      const allComments = state.comments[r.id] || {};
+      const commentList = Object.entries(allComments).map(([cid, c]) => ({ id: cid, ...c }));
+      const commentCount = commentList.length;
+
+      let rowClass = "req-row";
+      if (isDone) rowClass += " done";
+      else if (isClaimed) rowClass += " claimed";
+      if (r.urgent && !isDone) rowClass += " urgent";
+      if (hasUnread) rowClass += " has-unread-comment";
+
+      const claimerHtml = r.claimedBy
+        ? `<span class="req-row-claimer">${memberEmoji(r.claimedBy)} ${escapeHtml(memberName(r.claimedBy))}</span>`
+        : "";
+
+      let pillsHtml = "";
+      if (!isDone) {
+        if (r.urgent) pillsHtml += `<span class="pill urgent" style="font-size:9px;padding:2px 6px;">🔥</span>`;
+        if (r.diff && r.diff !== "normal") pillsHtml += `<span class="pill diff-${r.diff}" style="font-size:9px;padding:2px 6px;">${r.diff === "hard" ? "💪" : "😅"}</span>`;
+      } else {
+        pillsHtml = `<span class="pill s-done" style="font-size:9px;padding:2px 6px;">✅</span>`;
+      }
+
+      let actHtml = "";
+      if (isDone) {
+        actHtml = `<button class="ghost rc-btn" data-act="reopen" data-id="${r.id}">↩️</button>`;
+        if (r.requestedBy === state.uid) {
+          actHtml += `<button class="icon-btn" data-act="delete" data-id="${r.id}" style="font-size:14px;padding:2px 6px;" aria-label="削除">×</button>`;
+        }
+      } else if (!isClaimed) {
+        const isAssigned = r.assignedTo === state.uid;
+        actHtml = `<button class="${isAssigned ? 'warn' : 'success'} rc-btn" data-act="claim" data-id="${r.id}">${isAssigned ? "✋担当" : "🙋買うよ"}</button>`;
+        if (r.requestedBy === state.uid) {
+          actHtml += `<button class="icon-btn" data-act="delete" data-id="${r.id}" style="font-size:14px;padding:2px 6px;" aria-label="削除">×</button>`;
+        }
+      } else if (mine) {
+        actHtml = `<button class="success rc-btn" data-act="complete" data-id="${r.id}">✅完了</button>
+                   <button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">やめる</button>`;
+      }
+
+      const commentBtnClass = `rc-comment-btn${hasUnread ? ' has-unread' : ''}`;
+      actHtml += `<button class="${commentBtnClass}" data-toggle="${r.id}">${commentCount > 0 ? `💬${commentCount}` : "💬"}${expanded ? ' ▲' : ''}</button>`;
+
+      let commentBodyHtml = "";
+      if (expanded) {
+        const roots = commentList.filter(c => !c.parentId).sort((a, b) => a.createdAt - b.createdAt);
+        const replies = commentList.filter(c => !!c.parentId);
+        let threadHtml = `<div class="comment-thread">`;
+        if (roots.length === 0) {
+          threadHtml += `<p class="muted" style="font-size:12px;text-align:center;">まだコメントはありません</p>`;
+        }
+        roots.forEach(root => {
+          const rootReplies = replies.filter(rp => rp.parentId === root.id).sort((a, b) => a.createdAt - b.createdAt);
+          threadHtml += `<div class="comment-root">
+            <div class="comment-item">
+              <span class="avatar sm">${escapeHtml(root.authorEmoji)}</span>
+              <div class="comment-body">
+                <div class="comment-author">${escapeHtml(root.authorName)} <span class="tiny">${timeAgo(root.createdAt)}</span></div>
+                <div class="comment-text">${escapeHtml(root.text)}</div>
+                <button class="reply-btn" data-reply="${root.id}" data-name="${escapeHtml(root.authorName)}" data-req="${r.id}">↩️ 返信</button>
+              </div>
+            </div>`;
+          rootReplies.forEach(rep => {
+            threadHtml += `<div class="comment-item reply">
+              <span class="avatar sm">${escapeHtml(rep.authorEmoji)}</span>
+              <div class="comment-body">
+                <div class="comment-author">${escapeHtml(rep.authorName)} <span class="tiny">${timeAgo(rep.createdAt)}</span></div>
+                <div class="comment-text">${escapeHtml(rep.text)}</div>
+              </div>
+            </div>`;
+          });
+          threadHtml += `</div>`;
+        });
+        threadHtml += `<div class="comment-input-row" data-req="${r.id}" data-parent="">
+          <span class="avatar sm">${state.profile ? escapeHtml(state.profile.emoji) : '🙂'}</span>
+          <input class="comment-input" placeholder="コメントを追加..." />
+          <button class="comment-send">送信</button>
+        </div></div>`;
+        commentBodyHtml = `<div class="req-row-comment-body">${threadHtml}</div>`;
+      }
+
+      return `<div class="${rowClass}" style="--i:${i}">
+        <div class="req-row-main">
+          <span class="req-row-name">${escapeHtml(r.name)}</span>
+          <div class="req-row-meta">${claimerHtml}${pillsHtml}</div>
+          <div class="req-row-actions">${actHtml}</div>
+        </div>
+        ${commentBodyHtml}
+      </div>`;
+    }
+
+    // ===== Wire group toggles =====
+    function wireGroupToggles() {
+      document.querySelectorAll("[data-group-toggle]").forEach(hdr => {
+        hdr.addEventListener("click", () => {
+          const gid = hdr.dataset.groupToggle;
+          if (expandedGroups.has(gid)) expandedGroups.delete(gid);
+          else expandedGroups.add(gid);
+          const group = document.querySelector(`.req-group[data-group="${gid}"]`);
+          if (group) group.classList.toggle("closed", !expandedGroups.has(gid));
+        });
+      });
+    }
+
     function renderRequests() {
       const items = Object.entries(state.requests).map(([id, r]) => ({ id, ...r }));
-      const open = items.filter((r) => r.status === "open").sort((a,b) => (b.urgent?1:0) - (a.urgent?1:0) || a.requestedAt - b.requestedAt);
-      const claimed = items.filter((r) => r.status === "claimed").sort((a,b) => a.claimedAt - b.claimedAt);
-      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-      const done = items.filter((r) => r.status === "done" && (r.completedAt || 0) >= todayStart.getTime()).sort((a,b) => b.completedAt - a.completedAt);
 
-      const hasAny = open.length + claimed.length + done.length > 0;
+      // Group 1: unclaimed open items
+      const openItems = items
+        .filter(r => r.status === "open")
+        .sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || a.requestedAt - b.requestedAt);
+
+      // Group 2: items I claimed (any non-open status)
+      const mineItems = items
+        .filter(r => r.status !== "open" && r.claimedBy === state.uid)
+        .sort((a, b) => {
+          if (a.status === "done" && b.status !== "done") return 1;
+          if (b.status === "done" && a.status !== "done") return -1;
+          return (a.claimedAt || 0) - (b.claimedAt || 0);
+        });
+
+      // Group 3: items others claimed (any non-open status)
+      const othersItems = items
+        .filter(r => r.status !== "open" && r.claimedBy && r.claimedBy !== state.uid)
+        .sort((a, b) => {
+          if (a.status === "done" && b.status !== "done") return 1;
+          if (b.status === "done" && a.status !== "done") return -1;
+          return (a.claimedAt || 0) - (b.claimedAt || 0);
+        });
+
+      const hasAny = items.length > 0;
       $("btn-howto").style.display = hasAny ? "" : "none";
-      $("list-open").innerHTML = open.length ? open.map((r,i) => openCard(r,i)).join("") : (!hasAny ? howtoHtml() : "");
-      $("list-claimed").innerHTML = claimed.length ? sectionHtml("🏃 買いに行く", claimed.length, claimed.map((r,i) => claimedCard(r,i)).join("")) : "";
-      $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map((r,i) => doneCard(r,i)).join("")) : "";
 
+      let html = "";
+      if (!hasAny) {
+        html = howtoHtml();
+      } else {
+        const openBody = openItems.length
+          ? openItems.map((r, i) => compactCard(r, i)).join("")
+          : `<div class="empty" style="padding:12px 4px 8px;font-size:12px;">新しい依頼はありません</div>`;
+        html += groupHtml("group-open", "🛒 買い物リスト", openItems.length, openBody);
+        if (mineItems.length) {
+          html += groupHtml("group-mine", "🙋 自分のリスト", mineItems.length,
+            mineItems.map((r, i) => compactCard(r, i)).join(""));
+        }
+        if (othersItems.length) {
+          html += groupHtml("group-others", "👥 他の人のリスト", othersItems.length,
+            othersItems.map((r, i) => compactCard(r, i)).join(""));
+        }
+      }
+
+      $("list-open").innerHTML = html;
+      $("list-claimed").innerHTML = "";
+      $("list-done").innerHTML = "";
       wireRequestButtons();
+      wireGroupToggles();
     }
     function sectionHtml(title, count, body) {
       return `<div class="section-header"><h2>${title}</h2><span class="section-count">${count}</span></div>${body}`;
@@ -2368,7 +2605,7 @@
       `;
     }
     function wireRequestButtons() {
-      document.querySelectorAll(".req button[data-act]").forEach((b) => {
+      document.querySelectorAll(".req-row [data-act]").forEach((b) => {
         b.addEventListener("click", () => {
           const id = b.dataset.id;
           const act = b.dataset.act;
@@ -2379,12 +2616,12 @@
           else if (act === "delete") deleteRequest(id);
         });
       });
-      document.querySelectorAll(".comment-toggle[data-toggle]").forEach((b) => {
+      document.querySelectorAll("[data-toggle]").forEach((b) => {
         b.addEventListener("click", () => toggleComments(b.dataset.toggle));
       });
       document.querySelectorAll(".reply-btn[data-reply]").forEach((b) => {
         b.addEventListener("click", () => {
-          const row = b.closest(".comment-thread").querySelector(`.comment-input-row[data-req="${b.dataset.req}"]`);
+          const row = document.querySelector(`.comment-input-row[data-req="${b.dataset.req}"]`);
           if (!row) return;
           row.dataset.parent = b.dataset.reply;
           const input = row.querySelector(".comment-input");
