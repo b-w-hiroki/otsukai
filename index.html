@@ -864,11 +864,20 @@
       display: flex; align-items: center; gap: 6px;
       padding: 9px 10px 9px 14px; min-height: 46px;
     }
+    .req-row-name-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
     .req-row-name {
-      font-weight: 700; font-size: 14px; flex: 1; min-width: 0;
+      font-weight: 700; font-size: 14px;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       letter-spacing: -0.2px; color: var(--ink);
     }
+    .req-row-hints { display: flex; flex-wrap: wrap; gap: 3px; }
+    .req-row-hint {
+      font-size: 10px; color: var(--ink-2); font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-full); padding: 1px 7px;
+      max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .req-row.done .req-row-hint { opacity: 0.6; }
     .req-row-meta {
       display: flex; align-items: center; gap: 3px; flex-shrink: 0;
     }
@@ -2469,6 +2478,18 @@
       const commentBtnClass = `rc-comment-btn${hasUnread ? ' has-unread' : ''}`;
       actHtml += `<button class="${commentBtnClass}" data-toggle="${r.id}">${commentCount > 0 ? `💬${commentCount}` : "💬"}${expanded ? ' ▲' : ''}</button>`;
 
+      // Extra info hints: budget / brand / memo / assignee
+      const hintParts = [];
+      if (r.budget > 0) hintParts.push(`💰 ${Number(r.budget).toLocaleString()}円以下`);
+      if (r.brand) hintParts.push(`🏷️ ${escapeHtml(r.brand)}`);
+      if (r.memo) hintParts.push(`📝 ${escapeHtml(r.memo)}`);
+      if (r.assignedTo && r.status === "open") {
+        hintParts.push(`📌 ${memberEmoji(r.assignedTo)} ${escapeHtml(memberName(r.assignedTo))}`);
+      }
+      const hintsHtml = hintParts.length
+        ? `<div class="req-row-hints">${hintParts.map(p => `<span class="req-row-hint">${p}</span>`).join("")}</div>`
+        : "";
+
       let commentBodyHtml = "";
       if (expanded) {
         const roots = commentList.filter(c => !c.parentId).sort((a, b) => a.createdAt - b.createdAt);
@@ -2509,7 +2530,10 @@
 
       return `<div class="${rowClass}" style="--i:${i}">
         <div class="req-row-main">
-          <span class="req-row-name">${escapeHtml(r.name)}</span>
+          <div class="req-row-name-col">
+            <span class="req-row-name">${escapeHtml(r.name)}</span>
+            ${hintsHtml}
+          </div>
           <div class="req-row-meta">${claimerHtml}${pillsHtml}</div>
           <div class="req-row-actions">${actHtml}</div>
         </div>
