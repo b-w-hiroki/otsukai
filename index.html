@@ -1368,6 +1368,10 @@
           <button id="btn-mission-sheet-close" class="sheet-close">✕</button>
         </div>
         <div class="setup-form">
+          <div>
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">担当する子ども</label>
+            <select id="mission-assignee" style="width:100%;"></select>
+          </div>
           <input id="mission-title-input" placeholder="ミッション名（例: お手伝い、勉強）" maxlength="40" />
           <div class="row" style="gap:8px;">
             <div style="flex:1;position:relative;">
@@ -2303,6 +2307,17 @@
       $("mission-title-input").value = "";
       $("mission-target").value = "";
       $("mission-reward-input").value = "";
+      // 子どもメンバーのみセレクトに注入
+      const sel = $("mission-assignee");
+      sel.innerHTML = '<option value="">-- 子どもを選んでください --</option>';
+      const members = state.family && state.family.members ? state.family.members : {};
+      Object.entries(members).forEach(([uid, m]) => {
+        if (m.memberRole !== "child") return;
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = (m.emoji || "👤") + " " + (m.name || "メンバー");
+        sel.appendChild(opt);
+      });
       $("mission-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
       $("fab-add").classList.add("open");
@@ -2322,39 +2337,34 @@
       showToast(role === "parent" ? "👨‍👩‍👧 親として設定しました" : "👧 子どもとして設定しました", { sound: false });
     }
     async function addMission() {
+      const assignedTo = $("mission-assignee").value;
       const title = $("mission-title-input").value.trim();
       const targetCount = parseInt($("mission-target").value, 10);
       const reward = parseInt($("mission-reward-input").value, 10);
+      if (!assignedTo) return showToast("担当する子どもを選んでください");
       if (!title) return showToast("ミッション名を入力してください");
       if (!targetCount || targetCount < 1) return showToast("クリア回数を入力してください");
       if (!reward || reward < 1) return showToast("おこづかい金額を入力してください");
       const mid = familyRef().child("missions").push().key;
       await familyRef().child("missions/" + mid).set({
-        title, targetCount, reward,
+        title, targetCount, reward, assignedTo,
         createdBy: state.uid, createdAt: now(), status: "active"
       });
       closeMissionSheet();
-      showToast("ミッションを作成しました 🎯", { sound: false });
+      showToast("ミッションを依頼しました 🎯", { sound: false });
     }
-    async function doMissionStep(mid) {
-      const ref = familyRef().child(`missionLogs/${mid}/${state.uid}/count`);
+    async function doMissionStep(mid, uid) {
+      const targetUid = uid || state.uid;
+      const ref = familyRef().child(`missionLogs/${mid}/${targetUid}/count`);
       await ref.transaction((v) => (v || 0) + 1);
-      showToast("やった！ ⭐", { sound: false });
-    }
-    async function requestReward(mid) {
-      await familyRef().child(`missionLogs/${mid}/${state.uid}`).update({
-        claimPending: true, claimedAt: now()
-      });
-      showToast("おこづかいを申請しました！🙏", { sound: false });
+      showToast("達成確認！ ⭐", { sound: false });
     }
     async function confirmPaid(mid, uid) {
-      await familyRef().child(`missionLogs/${mid}/${uid}`).update({
-        paid: true, paidAt: now(), claimPending: false
+      // 報酬渡し済み → ログをリセットして次サイクルへ
+      await familyRef().child(`missionLogs/${mid}/${uid}`).set({
+        count: 0, claimPending: false, paid: false
       });
-      // Reset count so mission can continue
-      await familyRef().child(`missionLogs/${mid}/${uid}/count`).set(0);
-      await familyRef().child(`missionLogs/${mid}/${uid}/paid`).set(false);
-      showToast("支払い完了！おつかれさま 💰");
+      showToast("おこづかいを渡しました 💰");
     }
     async function archiveMission(mid) {
       await familyRef().child(`missions/${mid}/status`).set("archived");
@@ -2402,86 +2412,38 @@
     }
 
     function renderMissionsParent(el, missions) {
-      const children = Object.entries((state.family && state.family.members) || {})
-        .filter(([, m]) => m.memberRole === "child")
-        .map(([uid, m]) => ({ uid, ...m }));
       if (!missions.length) {
-        el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><b>ミッションがまだありません</b><br>＋ をタップしてミッションを作りましょう</div>`;
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><b>ミッションがまだありません</b><br>＋ をタップして子どもにミッションを依頼しましょう</div>`;
         return;
       }
       el.innerHTML = sectionHtml("🎯 アクティブなミッション", missions.length,
-        missions.map((m, i) => missionCardParent(m, children, i)).join(""));
+        missions.map((m, i) => missionCardParent(m, i)).join(""));
     }
 
-    function missionCardParent(m, children, i) {
-      const logs = state.missionLogs[m.mid] || {};
-      let childrenHtml = "";
-      if (!children.length) {
-        childrenHtml = `<p class="muted" style="font-size:12px;margin-top:8px;">子どもがまだ役割設定していません</p>`;
-      } else {
-        childrenHtml = children.map(child => {
-          const log = logs[child.uid] || {};
-          const count = log.count || 0;
-          const pct = Math.min(100, Math.round(count / m.targetCount * 100));
-          const claimPending = log.claimPending && !log.paid;
-          return `<div style="margin-top:10px;">
-            <div class="row between" style="margin-bottom:2px;">
-              <span style="font-size:12px;font-weight:700;">${escapeHtml(child.emoji || "👤")} ${escapeHtml(child.name)}</span>
-              <span class="tiny">${count} / ${m.targetCount}回</span>
-            </div>
-            <div class="mission-progress-bar"><div class="mission-progress-fill" style="width:${pct}%"></div></div>
-            ${claimPending ? `<div class="row" style="margin-top:6px;gap:8px;flex-wrap:wrap;">
-              <span style="font-size:12px;color:var(--c-done);font-weight:700;">💰 おこづかい申請中！</span>
-              <button class="tiny-btn success" data-act="confirm-paid" data-mid="${m.mid}" data-uid="${child.uid}">支払い確認 ✅</button>
-            </div>` : ""}
-          </div>`;
-        }).join("");
-      }
+    function missionCardParent(m, i) {
+      const log = (state.missionLogs[m.mid] || {})[m.assignedTo] || {};
+      const count = log.count || 0;
+      const pct = Math.min(100, Math.round(count / m.targetCount * 100));
+      const isDone = count >= m.targetCount;
+      const member = state.family && state.family.members && m.assignedTo
+        ? state.family.members[m.assignedTo] : null;
+      const childName = member ? escapeHtml(member.name) : "（未設定）";
+      const childEmoji = member ? (member.emoji || "👤") : "👤";
+      const actionHtml = isDone
+        ? `<button class="success tiny-btn" data-act="confirm-paid" data-mid="${m.mid}" data-uid="${m.assignedTo}">💰 おこづかいを渡す</button>`
+        : `<button class="ghost tiny-btn" data-act="do-step" data-mid="${m.mid}" data-uid="${m.assignedTo}">⭐ +1 達成確認</button>`;
       return `<div class="mission-card" style="--i:${i}">
         <div class="row between" style="margin-bottom:4px;">
           <span class="mission-title">${escapeHtml(m.title)}</span>
           <button class="icon-btn" data-act="archive" data-mid="${m.mid}" aria-label="終了" title="ミッション終了">✕</button>
         </div>
-        <div class="row" style="gap:12px;">
+        <div class="row" style="gap:12px;margin-bottom:10px;">
           <span class="mission-reward-label">💰 ${Number(m.reward).toLocaleString()}円</span>
           <span class="tiny">🔄 ${m.targetCount}回でクリア</span>
         </div>
-        ${childrenHtml}
-      </div>`;
-    }
-
-    function renderMissionsChild(el, missions) {
-      if (!missions.length) {
-        el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><b>ミッションがまだありません</b><br>親にミッションを作ってもらいましょう</div>`;
-        return;
-      }
-      el.innerHTML = sectionHtml("🎯 ミッション一覧", missions.length,
-        missions.map((m, i) => missionCardChild(m, i)).join(""));
-    }
-
-    function missionCardChild(m, i) {
-      const log = (state.missionLogs[m.mid] || {})[state.uid] || {};
-      const count = log.count || 0;
-      const pct = Math.min(100, Math.round(count / m.targetCount * 100));
-      const done = count >= m.targetCount;
-      const claimPending = !!(log.claimPending && !log.paid);
-      let actionHtml = "";
-      if (claimPending) {
-        actionHtml = `<span style="color:var(--muted);font-size:13px;font-weight:600;">⏳ 親の確認待ち…</span>`;
-      } else if (done) {
-        actionHtml = `<button class="success" data-act="request-reward" data-mid="${m.mid}">🎉 おこづかい申請！</button>`;
-      } else {
-        actionHtml = `<button class="ghost" data-act="do-step" data-mid="${m.mid}">⭐ やった！（+1）</button>`;
-      }
-      return `<div class="mission-card${claimPending ? " pending" : ""}" style="--i:${i}">
-        <div class="mission-title" style="margin-bottom:4px;">${escapeHtml(m.title)}</div>
-        <div class="row" style="gap:12px;margin-bottom:8px;">
-          <span class="mission-reward-label">💰 ${Number(m.reward).toLocaleString()}円</span>
-          <span class="tiny">🔄 ${m.targetCount}回でクリア</span>
-        </div>
-        <div class="row between" style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px;">
-          <span>${count} / ${m.targetCount}回 完了</span>
-          <span>${pct}%</span>
+        <div class="row between" style="margin-bottom:4px;">
+          <span style="font-size:13px;font-weight:700;">${childEmoji} ${childName}</span>
+          <span class="tiny">${count} / ${m.targetCount}回</span>
         </div>
         <div class="mission-progress-bar" style="margin-bottom:10px;">
           <div class="mission-progress-fill" style="width:${pct}%"></div>
@@ -2490,12 +2452,43 @@
       </div>`;
     }
 
+    function renderMissionsChild(el, missions) {
+      const myMissions = missions.filter(m => m.assignedTo === state.uid);
+      if (!myMissions.length) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🎯</div><b>ミッションがまだありません</b><br>親からのミッションをここで確認できます</div>`;
+        return;
+      }
+      el.innerHTML = sectionHtml("🎯 ミッション一覧", myMissions.length,
+        myMissions.map((m, i) => missionCardChild(m, i)).join(""));
+    }
+
+    function missionCardChild(m, i) {
+      const log = (state.missionLogs[m.mid] || {})[state.uid] || {};
+      const count = log.count || 0;
+      const pct = Math.min(100, Math.round(count / m.targetCount * 100));
+      const isDone = count >= m.targetCount;
+      return `<div class="mission-card${isDone ? ' done' : ''}" style="--i:${i}">
+        <div class="mission-title" style="margin-bottom:4px;">${escapeHtml(m.title)}</div>
+        <div class="row" style="gap:12px;margin-bottom:8px;">
+          <span class="mission-reward-label">💰 ${Number(m.reward).toLocaleString()}円</span>
+          <span class="tiny">🔄 ${m.targetCount}回でクリア</span>
+        </div>
+        <div class="row between" style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px;">
+          <span>${count} / ${m.targetCount}回</span>
+          <span>${pct}%</span>
+        </div>
+        <div class="mission-progress-bar" style="margin-bottom:8px;">
+          <div class="mission-progress-fill" style="width:${pct}%"></div>
+        </div>
+        ${isDone ? `<div style="text-align:center;padding:6px 0;font-size:14px;font-weight:800;color:var(--c-done);">🎉 達成！おこづかいをもらってね</div>` : ""}
+      </div>`;
+    }
+
     function wireMissionButtons() {
       document.querySelectorAll(".mission-card [data-act]").forEach(btn => {
         btn.addEventListener("click", () => {
           const { act, mid, uid } = btn.dataset;
-          if (act === "do-step") doMissionStep(mid);
-          else if (act === "request-reward") requestReward(mid);
+          if (act === "do-step") doMissionStep(mid, uid);
           else if (act === "confirm-paid") confirmPaid(mid, uid);
           else if (act === "archive") archiveMission(mid);
         });
@@ -2507,18 +2500,18 @@
       if (!badge) return;
       let count = 0;
       if (state.myRole === "parent") {
-        Object.entries(state.missionLogs).forEach(([mid, logs]) => {
-          const m = state.missions[mid];
-          if (!m || m.status !== "active") return;
-          Object.values(logs || {}).forEach(log => {
-            if (log.claimPending && !log.paid) count++;
-          });
+        // 達成済み（おこづかいを渡す待ち）のミッション数
+        Object.entries(state.missions).forEach(([mid, m]) => {
+          if (m.status !== "active" || !m.assignedTo) return;
+          const log = (state.missionLogs[mid] || {})[m.assignedTo] || {};
+          if ((log.count || 0) >= m.targetCount) count++;
         });
       } else if (state.myRole === "child") {
+        // 自分に割り当てられた達成済みミッション数
         Object.entries(state.missions).forEach(([mid, m]) => {
-          if (m.status !== "active") return;
+          if (m.status !== "active" || m.assignedTo !== state.uid) return;
           const log = (state.missionLogs[mid] || {})[state.uid] || {};
-          if ((log.count || 0) >= m.targetCount && !log.claimPending && !log.paid) count++;
+          if ((log.count || 0) >= m.targetCount) count++;
         });
       }
       if (count > 0 && state.activeTab !== "missions") {
