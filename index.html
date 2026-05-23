@@ -907,14 +907,19 @@
       font-weight: 700; white-space: nowrap; letter-spacing: -0.1px;
     }
     .rc-comment-btn {
-      padding: 5px 10px; font-size: 14px;
+      position: relative;
+      padding: 5px 10px; font-size: 14px; width: 38px; flex-shrink: 0;
       background: transparent; color: var(--muted);
       border: 1.5px solid var(--border); border-radius: var(--r-full);
       cursor: pointer; box-shadow: none; font-weight: 600;
       transition: background .12s, color .12s; white-space: nowrap;
     }
-    .rc-comment-btn.has-unread { color: #c2410c; border-color: #fed7aa; background: #fff7ed; }
+    .rc-comment-btn.has-unread { color: var(--muted); border-color: var(--border); background: transparent; }
     .rc-comment-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--pri); border-color: var(--pri-mid); transform: none; box-shadow: none; }
+    .comment-dot { position: absolute; top: 3px; right: 3px; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--surface); }
+    .comment-dot.unread { background: #ef4444; }
+    .comment-dot.seen { background: var(--muted); }
+    .rc-comment-btn.open { background: var(--pri-soft); color: var(--pri); border-color: var(--pri-mid); }
     .req-row-comment-body {
       padding: 8px 12px 10px 14px;
       border-top: 1px solid var(--border);
@@ -2576,8 +2581,10 @@
                    <button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">やめる</button>`;
       }
 
-      const commentBtnClass = `rc-comment-btn${hasUnread ? ' has-unread' : ''}`;
-      actHtml += `<button class="${commentBtnClass}" data-toggle="${r.id}">${commentCount > 0 ? `💬${commentCount}` : "💬"}${expanded ? ' ▲' : ''}</button>`;
+      const dot = hasUnread
+        ? `<span class="comment-dot unread"></span>`
+        : commentCount > 0 ? `<span class="comment-dot seen"></span>` : '';
+      actHtml += `<button class="rc-comment-btn${expanded ? ' open' : ''}" data-toggle="${r.id}">💬${dot}</button>`;
 
       // Extra info hints: budget / brand / memo / assignee
       const hintParts = [];
@@ -2875,8 +2882,9 @@
       // 名前コラムタップで編集
       document.querySelectorAll(".req-row-name-col[data-edit-id]").forEach((col) => {
         col.addEventListener("click", () => {
-          const r = state.requests[col.dataset.editId];
-          if (r) openEditSheet(r);
+          const id = col.dataset.editId;
+          const raw = state.requests[id];
+          if (raw) openEditSheet({ id, ...raw }); // id を明示的に付与
         });
       });
     }
