@@ -1299,6 +1299,30 @@
       </div>
     </div>
 
+    <!-- Family stats sheet -->
+    <div id="family-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">👨‍👩‍👧 家族の状況</div>
+          <button id="btn-family-close" class="sheet-close">✕</button>
+        </div>
+        <div id="family-sheet-body" style="padding-bottom:16px;"></div>
+      </div>
+    </div>
+
+    <!-- Mission history sheet -->
+    <div id="mission-history-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">🏆 ミッション履歴</div>
+          <button id="btn-mission-history-close" class="sheet-close">✕</button>
+        </div>
+        <div id="mission-history-body" style="padding-bottom:16px;"></div>
+      </div>
+    </div>
+
     <!-- History sheet -->
     <div id="history-sheet" class="sheet">
       <div class="sheet-handle"></div>
@@ -2998,34 +3022,93 @@
       const name = state.profile ? state.profile.name : "ゲスト";
       const emoji = state.profile ? (state.profile.emoji || "🙂") : "🙂";
       const roleLabel = state.myRole ? ({ parent: "保護者", child: "こども" }[state.myRole] || "") : "";
-      // 自分のスタッツ
-      const myStats = (state.family && state.family.stats && state.family.stats[state.uid]) || {};
+      const myStats = state.stats[state.uid] || {};
       const req = myStats.requestedCount || 0;
       const cl = myStats.claimedCount || 0;
       const done = myStats.completedCount || 0;
-      // メンバー全員のスタッツ
-      const memberStatsHtml = renderMemberStatsHtml();
       body.innerHTML = `
         <div style="display:flex;align-items:center;gap:14px;padding:4px 0 20px;">
-          <div class="avatar" style="width:56px;height:56px;font-size:28px;box-shadow:none;background:var(--pri-soft);">${emoji}</div>
+          <div class="avatar" style="width:60px;height:60px;font-size:30px;box-shadow:none;background:var(--pri-soft);">${emoji}</div>
           <div>
             <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;">${escapeHtml(name)}</div>
             ${roleLabel ? `<div style="margin-top:4px;"><span class="role-badge">${roleLabel}</span></div>` : ""}
           </div>
         </div>
-        <div class="stat-grid" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:20px;">
+        <div class="stat-grid" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:24px;">
           <div class="stat"><b>${req}</b><span>依頼</span></div>
           <div class="stat"><b>${cl}</b><span>担当</span></div>
           <div class="stat"><b>${done}</b><span>完了</span></div>
         </div>
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">家族の貢献</div>
-        <div id="player-member-stats">${memberStatsHtml}</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="ps-btn-family" class="ghost" style="width:100%;text-align:left;padding:14px 16px;border-radius:12px;font-size:14px;font-weight:700;">
+            👨‍👩‍👧 家族の状況
+          </button>
+          <button id="ps-btn-history" class="ghost" style="width:100%;text-align:left;padding:14px 16px;border-radius:12px;font-size:14px;font-weight:700;">
+            🛒 買い物履歴
+          </button>
+          <button id="ps-btn-mission-history" class="ghost" style="width:100%;text-align:left;padding:14px 16px;border-radius:12px;font-size:14px;font-weight:700;">
+            🏆 ミッション達成履歴
+          </button>
+        </div>
       `;
+      // ボタンのイベント
+      body.querySelector("#ps-btn-family").addEventListener("click", openFamilySheet);
+      body.querySelector("#ps-btn-history").addEventListener("click", openHistorySheet);
+      body.querySelector("#ps-btn-mission-history").addEventListener("click", openMissionHistorySheet);
       $("player-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
     }
     function closePlayerSheet() {
       $("player-sheet").classList.remove("open");
+      $("sheet-backdrop").classList.remove("open");
+    }
+
+    // ===== Family stats sheet =====
+    function openFamilySheet() {
+      $("family-sheet-body").innerHTML = renderMemberStatsHtml() || `<p class="muted" style="text-align:center;font-size:13px;">メンバー情報がありません</p>`;
+      $("family-sheet").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+    }
+    function closeFamilySheet() {
+      $("family-sheet").classList.remove("open");
+      $("sheet-backdrop").classList.remove("open");
+    }
+
+    // ===== Mission history sheet =====
+    function renderMissionHistoryHtml() {
+      const rows = [];
+      Object.entries(state.missionLogs).forEach(([mid, logs]) => {
+        const myLog = logs[state.uid];
+        if (!myLog || !(myLog.count > 0)) return;
+        const m = state.missions[mid];
+        const title = m ? m.title : "（終了済みミッション）";
+        const reward = m ? m.reward : 0;
+        const targetCount = m ? m.targetCount : "?";
+        const cleared = myLog.count >= (m ? m.targetCount : Infinity);
+        const paid = myLog.paid;
+        rows.push({ title, reward, count: myLog.count, targetCount, cleared, paid, claimedAt: myLog.claimedAt || 0 });
+      });
+      if (!rows.length) return emptyHtml("まだミッション履歴がありません。");
+      rows.sort((a, b) => b.claimedAt - a.claimedAt);
+      return rows.map(r => `
+        <div class="row" style="padding:10px 4px;border-bottom:1px solid var(--border);gap:10px;align-items:center;">
+          <div class="grow">
+            <div style="font-size:14px;font-weight:700;">${escapeHtml(r.title)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">${r.count} / ${r.targetCount}回 達成${r.reward ? ` ・ 💰${Number(r.reward).toLocaleString()}円` : ''}</div>
+          </div>
+          <span style="font-size:12px;font-weight:700;${r.paid ? 'color:var(--c-done)' : r.cleared ? 'color:var(--c-claimed)' : 'color:var(--muted)'}">
+            ${r.paid ? '✅ 報酬済' : r.cleared ? '🎉 達成' : '進行中'}
+          </span>
+        </div>
+      `).join("");
+    }
+    function openMissionHistorySheet() {
+      $("mission-history-body").innerHTML = renderMissionHistoryHtml();
+      $("mission-history-sheet").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+    }
+    function closeMissionHistorySheet() {
+      $("mission-history-sheet").classList.remove("open");
       $("sheet-backdrop").classList.remove("open");
     }
 
@@ -3063,6 +3146,8 @@
       $("btn-player-sheet-close").addEventListener("click", closePlayerSheet);
       $("btn-open-history").addEventListener("click", openHistorySheet);
       $("btn-history-close").addEventListener("click", closeHistorySheet);
+      $("btn-family-close").addEventListener("click", closeFamilySheet);
+      $("btn-mission-history-close").addEventListener("click", closeMissionHistorySheet);
       $("btn-howto").addEventListener("click", openHowto);
       $("btn-howto-close").addEventListener("click", closeHowto);
       $("howto-modal-backdrop").addEventListener("click", closeHowto);
@@ -3086,7 +3171,7 @@
         else openSheet();
       });
       $("btn-sheet-close").addEventListener("click", closeSheet);
-      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); });
+      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); });
       $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else addRequest(); });
       $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
