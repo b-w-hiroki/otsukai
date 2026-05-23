@@ -133,6 +133,14 @@
     }
     .topbar .title { font-size: 15px; font-weight: 800; flex: 1; min-width: 0; letter-spacing: -0.4px; display: flex; align-items: center; gap: 5px; }
     .topbar .family-name { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .topbar-player-btn {
+      display: flex; align-items: center; gap: 10px;
+      background: transparent; border: none; box-shadow: none;
+      padding: 4px 8px 4px 2px; border-radius: var(--r-md);
+      transition: background .15s; cursor: pointer;
+    }
+    .topbar-player-btn:hover { background: var(--surface-2); transform: none; box-shadow: none; }
+    .topbar-player-info { text-align: left; }
     .role-badge { font-size: 15px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--pri-soft); color: var(--pri); letter-spacing: 0; white-space: nowrap; }
 
     /* ======= Avatar ======= */
@@ -891,50 +899,26 @@
   <!-- Screen: Main app -->
   <div id="screen-main" class="screen">
     <div class="topbar">
-      <div class="avatar" id="my-avatar">🙂</div>
-      <div class="grow">
-        <div class="title" id="top-family-name"><span id="top-family-text">家族</span><span id="top-role-badge" class="role-badge" style="display:none;"></span></div>
-      </div>
+      <button id="btn-player-profile" class="topbar-player-btn" aria-label="プレイヤー情報">
+        <div class="avatar" id="my-avatar">🙂</div>
+        <div class="topbar-player-info">
+          <div class="title" id="top-family-name"><span id="top-family-text">家族</span><span id="top-role-badge" class="role-badge" style="display:none;"></span></div>
+        </div>
+      </button>
+      <div class="grow"></div>
       <button id="btn-howto" class="howto-btn" style="display:none;" aria-label="使い方">？</button>
     </div>
 
     <div class="app">
       <!-- Tab: Requests -->
       <section id="tab-requests" class="tab active">
-        <!-- セグメント切り替え -->
-        <div class="seg-control">
-          <button class="seg-btn active" data-seg="list">🛒 買い物リスト</button>
-          <button class="seg-btn" data-seg="going">🏃 買いに行く</button>
-          <button class="seg-btn" data-seg="history">📊 履歴</button>
+        <div id="shortcut-area" class="shortcut-area" style="display:none;">
+          <div class="shortcut-area-label">⚡ よく買うもの（タップで即追加）</div>
+          <div id="shortcut-chips" class="shortcut-chips"></div>
         </div>
-
-        <!-- 買い物リスト（未担当） -->
-        <div id="requests-list-view">
-          <div id="shortcut-area" class="shortcut-area" style="display:none;">
-            <div class="shortcut-area-label">⚡ よく買うもの（タップで即追加）</div>
-            <div id="shortcut-chips" class="shortcut-chips"></div>
-          </div>
-          <div id="list-open"></div>
-        </div>
-
-        <!-- 買いに行く（担当中・完了） -->
-        <div id="requests-going-view" style="display:none;">
-          <div id="list-claimed"></div>
-          <div id="list-done"></div>
-        </div>
-
-        <!-- 履歴ビュー -->
-        <div id="requests-history-view" style="display:none;">
-          <div class="card">
-            <h2>📊 家族の貢献</h2>
-            <p class="muted">これまでの依頼・受託・完了の回数です。</p>
-            <div id="member-stats"></div>
-          </div>
-          <div class="card">
-            <h2>📜 完了履歴</h2>
-            <div id="history-list"></div>
-          </div>
-        </div>
+        <div id="list-open"></div>
+        <div id="list-claimed"></div>
+        <div id="list-done"></div>
       </section>
 
       <!-- Tab: Stock -->
@@ -1179,6 +1163,18 @@
           </div>
           <button id="btn-add-stock">追加する</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Player profile sheet -->
+    <div id="player-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title" id="player-sheet-title">プレイヤー情報</div>
+          <button id="btn-player-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div id="player-sheet-body"></div>
       </div>
     </div>
 
@@ -2241,15 +2237,9 @@
 
       const hasAny = open.length + claimed.length + done.length > 0;
       $("btn-howto").style.display = hasAny ? "" : "none";
-      $("list-open").innerHTML = open.length ? open.map((r,i) => openCard(r,i)).join("") : (hasAny ? '<div class="empty"><div class="empty-icon">🎉</div>全部担当済みです！</div>' : howtoHtml());
-      $("list-claimed").innerHTML = claimed.length ? claimed.map((r,i) => claimedCard(r,i)).join("") : '<div class="empty"><div class="empty-icon">🏪</div>買いに行っている人はいません</div>';
+      $("list-open").innerHTML = open.length ? open.map((r,i) => openCard(r,i)).join("") : (!hasAny ? howtoHtml() : "");
+      $("list-claimed").innerHTML = claimed.length ? sectionHtml("🏃 買いに行く", claimed.length, claimed.map((r,i) => claimedCard(r,i)).join("")) : "";
       $("list-done").innerHTML = done.length ? sectionHtml("✅ 今日完了", done.length, done.map((r,i) => doneCard(r,i)).join("")) : "";
-
-      // 「買いに行く」タブのバッジ
-      const goingBtn = document.querySelector('.seg-btn[data-seg="going"]');
-      if (goingBtn) {
-        goingBtn.textContent = claimed.length > 0 ? `🏃 買いに行く (${claimed.length})` : "🏃 買いに行く";
-      }
 
       wireRequestButtons();
     }
@@ -2419,32 +2409,30 @@
       });
     }
 
-    function renderHistory() {
+    function renderHistoryHtml() {
       const items = Object.entries(state.requests)
         .filter(([,r]) => r.status === "done")
         .sort((a,b) => (b[1].completedAt || 0) - (a[1].completedAt || 0))
         .slice(0, 50);
-      if (!items.length) {
-        $("history-list").innerHTML = emptyHtml("まだ完了履歴がありません。");
-        return;
-      }
-      $("history-list").innerHTML = items.map(([id, r]) => {
+      if (!items.length) return emptyHtml("まだ完了履歴がありません。");
+      return items.map(([id, r]) => {
         const d = new Date(r.completedAt || 0);
         const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
         return `
-          <div class="row" style="padding:8px 4px; border-bottom: 1px solid var(--line);">
-            <span class="muted" style="width:48px;">${dateStr}</span>
-            <span class="grow">${escapeHtml(r.name)}</span>
+          <div class="row" style="padding:8px 4px; border-bottom: 1px solid var(--border);">
+            <span class="muted" style="width:40px;flex-shrink:0;">${dateStr}</span>
+            <span class="grow" style="font-size:14px;">${escapeHtml(r.name)}</span>
             <span class="tiny">${memberEmoji(r.requestedBy)}→${memberEmoji(r.completedBy)}</span>
           </div>
         `;
       }).join("");
     }
+    function renderHistory() {} // 互換性のため残置（履歴はプレイヤーシートで表示）
 
-    function renderMemberStats() {
-      if (!state.family || !state.family.members) return;
+    function renderMemberStatsHtml() {
+      if (!state.family || !state.family.members) return "";
       const members = state.family.members;
-      const html = Object.entries(members).map(([uid, m]) => {
+      return Object.entries(members).map(([uid, m]) => {
         const s = state.stats[uid] || {};
         return `
           <div class="stat-card">
@@ -2461,8 +2449,8 @@
           </div>
         `;
       }).join("");
-      $("member-stats").innerHTML = html;
     }
+    function renderMemberStats() {} // 互換性のため残置
 
     function renderSettings() {
       if (!state.profile || !state.family) return;
@@ -2513,18 +2501,45 @@
       document.title = (openCount > 0 ? `(${openCount}) ` : "") + "🧺 おうちのおつかい";
     }
 
-    // ===== Segmented control (requests sub-tab) =====
-    let reqSubTab = "list";
-    function wireSegControl() {
-      document.querySelectorAll(".seg-btn[data-seg]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          reqSubTab = btn.dataset.seg;
-          document.querySelectorAll(".seg-btn[data-seg]").forEach(b => b.classList.toggle("active", b === btn));
-          $("requests-list-view").style.display = reqSubTab === "list" ? "" : "none";
-          $("requests-going-view").style.display = reqSubTab === "going" ? "" : "none";
-          $("requests-history-view").style.display = reqSubTab === "history" ? "" : "none";
-        });
-      });
+    // ===== Player profile sheet =====
+    function openPlayerSheet() {
+      const body = $("player-sheet-body");
+      const name = state.profile ? state.profile.name : "ゲスト";
+      const emoji = state.profile ? (state.profile.emoji || "🙂") : "🙂";
+      const roleLabel = state.myRole ? ({ parent: "保護者", child: "こども" }[state.myRole] || "") : "";
+      // 自分のスタッツ
+      const myStats = (state.family && state.family.stats && state.family.stats[state.uid]) || {};
+      const req = myStats.requestedCount || 0;
+      const cl = myStats.claimedCount || 0;
+      const done = myStats.completedCount || 0;
+      // メンバー全員のスタッツ
+      const memberStatsHtml = renderMemberStatsHtml();
+      // 完了履歴
+      const historyHtml = renderHistoryHtml();
+      body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:14px;padding:4px 0 20px;">
+          <div class="avatar" style="width:56px;height:56px;font-size:28px;box-shadow:none;background:var(--pri-soft);">${emoji}</div>
+          <div>
+            <div style="font-size:20px;font-weight:800;letter-spacing:-0.5px;">${escapeHtml(name)}</div>
+            ${roleLabel ? `<div style="margin-top:4px;"><span class="role-badge">${roleLabel}</span></div>` : ""}
+          </div>
+        </div>
+        <div class="stat-grid" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:20px;">
+          <div class="stat"><b>${req}</b><span>依頼</span></div>
+          <div class="stat"><b>${cl}</b><span>担当</span></div>
+          <div class="stat"><b>${done}</b><span>完了</span></div>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">家族の貢献</div>
+        <div id="player-member-stats">${memberStatsHtml}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin:20px 0 10px;">完了履歴</div>
+        <div id="player-history-list">${historyHtml}</div>
+      `;
+      $("player-sheet").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+    }
+    function closePlayerSheet() {
+      $("player-sheet").classList.remove("open");
+      $("sheet-backdrop").classList.remove("open");
     }
 
     // ===== Tabs =====
@@ -2555,6 +2570,8 @@
       $("btn-save-profile").addEventListener("click", saveProfile);
       $("btn-create-family").addEventListener("click", createFamily);
       $("btn-join-family").addEventListener("click", joinFamily);
+      $("btn-player-profile").addEventListener("click", openPlayerSheet);
+      $("btn-player-sheet-close").addEventListener("click", closePlayerSheet);
       $("btn-howto").addEventListener("click", openHowto);
       $("btn-howto-close").addEventListener("click", closeHowto);
       $("howto-modal-backdrop").addEventListener("click", closeHowto);
@@ -2565,7 +2582,7 @@
         else openSheet();
       });
       $("btn-sheet-close").addEventListener("click", closeSheet);
-      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); });
+      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); });
       $("btn-add-request").addEventListener("click", addRequest);
       $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
@@ -2619,7 +2636,6 @@
     function init() {
       wireGlobalEvents();
       wireTabs();
-      wireSegControl();
       if (!isConfigured) {
         showScreen("config");
         return;
