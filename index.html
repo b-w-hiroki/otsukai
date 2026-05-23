@@ -1066,6 +1066,7 @@
             <div id="set-emoji-picker" class="emoji-picker"></div>
             <button id="btn-update-profile">更新</button>
           </div>
+          <button id="btn-open-history" class="ghost" style="width:100%;margin-top:12px;">📋 完了履歴を見る</button>
         </div>
         <div class="card">
           <h2>👨‍👩‍👧‍👦 家族</h2>
@@ -1288,6 +1289,18 @@
           </div>
           <button id="btn-add-stock">追加する</button>
         </div>
+      </div>
+    </div>
+
+    <!-- History sheet -->
+    <div id="history-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">📋 完了履歴</div>
+          <button id="btn-history-close" class="sheet-close">✕</button>
+        </div>
+        <div id="history-list" style="overflow-y:auto;padding-bottom:16px;"></div>
       </div>
     </div>
 
@@ -2955,6 +2968,17 @@
       document.title = (openCount > 0 ? `(${openCount}) ` : "") + "🧺 おうちのおつかい";
     }
 
+    // ===== History sheet =====
+    function openHistorySheet() {
+      $("history-list").innerHTML = renderHistoryHtml();
+      $("history-sheet").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+    }
+    function closeHistorySheet() {
+      $("history-sheet").classList.remove("open");
+      $("sheet-backdrop").classList.remove("open");
+    }
+
     // ===== Player profile sheet =====
     function openPlayerSheet() {
       const body = $("player-sheet-body");
@@ -2968,8 +2992,6 @@
       const done = myStats.completedCount || 0;
       // メンバー全員のスタッツ
       const memberStatsHtml = renderMemberStatsHtml();
-      // 完了履歴
-      const historyHtml = renderHistoryHtml();
       body.innerHTML = `
         <div style="display:flex;align-items:center;gap:14px;padding:4px 0 20px;">
           <div class="avatar" style="width:56px;height:56px;font-size:28px;box-shadow:none;background:var(--pri-soft);">${emoji}</div>
@@ -2985,8 +3007,6 @@
         </div>
         <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">家族の貢献</div>
         <div id="player-member-stats">${memberStatsHtml}</div>
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin:20px 0 10px;">完了履歴</div>
-        <div id="player-history-list">${historyHtml}</div>
       `;
       $("player-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
@@ -3028,6 +3048,8 @@
       $("btn-join-family").addEventListener("click", joinFamily);
       $("btn-player-profile").addEventListener("click", openPlayerSheet);
       $("btn-player-sheet-close").addEventListener("click", closePlayerSheet);
+      $("btn-open-history").addEventListener("click", openHistorySheet);
+      $("btn-history-close").addEventListener("click", closeHistorySheet);
       $("btn-howto").addEventListener("click", openHowto);
       $("btn-howto-close").addEventListener("click", closeHowto);
       $("howto-modal-backdrop").addEventListener("click", closeHowto);
@@ -3051,7 +3073,7 @@
         else openSheet();
       });
       $("btn-sheet-close").addEventListener("click", closeSheet);
-      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); });
+      $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); });
       $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else addRequest(); });
       $("btn-add-shortcut").addEventListener("click", addShortcut);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
