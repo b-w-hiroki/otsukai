@@ -1100,22 +1100,6 @@
           </label>
         </div>
         <div class="card">
-          <h2>🎯 ミッションの役割</h2>
-          <p class="muted" id="role-current-label" style="font-size:12px;"></p>
-          <div class="role-picker">
-            <button class="role-btn" id="role-btn-parent" data-role="parent">
-              <span class="role-icon">👨‍👩‍👧</span>
-              <span>親</span>
-              <span class="tiny">ミッションを作る</span>
-            </button>
-            <button class="role-btn" id="role-btn-child" data-role="child">
-              <span class="role-icon">👧</span>
-              <span>子ども</span>
-              <span class="tiny">ミッションをこなす</span>
-            </button>
-          </div>
-        </div>
-        <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
         </div>
       </section>
@@ -1307,6 +1291,18 @@
       </div>
     </div>
 
+    <!-- Player profile sheet -->
+    <div id="player-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title" id="player-sheet-title">プレイヤー情報</div>
+          <button id="btn-player-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div id="player-sheet-body"></div>
+      </div>
+    </div>
+
     <!-- Family stats sheet -->
     <div id="family-sheet" class="sheet">
       <div class="sheet-handle"></div>
@@ -1340,18 +1336,6 @@
           <button id="btn-history-close" class="sheet-close">✕</button>
         </div>
         <div id="history-list" style="overflow-y:auto;padding-bottom:16px;"></div>
-      </div>
-    </div>
-
-    <!-- Player profile sheet -->
-    <div id="player-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title" id="player-sheet-title">プレイヤー情報</div>
-          <button id="btn-player-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div id="player-sheet-body"></div>
       </div>
     </div>
 
@@ -1626,8 +1610,8 @@
       }
       const ts = now();
       await db.ref("families/" + familyId).set({
-        meta: { name, createdAt: ts, inviteCode: code },
-        members: { [state.uid]: { name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "admin" } }
+        meta: { name, createdAt: ts, inviteCode: code, createdBy: state.uid },
+        members: { [state.uid]: { name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "admin", memberRole: "parent" } }
       });
       await db.ref("invites/" + code).set(familyId);
       await db.ref("users/" + state.uid + "/familyId").set(familyId);
@@ -1643,7 +1627,7 @@
         if (!familyId) return showFamilyError("招待コードが見つかりません");
         const ts = now();
         await db.ref(`families/${familyId}/members/${state.uid}`).set({
-          name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "member"
+          name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "member", memberRole: "child"
         });
         await db.ref("users/" + state.uid + "/familyId").set(familyId);
         state.familyId = familyId;
@@ -2452,34 +2436,14 @@
       if (!el || !state.profile) return;
       const role = state.myRole;
       if (!role) {
-        el.innerHTML = `
-          <div class="card" style="text-align:center; padding:24px 20px;">
-            <div style="font-size:48px;margin-bottom:12px;">🎯</div>
-            <h2 style="margin-bottom:8px;">親子ミッション</h2>
-            <p class="muted" style="margin-bottom:16px;">まずあなたの役割を選んでください</p>
-            <div class="role-picker">
-              <button class="role-btn" data-role-pick="parent">
-                <span class="role-icon">👨‍👩‍👧</span>
-                <span>親</span>
-                <span class="tiny">ミッションを作る</span>
-              </button>
-              <button class="role-btn" data-role-pick="child">
-                <span class="role-icon">👧</span>
-                <span>子ども</span>
-                <span class="tiny">ミッションをこなす</span>
-              </button>
-            </div>
-          </div>`;
-        el.querySelectorAll(".role-btn[data-role-pick]").forEach(btn => {
-          btn.addEventListener("click", () => saveMyRole(btn.dataset.rolePick));
-        });
+        el.innerHTML = `<div class="empty">ロールが設定されていません。<br>家族設定を確認してください。</div>`;
         return;
       }
       const activeMissions = Object.entries(state.missions)
         .filter(([, m]) => m.status === "active")
         .map(([mid, m]) => ({ mid, ...m }))
         .sort((a, b) => a.createdAt - b.createdAt);
-      if (role === "parent") {
+      if (isParent()) {
         renderMissionsParent(el, activeMissions);
       } else {
         renderMissionsChild(el, activeMissions);
@@ -2575,7 +2539,7 @@
       const badge = $("badge-missions");
       if (!badge) return;
       let count = 0;
-      if (state.myRole === "parent") {
+      if (isParent()) {
         // 達成済み（おこづかいを渡す待ち）のミッション数
         Object.entries(state.missions).forEach(([mid, m]) => {
           if (m.status !== "active" || !m.assignedTo) return;
@@ -2599,7 +2563,8 @@
     }
 
     // ===== Rendering =====
-    const ROLE_LABEL = { parent: "保護者", child: "こども" };
+    const ROLE_LABEL = { parent: "保護者", "sub-parent": "副保護者", child: "こども" };
+    function isParent() { return state.myRole === "parent" || state.myRole === "sub-parent"; }
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
       $("top-family-text").textContent = state.family.meta.name || "家族";
@@ -3005,23 +2970,33 @@
 
     function renderMemberStatsHtml() {
       if (!state.family || !state.family.members) return "";
+      const canManage = state.myRole === "parent";
       const members = state.family.members;
       return Object.entries(members).map(([uid, m]) => {
         const s = state.stats[uid] || {};
+        const roleLabel = ROLE_LABEL[m.memberRole] || "未設定";
+        const isMe = uid === state.uid;
+        const manageHtml = (canManage && !isMe) ? `
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <button class="ghost tiny-btn" style="font-size:11px;" data-set-role="${uid}" data-role-val="sub-parent">副保護者</button>
+            <button class="ghost tiny-btn" style="font-size:11px;" data-set-role="${uid}" data-role-val="child">子ども</button>
+          </div>` : "";
         return `
           <div class="stat-card">
-            <div class="row">
-              <div class="avatar">${m.emoji || "👤"}</div>
-              <div class="grow"><b>${escapeHtml(m.name)}</b></div>
-              ${uid === state.uid ? '<span class="tiny">あなた</span>' : ''}
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+              <span style="font-size:28px;">${m.emoji || "👤"}</span>
+              <div>
+                <div style="font-weight:700;font-size:14px;">${escapeHtml(m.name || "メンバー")}${isMe ? " <span style='color:var(--muted);font-size:11px;'>(自分)</span>" : ""}</div>
+                <div style="font-size:11px;color:var(--muted);">${roleLabel}</div>
+              </div>
             </div>
-            <div class="stat-grid">
+            <div class="stat-grid" style="margin-top:0;padding-top:8px;border-top:1px solid var(--border);">
               <div class="stat"><b>${s.requestedCount || 0}</b><span>依頼</span></div>
-              <div class="stat"><b>${s.claimedCount || 0}</b><span>受託</span></div>
+              <div class="stat"><b>${s.claimedCount || 0}</b><span>担当</span></div>
               <div class="stat"><b>${s.completedCount || 0}</b><span>完了</span></div>
             </div>
-          </div>
-        `;
+            ${manageHtml}
+          </div>`;
       }).join("");
     }
     function renderMemberStats() {} // 互換性のため残置
@@ -3040,13 +3015,6 @@
           ${escapeHtml(m.name)}${uid === state.uid ? "（自分）" : ""}
         </span>
       `).join("");
-      // Update role picker highlight
-      const role = state.myRole;
-      const roleLabelEl = $("role-current-label");
-      if (roleLabelEl) roleLabelEl.textContent = role === "parent" ? "現在: 親" : role === "child" ? "現在: 子ども" : "未設定";
-      document.querySelectorAll(".role-btn[data-role]").forEach(btn => {
-        btn.classList.toggle("selected", btn.dataset.role === role);
-      });
     }
 
     function renderEmojiPicker(elId, stateKey) {
@@ -3091,7 +3059,7 @@
       const body = $("player-sheet-body");
       const name = state.profile ? state.profile.name : "ゲスト";
       const emoji = state.profile ? (state.profile.emoji || "🙂") : "🙂";
-      const roleLabel = state.myRole ? ({ parent: "保護者", child: "こども" }[state.myRole] || "") : "";
+      const roleLabel = state.myRole ? (ROLE_LABEL[state.myRole] || "") : "";
       const myStats = state.stats[state.uid] || {};
       const req = myStats.requestedCount || 0;
       const cl = myStats.claimedCount || 0;
@@ -3135,7 +3103,17 @@
 
     // ===== Family stats sheet =====
     function openFamilySheet() {
-      $("family-sheet-body").innerHTML = renderMemberStatsHtml() || `<p class="muted" style="text-align:center;font-size:13px;">メンバー情報がありません</p>`;
+      const html = renderMemberStatsHtml() || `<p class="muted" style="text-align:center;font-size:13px;">メンバー情報がありません</p>`;
+      $("family-sheet-body").innerHTML = html;
+      // Wire role management buttons (parent only)
+      $("family-sheet-body").querySelectorAll("[data-set-role]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const targetUid = btn.dataset.setRole;
+          const newRole = btn.dataset.roleVal;
+          await familyRef().child(`members/${targetUid}/memberRole`).set(newRole);
+          showToast(newRole === "sub-parent" ? "副保護者に設定しました" : "子どもに設定しました", { sound: false });
+        });
+      });
       $("family-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
     }
@@ -3236,7 +3214,7 @@
       $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
       $("fab-add").addEventListener("click", () => {
         if (state.activeTab === "stock") openStockSheet();
-        else if (state.activeTab === "missions" && state.myRole === "parent") openMissionSheet();
+        else if (state.activeTab === "missions" && isParent()) openMissionSheet();
         else if (state.activeTab === "missions") { /* child: nothing */ }
         else openSheet();
       });
@@ -3274,10 +3252,6 @@
       $("btn-mission-sheet-close").addEventListener("click", closeMissionSheet);
       $("btn-add-mission").addEventListener("click", addMission);
       $("mission-title-input").addEventListener("keydown", (e) => { if (e.key === "Enter") $("mission-target").focus(); });
-      // Settings role buttons
-      document.querySelectorAll(".role-btn[data-role]").forEach(btn => {
-        btn.addEventListener("click", () => saveMyRole(btn.dataset.role));
-      });
       document.querySelectorAll(".slp-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
           stockAddLevel = btn.dataset.lvl;
