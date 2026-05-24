@@ -349,16 +349,19 @@
     .shortcut-chips-empty { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
     .shortcut-add-row { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px; }
     .shortcut-chip {
-      display: inline-flex; align-items: center; gap: 4px;
+      position: relative; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px;
       background: var(--pri-soft); color: var(--pri);
-      border-radius: var(--r-full); padding: 6px 8px 6px 14px;
+      border-radius: var(--r-md); padding: 7px 28px 7px 14px;
       font-size: 13px; font-weight: 600; cursor: pointer; user-select: none;
       border: 1.5px solid var(--pri-mid); box-shadow: 0 1px 4px rgba(99,102,241,0.10);
       transition: background .12s, box-shadow .12s, transform .12s;
     }
     .shortcut-chip:hover { background: #e5e4fa; box-shadow: 0 3px 10px rgba(99,102,241,0.18); transform: translateY(-1px); }
     .shortcut-chip:active { transform: scale(0.96); }
+    .shortcut-chip-label { display: flex; align-items: center; gap: 4px; width: 100%; }
+    .shortcut-chip-hints { font-size: 10px; font-weight: 600; color: var(--pri-dark); opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
     .chip-delete {
+      position: absolute; top: 4px; right: 4px;
       background: transparent; border: none; color: var(--pri-mid); font-size: 15px;
       padding: 0 2px; cursor: pointer; line-height: 1; border-radius: 50%;
       width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
@@ -1181,8 +1184,7 @@
       <div id="shortcut-panel" class="shortcut-panel">
         <div id="shortcut-chips" class="shortcut-chips"></div>
         <div class="shortcut-add-row">
-          <input id="shortcut-new-name" placeholder="新しく追加..." maxlength="40" style="flex:1;font-size:13px;padding:7px 10px;" />
-          <button id="btn-shortcut-register" class="ghost" style="white-space:nowrap;font-size:13px;padding:7px 12px;">＋ 登録</button>
+          <button id="btn-shortcut-register" class="ghost" style="width:100%;font-size:13px;padding:9px 12px;">＋ よく買うものを登録</button>
         </div>
       </div>
     </div>
@@ -1450,6 +1452,7 @@
 
     const expandedGroups = new Set(["group-open", "group-mine"]);
     let editingRequestId = null;
+    let shortcutMode = false;
 
     const $ = (id) => document.getElementById(id);
     const now = () => Date.now();
@@ -1892,6 +1895,7 @@
     // ===== Bottom sheet =====
     function resetSheetToAddMode() {
       editingRequestId = null;
+      shortcutMode = false;
       document.querySelector("#sheet-add .sheet-title").textContent = "🛍️ おつかいを追加";
       $("btn-add-request").textContent = "追加する";
       $("new-name").value = "";
@@ -2018,6 +2022,10 @@
     async function addFromShortcut(s) {
       const id = familyRef().child("requests").push().key;
       const req = { name: s.name, diff: s.diff || "normal", urgent: s.urgent || false, status: "open", requestedBy: state.uid, requestedAt: now() };
+      if (s.memo) req.memo = s.memo;
+      if (s.budget > 0) req.budget = s.budget;
+      if (s.brand) req.brand = s.brand;
+      if (s.assignedTo) req.assignedTo = s.assignedTo;
       await familyRef().child("requests/" + id).set(req);
       await bumpStat("requestedCount");
       showToast(`🛒 「${s.name}」を追加しました`);
@@ -2027,14 +2035,55 @@
       if (!wrap) return;
       wrap.style.display = state.activeTab === "requests" ? "flex" : "none";
     }
-    async function addShortcutFromPanel() {
-      const input = $("shortcut-new-name");
-      const name = input.value.trim();
+    function openShortcutRegisterSheet() {
+      shortcutMode = true;
+      editingRequestId = null;
+      closeShortcutPanel();
+      // メンバーセレクトを再構築
+      const sel = $("new-assignee");
+      sel.innerHTML = '<option value="">👥 誰でもOK（指名なし）</option>';
+      const members = state.family && state.family.members ? state.family.members : {};
+      Object.entries(members).forEach(([uid, m]) => {
+        if (uid === state.uid) return;
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = (m.emoji || "👤") + " " + (m.name || uid);
+        sel.appendChild(opt);
+      });
+      // フィールドをクリア
+      $("new-name").value = "";
+      $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
+      $("new-urgent").checked = false;
+      $("new-diff").value = "normal";
+      $("new-assignee").value = "";
+      // ショートカット登録モード UI
+      document.querySelector("#sheet-add .sheet-title").textContent = "⭐ よく買うものを登録";
+      $("btn-add-request").textContent = "登録する";
+      $("sheet-add").classList.add("open");
+      $("sheet-backdrop").classList.add("open");
+      $("fab-add").classList.add("open");
+      setTimeout(() => $("new-name").focus(), 350);
+    }
+    async function addShortcutFromSheet() {
+      const name = $("new-name").value.trim();
       if (!name) return showToast("品名を入力してください");
+      const diff = $("new-diff").value;
+      const urgent = $("new-urgent").checked;
+      const memo = $("new-memo").value.trim();
+      const budget = parseInt($("new-budget").value, 10);
+      const brand = $("new-brand").value.trim();
+      const assignedTo = $("new-assignee").value;
+      const entry = { name, diff, urgent: urgent || false, createdAt: now(), createdBy: state.uid };
+      if (memo) entry.memo = memo;
+      if (budget > 0) entry.budget = budget;
+      if (brand) entry.brand = brand;
+      if (assignedTo) entry.assignedTo = assignedTo;
       const ref = familyRef().child("shortcuts").push();
-      await ref.set({ name, diff: "normal", urgent: false, createdAt: now(), createdBy: state.uid });
-      input.value = "";
-      showToast(`⭐ 「${name}」を登録しました`);
+      await ref.set(entry);
+      closeSheet();
+      showToast(`⭐ 「${name}」をよく買うものに登録しました`);
     }
     function renderShortcuts() {
       const wrap = $("shortcut-float-wrap");
@@ -2046,14 +2095,24 @@
       const count = entries.length;
       btn.innerHTML = `<span style="font-size:17px;line-height:1;">⚡</span> よく買うもの${count ? ` <span style="background:rgba(255,255,255,0.25);border-radius:99px;padding:1px 7px;font-size:11px;font-weight:800;">${count}</span>` : ''}`;
       if (!count) {
-        chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。下の入力欄から追加してください。</p>`;
+        chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。「＋ よく買うものを登録」から追加してください。</p>`;
       } else {
-        chips.innerHTML = entries.map(([id, s]) => `
+        chips.innerHTML = entries.map(([id, s]) => {
+          const hints = [];
+          if (s.budget > 0) hints.push(`💰${Number(s.budget).toLocaleString()}円`);
+          if (s.brand) hints.push(`🏷️${escapeHtml(s.brand)}`);
+          if (s.assignedTo) {
+            const m = (state.family && state.family.members && state.family.members[s.assignedTo]);
+            if (m) hints.push(`👤${escapeHtml(m.name || '')}`);
+          }
+          const hintHtml = hints.length ? `<span class="shortcut-chip-hints">${hints.join(' ')}</span>` : '';
+          return `
           <button class="shortcut-chip" data-sid="${id}">
-            ${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}
+            <span class="shortcut-chip-label">${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}</span>
+            ${hintHtml}
             <span class="chip-delete" data-del="${id}" role="button" aria-label="削除">×</span>
-          </button>
-        `).join("");
+          </button>`;
+        }).join("");
       }
       chips.querySelectorAll(".shortcut-chip").forEach(chip => {
         chip.addEventListener("click", (e) => {
@@ -3183,9 +3242,8 @@
       });
       $("btn-sheet-close").addEventListener("click", closeSheet);
       $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); });
-      $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else addRequest(); });
-      $("btn-shortcut-register").addEventListener("click", addShortcutFromPanel);
-      $("shortcut-new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addShortcutFromPanel(); });
+      $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
+      $("btn-shortcut-register").addEventListener("click", openShortcutRegisterSheet);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
       $("btn-logout").addEventListener("click", signOut);
       $("btn-copy-code").addEventListener("click", async () => {
