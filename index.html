@@ -344,7 +344,10 @@
       border: 1px solid rgba(255,255,255,0.88);
     }
     .shortcut-area-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
-    .shortcut-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .shortcut-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 0; }
+    .shortcut-chips:empty { margin-bottom: 0; }
+    .shortcut-chips-empty { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .shortcut-add-row { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px; }
     .shortcut-chip {
       display: inline-flex; align-items: center; gap: 4px;
       background: var(--pri-soft); color: var(--pri);
@@ -885,12 +888,12 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       letter-spacing: -0.3px; color: var(--ink);
     }
-    .req-row-hints { display: flex; flex-wrap: nowrap; gap: 3px; overflow: hidden; }
+    .req-row-hints { display: flex; flex-wrap: wrap; gap: 3px 4px; margin-top: 1px; }
     .req-row-hint {
-      font-size: 13px; color: var(--ink-2); font-weight: 600;
+      font-size: 11px; color: var(--ink-2); font-weight: 600;
       background: var(--surface-2); border: 1px solid var(--border);
-      border-radius: var(--r-full); padding: 2px 9px;
-      max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      border-radius: var(--r-full); padding: 2px 8px;
+      white-space: nowrap;
     }
     .req-row.done .req-row-hint { opacity: 0.6; }
     .req-row-meta {
@@ -1177,6 +1180,10 @@
       <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買うもの</button>
       <div id="shortcut-panel" class="shortcut-panel">
         <div id="shortcut-chips" class="shortcut-chips"></div>
+        <div class="shortcut-add-row">
+          <input id="shortcut-new-name" placeholder="新しく追加..." maxlength="40" style="flex:1;font-size:13px;padding:7px 10px;" />
+          <button id="btn-shortcut-register" class="ghost" style="white-space:nowrap;font-size:13px;padding:7px 12px;">＋ 登録</button>
+        </div>
       </div>
     </div>
 
@@ -1258,7 +1265,6 @@
           </div>
           <div class="row" style="gap:8px;">
             <button id="btn-add-request" style="flex:1;">追加する</button>
-            <button id="btn-add-shortcut" class="ghost" style="white-space:nowrap;" title="入力内容をショートカット登録">⭐ 登録</button>
           </div>
         </div>
       </div>
@@ -2019,9 +2025,16 @@
     function updateShortcutVisibility() {
       const wrap = $("shortcut-float-wrap");
       if (!wrap) return;
-      const hasShortcuts = Object.keys(state.shortcuts).length > 0;
-      const onRequests = state.activeTab === "requests";
-      wrap.style.display = (hasShortcuts && onRequests) ? "block" : "none";
+      wrap.style.display = state.activeTab === "requests" ? "flex" : "none";
+    }
+    async function addShortcutFromPanel() {
+      const input = $("shortcut-new-name");
+      const name = input.value.trim();
+      if (!name) return showToast("品名を入力してください");
+      const ref = familyRef().child("shortcuts").push();
+      await ref.set({ name, diff: "normal", urgent: false, createdAt: now(), createdBy: state.uid });
+      input.value = "";
+      showToast(`⭐ 「${name}」を登録しました`);
     }
     function renderShortcuts() {
       const wrap = $("shortcut-float-wrap");
@@ -2030,14 +2043,18 @@
       if (!wrap || !btn || !chips) return;
       const entries = Object.entries(state.shortcuts);
       updateShortcutVisibility();
-      if (!entries.length) return;
-      btn.innerHTML = `⚡ よく買うもの <span style="background:var(--pri-soft);color:var(--pri);border-radius:99px;padding:1px 8px;font-size:11px;font-weight:800;">${entries.length}</span>`;
-      chips.innerHTML = entries.map(([id, s]) => `
-        <button class="shortcut-chip" data-sid="${id}">
-          ${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}
-          <span class="chip-delete" data-del="${id}" role="button" aria-label="削除">×</span>
-        </button>
-      `).join("");
+      const count = entries.length;
+      btn.innerHTML = `<span style="font-size:17px;line-height:1;">⚡</span> よく買うもの${count ? ` <span style="background:rgba(255,255,255,0.25);border-radius:99px;padding:1px 7px;font-size:11px;font-weight:800;">${count}</span>` : ''}`;
+      if (!count) {
+        chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。下の入力欄から追加してください。</p>`;
+      } else {
+        chips.innerHTML = entries.map(([id, s]) => `
+          <button class="shortcut-chip" data-sid="${id}">
+            ${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}
+            <span class="chip-delete" data-del="${id}" role="button" aria-label="削除">×</span>
+          </button>
+        `).join("");
+      }
       chips.querySelectorAll(".shortcut-chip").forEach(chip => {
         chip.addEventListener("click", (e) => {
           if (e.target.closest(".chip-delete")) return;
@@ -2717,7 +2734,8 @@
           : `<div class="empty" style="padding:12px 4px 8px;font-size:12px;">新しい依頼はありません</div>`;
         html += groupHtml("group-open", "🛒 買い物リスト", openItems.length, openBody);
         if (mineItems.length) {
-          html += groupHtml("group-mine", "🙋 自分のリスト", mineItems.length,
+          const myName = (state.profile && state.profile.name) ? state.profile.name : "自分";
+          html += groupHtml("group-mine", `🙋 ${myName}のリスト`, mineItems.length,
             mineItems.map((r, i) => compactCard(r, i)).join(""));
         }
         if (othersItems.length) {
@@ -3166,7 +3184,8 @@
       $("btn-sheet-close").addEventListener("click", closeSheet);
       $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); });
       $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else addRequest(); });
-      $("btn-add-shortcut").addEventListener("click", addShortcut);
+      $("btn-shortcut-register").addEventListener("click", addShortcutFromPanel);
+      $("shortcut-new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addShortcutFromPanel(); });
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
       $("btn-logout").addEventListener("click", signOut);
       $("btn-copy-code").addEventListener("click", async () => {
