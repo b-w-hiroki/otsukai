@@ -3170,7 +3170,6 @@
           state.activeTab = t;
           document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
           $("tab-" + t).classList.add("active");
-          window.scrollTo(0, 0);
           closeSheet();
           closeStockSheet();
           closeMissionSheet();
@@ -3179,6 +3178,15 @@
           renderBadge();
           renderStockBadge();
           renderMissionBadge();
+          // スクロールを最上部へ。モバイルの描画タイミング差で同期実行だけだと
+          // 効かない場合があるため、次フレームでも再実行する。
+          const scrollTop = () => {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+          };
+          scrollTop();
+          requestAnimationFrame(scrollTop);
         });
       });
     }
