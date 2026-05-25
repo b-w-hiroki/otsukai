@@ -3170,6 +3170,7 @@
           state.activeTab = t;
           document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
           $("tab-" + t).classList.add("active");
+          window.scrollTo(0, 0);
           closeSheet();
           closeStockSheet();
           closeMissionSheet();
