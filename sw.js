@@ -1,7 +1,7 @@
 // おうちのおつかい — Service Worker
 // ナビゲーションはネットワーク優先（オンライン時は常に最新）、
 // オフライン時のみキャッシュした index.html を返す。
-const CACHE = "otsukai-v1";
+const CACHE = "otsukai-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
