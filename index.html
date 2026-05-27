@@ -123,6 +123,43 @@
     .auth-tagline { font-size: 13px; color: rgba(255,255,255,0.68); margin: 0; font-weight: 600; position: relative; letter-spacing: 0.2px; }
     .auth-body { margin-top: -4px; position: relative; z-index: 1; padding: 0 16px; }
 
+    /* Auth: features / app description */
+    .auth-features { padding: 20px 0 4px; }
+    .auth-features-lead {
+      font-size: 14px; text-align: center; color: var(--ink-2);
+      margin: 0 0 14px; font-weight: 700; line-height: 1.7;
+    }
+    .auth-features-lead b { color: var(--pri-dark); }
+    .auth-feature-list {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: var(--shadow-card);
+      padding: 4px 14px;
+    }
+    .auth-feature {
+      display: flex; gap: 12px; align-items: center;
+      padding: 12px 2px;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .auth-feature:last-child { border-bottom: none; }
+    .auth-feature-icon {
+      font-size: 22px; line-height: 1;
+      width: 40px; height: 40px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--pri-soft), #e0e7ff);
+      border-radius: 12px;
+    }
+    .auth-feature-text b {
+      font-size: 13px; color: var(--ink);
+      display: block; margin-bottom: 2px;
+      font-weight: 800; letter-spacing: -0.2px;
+    }
+    .auth-feature-text p {
+      font-size: 12px; color: var(--muted);
+      margin: 0; line-height: 1.55;
+    }
+
     /* ======= Topbar ======= */
     .topbar {
       position: sticky; top: 0; z-index: 20;
@@ -974,7 +1011,44 @@
       <p class="auth-tagline">家族でリアルタイムにお買い物をシェア</p>
     </div>
     <div class="auth-body">
-      <div class="card" style="margin-top: 8px;">
+      <div class="auth-features">
+        <p class="auth-features-lead">
+          「あれ買ってきて」を、家族みんなのリストに。<br>
+          おつかい・在庫・ミッションを一つにまとめた<br>
+          <b>家族専用のおつかいアプリ</b>です。
+        </p>
+        <div class="auth-feature-list">
+          <div class="auth-feature">
+            <span class="auth-feature-icon">🛒</span>
+            <div class="auth-feature-text">
+              <b>頼みたい物が家族のスマホへ即同期</b>
+              <p>「卵が切れた」と入れた瞬間、外出中の家族の画面に届く。誰が引き受けたかも一目で分かる。</p>
+            </div>
+          </div>
+          <div class="auth-feature">
+            <span class="auth-feature-icon">📦</span>
+            <div class="auth-feature-text">
+              <b>家のストックを写真付きで管理</b>
+              <p>残量を「あり / 少ない / なし」で記録。買い忘れも買いすぎもなくなる。</p>
+            </div>
+          </div>
+          <div class="auth-feature">
+            <span class="auth-feature-icon">🎯</span>
+            <div class="auth-feature-text">
+              <b>子どもへのおつかいをミッション化</b>
+              <p>親が子に依頼、完了すると履歴に残る。お手伝いがちょっとした冒険になる。</p>
+            </div>
+          </div>
+          <div class="auth-feature">
+            <span class="auth-feature-icon">⚡</span>
+            <div class="auth-feature-text">
+              <b>よく買うものをワンタップで追加</b>
+              <p>定番品を登録しておけば、毎回の入力なしで即リスト化。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 16px;">
         <button id="btn-google" class="outline" style="width:100%; margin-bottom: 4px; font-size:14px;">
           <span style="font-weight:800;">G</span> &nbsp;Googleでログイン
         </button>
@@ -1055,15 +1129,12 @@
         <div id="list-open"></div>
         <div id="list-claimed"></div>
         <div id="list-done"></div>
-        <!-- 広告枠 (i-mobile)
-             下の <div class="ad-content"> 内に i-mobile 管理画面で発行された
-             スポットタグ (<script src="..." async></script>) を貼り付けると
-             自動で表示されます (中身が空のときは非表示)。 -->
+        <!-- 広告枠 (i-mobile「トップページ バナー」スポット)
+             initAdSlots() / injectImobileBanner() で SP/PC 別タグを端末判定して注入。
+             スポットIDの差し替えは index.html 末尾の initAdSlots() の引数で行う。 -->
         <div id="ad-slot-requests" class="ad-slot">
           <div class="ad-label">広告</div>
-          <div class="ad-content">
-            <!-- ここに i-mobile のスポットタグを貼り付け -->
-          </div>
+          <div class="ad-content"></div>
         </div>
       </section>
 
@@ -3292,9 +3363,43 @@
       }, 60000);
     }
 
-    // 広告枠: .ad-content の中身が空でなければ .ad-slot を表示する。
-    // 未契約・タグ未貼付のときは枠自体を出さないことで余白を作らない。
+    // i-mobile のバナータグを端末別に注入する。
+    // SP/PC 用タグを別サイト/別プラットフォームで併用するのは規約違反のため、
+    // 端末判定して片方だけを差し込む。
+    function injectImobileBanner(slotId, config) {
+      const slot = document.getElementById(slotId);
+      if (!slot) return;
+      const content = slot.querySelector(".ad-content");
+      if (!content || content.children.length > 0) return;
+      const isMobile = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)
+        || window.matchMedia("(max-width: 767px)").matches;
+      const variant = isMobile ? config.sp : config.pc;
+      const adDiv = document.createElement("div");
+      adDiv.id = variant.elementid;
+      content.appendChild(adDiv);
+      // spot.js は全スポットで共通なので一度だけ読み込む
+      if (!document.querySelector('script[data-imobile-loader]')) {
+        const loader = document.createElement("script");
+        loader.async = true;
+        loader.src = "https://imp-adedge.i-mobile.co.jp/script/v1/spot.js?20220104";
+        loader.setAttribute("data-imobile-loader", "1");
+        document.head.appendChild(loader);
+      }
+      const pushScript = document.createElement("script");
+      pushScript.text = '(window.adsbyimobile=window.adsbyimobile||[]).push({pid:'
+        + config.pid + ',mid:' + variant.mid + ',asid:' + variant.asid
+        + ',type:"banner",display:"inline",elementid:"' + variant.elementid + '"});';
+      document.head.appendChild(pushScript);
+    }
+
+    // 広告枠: スポットタグを注入し、.ad-content に中身があれば .ad-slot を表示する。
     function initAdSlots() {
+      // お買い物タブ末尾: i-mobile「トップページ バナー」
+      injectImobileBanner("ad-slot-requests", {
+        pid: 84969,
+        sp: { mid: 593255, asid: 1932938, elementid: "im-d0dd8eaf34ba46fcaaa603b7f68e0acc" },
+        pc: { mid: 593254, asid: 1932937, elementid: "im-68455a797ff34316a29423d6979d3d15" },
+      });
       document.querySelectorAll(".ad-slot").forEach((slot) => {
         const content = slot.querySelector(".ad-content");
         if (content && content.children.length > 0) {
