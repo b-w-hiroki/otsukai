@@ -1067,6 +1067,12 @@
         </div>
         <p id="auth-error" class="banner error" style="display:none; margin-top:12px; margin-bottom:0;"></p>
       </div>
+      <!-- 広告枠 (i-mobile「ログイン画面 バナー」スポット、要 新規スポット作成)
+           initAdSlots() の対応行のコメントを外して mid/asid を設定すると表示される。 -->
+      <div id="ad-slot-auth" class="ad-slot">
+        <div class="ad-label">広告</div>
+        <div class="ad-content"></div>
+      </div>
     </div>
   </div>
 
@@ -3398,6 +3404,12 @@
         pid: 84969,
         sp: { mid: 593255, asid: 1932938, elementid: "im-d0dd8eaf34ba46fcaaa603b7f68e0acc" },
         pc: { mid: 593254, asid: 1932937, elementid: "im-68455a797ff34316a29423d6979d3d15" },
+      });
+      // ログイン画面: i-mobile「ログイン画面 バナー」
+      injectImobileBanner("ad-slot-auth", {
+        pid: 84969,
+        sp: { mid: 593257, asid: 1932940, elementid: "im-ff2d5e1043d04affb90900196031d7cc" },
+        pc: { mid: 593256, asid: 1932939, elementid: "im-2f7e44594cec42cf857e64398b7496a4" },
       });
       document.querySelectorAll(".ad-slot").forEach((slot) => {
         const content = slot.querySelector(".ad-content");
