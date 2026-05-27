@@ -435,6 +435,12 @@
     /* ======= Empty state ======= */
     .empty { text-align: center; color: var(--muted); padding: 36px 20px; font-size: 13px; line-height: 1.9; }
 
+    /* ======= Ad slot ======= */
+    .ad-slot { display: none; margin: 24px auto 8px; text-align: center; }
+    .ad-slot.has-ad { display: block; }
+    .ad-slot .ad-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 6px; font-weight: 600; }
+    .ad-slot .ad-content { display: flex; justify-content: center; align-items: center; min-height: 50px; }
+
     /* ======= Tabs ======= */
     .tab { display: none; }
     .tab.active { display: block; animation: fadeUp .24s ease; }
@@ -1049,6 +1055,16 @@
         <div id="list-open"></div>
         <div id="list-claimed"></div>
         <div id="list-done"></div>
+        <!-- 広告枠 (i-mobile)
+             下の <div class="ad-content"> 内に i-mobile 管理画面で発行された
+             スポットタグ (<script src="..." async></script>) を貼り付けると
+             自動で表示されます (中身が空のときは非表示)。 -->
+        <div id="ad-slot-requests" class="ad-slot">
+          <div class="ad-label">広告</div>
+          <div class="ad-content">
+            <!-- ここに i-mobile のスポットタグを貼り付け -->
+          </div>
+        </div>
       </section>
 
       <!-- Tab: Stock -->
@@ -3276,9 +3292,21 @@
       }, 60000);
     }
 
+    // 広告枠: .ad-content の中身が空でなければ .ad-slot を表示する。
+    // 未契約・タグ未貼付のときは枠自体を出さないことで余白を作らない。
+    function initAdSlots() {
+      document.querySelectorAll(".ad-slot").forEach((slot) => {
+        const content = slot.querySelector(".ad-content");
+        if (content && content.children.length > 0) {
+          slot.classList.add("has-ad");
+        }
+      });
+    }
+
     function init() {
       wireGlobalEvents();
       wireTabs();
+      initAdSlots();
       if (!isConfigured) {
         showScreen("config");
         return;

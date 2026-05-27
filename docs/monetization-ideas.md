@@ -32,3 +32,12 @@
 実装時に必要な情報:
 - お布施リンク先URL(Buy Me a Coffee 等)
 - 広告ネットワーク(AdMob / AdSense / 手動バナー)
+
+## i-mobile 実装メモ (2026-05-27)
+- 配置箇所: お買い物タブ末尾 (`#ad-slot-requests`)。`#list-done` の再描画で消えないよう `#tab-requests` 直下の兄弟要素として配置。
+- 表示制御: `.ad-content` に子要素があるときだけ `.ad-slot` に `has-ad` クラスを付けて表示(`initAdSlots`)。タグ未貼付時は枠自体が出ない。
+- 規約対応: 「広告」ラベルを `--muted` カラーで明示(`.ad-label`)。
+- 残タスク:
+  - i-mobile 管理画面でスポット作成 → 発行された `<script src="..." async>` を `#ad-slot-requests` の `.ad-content` 内に貼り付け。
+  - 家族向けアプリのため、管理画面で**アダルト等のカテゴリを除外設定**。
+  - 効果を見て、② ストックタブ末尾 / ③ 設定タブ末尾 / ④ 完了履歴シート末尾 に追加検討。
