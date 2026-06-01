@@ -259,17 +259,38 @@
     }
     .res-chev { flex-shrink: 0; color: var(--muted); }
 
-    /* ── Roadmap TODO ────────────────────── */
-    .roadmap-todo {
-      background: var(--bg); border-radius: 14px; padding: 22px 26px;
-      border: 1.5px dashed var(--line);
-      font-size: 13.5px; color: var(--text-sub);
+    /* ── Roadmap timeline ────────────────── */
+    .timeline { display: flex; flex-direction: column; gap: 14px; }
+    .phase {
+      background: var(--bg); border-radius: 16px; padding: 20px 24px;
+      border: 1px solid var(--line);
+      display: flex; gap: 18px; align-items: flex-start;
+      transition: border-color .12s, box-shadow .12s;
     }
-    .roadmap-todo strong { color: var(--ink); }
-    .roadmap-todo code {
-      font-family: monospace; background: var(--bg3);
-      padding: 1px 6px; border-radius: 4px; font-size: 12px; color: var(--accent);
+    .phase:hover { border-color: var(--accent); box-shadow: 0 2px 14px rgba(99,102,241,.08); }
+    .phase-num {
+      width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+      display: grid; place-items: center;
+      font-family: var(--disp); font-weight: 800; font-size: 13px;
+      background: var(--accent-soft); color: var(--accent);
+      line-height: 1.1; text-align: center;
     }
+    .phase.done .phase-num { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .phase-body { flex: 1; min-width: 0; }
+    .phase-title {
+      font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink);
+      display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    }
+    .phase-cost {
+      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 99px;
+      background: var(--bg3); color: var(--text-sub);
+    }
+    .phase.done .phase-cost { background: #dcfce7; color: #166534; }
+    .phase-desc { font-size: 13px; color: var(--text-sub); margin-top: 5px; line-height: 1.6; }
+    .roadmap-note {
+      font-size: 12px; color: var(--muted); margin-top: 14px; text-align: right;
+    }
+    .roadmap-note a { color: var(--accent); font-weight: 600; }
 
     /* ── Footer ──────────────────────────── */
     footer {
@@ -403,7 +424,7 @@
         <span class="meta-label">プロトタイプ</span>
       </div>
       <div class="meta-item" role="listitem">
-        <span class="meta-num">1</span>
+        <span class="meta-num">3</span>
         <span class="meta-label">ドキュメント</span>
       </div>
       <div class="meta-item" role="listitem">
@@ -558,6 +579,24 @@
       <div
         class="resource-item"
         role="button" tabindex="0"
+        aria-label="リリース計画をページ内で開く"
+        onclick="openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">Android / iOS リリース計画</div>
+          <div class="res-desc">ストア配信のコスト最小ルート（PWA → Android → iOS）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
+
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
         aria-label="収益化アイデアメモをページ内で開く"
         onclick="openDoc('docs/monetization-ideas.md','収益化アイデアメモ','docs/monetization-ideas.md')"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/monetization-ideas.md','収益化アイデアメモ','docs/monetization-ideas.md')}"
@@ -572,6 +611,24 @@
         <span class="res-tag">Markdown</span>
         <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
       </div>
+
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
+        aria-label="バナー生成プロンプト集をページ内で開く"
+        onclick="openDoc('docs/banner-prompt.md','バナー生成プロンプト集','docs/banner-prompt.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/banner-prompt.md','バナー生成プロンプト集','docs/banner-prompt.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">バナー生成プロンプト集</div>
+          <div class="res-desc">画像生成AI向けのバナー作成プロンプト（ブランド設定込み）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
     </div>
   </section>
 
@@ -581,11 +638,43 @@
       <h2 id="hd-roadmap">🗺️ ロードマップ</h2>
       <p>フェーズ・リリース計画</p>
     </div>
-    <!-- TODO: README.md または docs/roadmap.md を作成するとここに自動反映されます -->
-    <div class="roadmap-todo" role="note">
-      📌 <strong>TODO:</strong> ロードマップデータが見つかりませんでした。<br>
-      <code>README.md</code> または <code>docs/roadmap.md</code> にフェーズ計画を記述すると、このセクションに表示されます。
+    <div class="timeline">
+      <div class="phase done">
+        <div class="phase-num">Phase<br>0</div>
+        <div class="phase-body">
+          <div class="phase-title">
+            PWA のまま（現状）
+            <span class="phase-cost">0円 · 完了</span>
+          </div>
+          <p class="phase-desc">GitHub Pages で配信中。Safari / Chrome の「ホーム画面に追加」でインストール可能。家族・知人にURL共有で試用できる段階。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase<br>1</div>
+        <div class="phase-body">
+          <div class="phase-title">
+            Android（Google Play）リリース
+            <span class="phase-cost">約 ¥3,800（初回のみ）</span>
+          </div>
+          <p class="phase-desc">TWA / Capacitor で現コードをそのままラップしてストア配信。Play Console 登録は一括 $25。ユーザーが増えてきたタイミングで着手。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase<br>2</div>
+        <div class="phase-body">
+          <div class="phase-title">
+            iOS（App Store）リリース
+            <span class="phase-cost">¥15,000/年 + Mac</span>
+          </div>
+          <p class="phase-desc">Apple Developer Program が年 $99 の継続コスト。Android で収益・反応を確認してから踏み出すのが安全な順序。</p>
+        </div>
+      </div>
     </div>
+    <p class="roadmap-note">
+      出典：<a href="#" onclick="openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md');return false;">リリース計画 →</a>
+    </p>
   </section>
 
 </main>
