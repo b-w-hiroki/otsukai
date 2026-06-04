@@ -1,11 +1,12 @@
 // おうちのおつかい — Service Worker
 // ナビゲーションはネットワーク優先（オンライン時は常に最新）、
-// オフライン時のみキャッシュした app.html を返す。
-const CACHE = "otsukai-v3";
+// オフライン時のみキャッシュしたページを返す。
+// アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
+const CACHE = "otsukai-v4";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["./app.html", "./index.html"])));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["./index.html", "./hub.html"])));
 });
 
 self.addEventListener("activate", (event) => {
@@ -23,9 +24,9 @@ self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.mode !== "navigate") return;
   const url = new URL(request.url);
-  // アプリへのナビゲーションは app.html をキャッシュ
-  const isApp = url.pathname.endsWith("app.html");
-  const cacheKey = isApp ? "./app.html" : "./index.html";
+  // ハブへのナビゲーションは hub.html、それ以外（ルート＝アプリ）は index.html をキャッシュ
+  const isHub = url.pathname.endsWith("hub.html");
+  const cacheKey = isHub ? "./hub.html" : "./index.html";
   event.respondWith(
     fetch(request)
       .then((response) => {

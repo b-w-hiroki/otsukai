@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>おうちのおつかい — プロジェクトハブ</title>
+  <meta name="description" content="買い物リスト・在庫管理・ミッションを家族でリアルタイム共有するホームアシスタントPWA。">
+  <link rel="canonical" href="https://b-w-hiroki.github.io/otsukai/hub.html">
+  <meta property="og:title" content="おうちのおつかい">
+  <meta property="og:description" content="家族のおつかい、もっとかんたんに。">
+  <meta property="og:url" content="https://b-w-hiroki.github.io/otsukai/hub.html">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://b-w-hiroki.github.io/otsukai/icon-512.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="おうちのおつかい">
+  <meta name="twitter:description" content="家族のおつかい、もっとかんたんに。">
+  <meta name="twitter:image" content="https://b-w-hiroki.github.io/otsukai/icon-512.png">
+  <meta name="theme-color" content="#6366f1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="おつかい">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent:      #6366f1;
+      --accent2:     #7c3aed;
+      --bg-dark:     #1a1035;
+      --ink:         #0e1015;
+      --ink2:        #1a1f2b;
+      --bg:          #ffffff;
+      --bg2:         #f6f7fa;
+      --bg3:         #eef0f6;
+      --line:        #e7e9ef;
+      --accent-soft: #eef0ff;
+      --text-sub:    #565c6a;
+      --muted:       #9aa0ad;
+      --disp:        "Plus Jakarta Sans", "Noto Sans JP", system-ui, sans-serif;
+      --body:        "Noto Sans JP", "Plus Jakarta Sans", system-ui, sans-serif;
+      --maxw:        1120px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--body); background: var(--bg2); color: var(--ink); line-height: 1.7; }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: var(--accent); text-decoration: none; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+
+    /* ── Hero ─────────────────────────────── */
+    .hero {
+      background: var(--bg-dark);
+      background-image:
+        radial-gradient(ellipse 80% 60% at 65% 15%, rgba(99,102,241,.38) 0%, transparent 70%),
+        radial-gradient(ellipse 45% 45% at 15% 85%, rgba(124,58,237,.22) 0%, transparent 60%);
+      color: #fff;
+      padding: 64px 24px 128px;
+    }
+    .hero-inner { max-width: var(--maxw); margin: 0 auto; }
+
+    .brand-row { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+    .monogram {
+      width: 54px; height: 54px; border-radius: 14px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+      display: grid; place-items: center;
+      font-family: var(--disp); font-size: 26px; color: #fff; font-weight: 800;
+      box-shadow: 0 4px 20px rgba(99,102,241,.4);
+    }
+    .brand-name {
+      font-family: var(--disp); font-size: 18px; font-weight: 700;
+      color: rgba(255,255,255,.9);
+    }
+
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      border-radius: 99px; padding: 4px 14px 4px 9px;
+      font-size: 12px; font-weight: 600; color: rgba(255,255,255,.82);
+      margin-bottom: 22px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.3);
+      animation: blink 2.2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%,100% { box-shadow: 0 0 0 3px rgba(74,222,128,.3); }
+      50%      { box-shadow: 0 0 0 7px rgba(74,222,128,.08); }
+    }
+
+    .hero h1 {
+      font-family: var(--disp);
+      font-size: clamp(1.9rem, 5vw, 3.2rem);
+      font-weight: 800; line-height: 1.14; letter-spacing: -.02em;
+      margin-bottom: 16px;
+    }
+    .hero-sub {
+      font-size: clamp(.95rem, 2vw, 1.1rem);
+      color: rgba(255,255,255,.68); max-width: 580px; line-height: 1.75;
+      margin-bottom: 28px;
+    }
+
+    .hero-meta { display: flex; gap: 28px; flex-wrap: wrap; margin-bottom: 32px; }
+    .meta-item { display: flex; flex-direction: column; }
+    .meta-num {
+      font-family: var(--disp); font-size: 1.6rem; font-weight: 800;
+      color: #fff; line-height: 1;
+    }
+    .meta-label { font-size: 11px; color: rgba(255,255,255,.5); margin-top: 3px; }
+
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-family: var(--disp); font-size: 15px; font-weight: 700;
+      padding: 13px 26px; border-radius: 99px; border: none; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(99,102,241,.45);
+      transition: transform .15s, box-shadow .15s;
+      text-decoration: none;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(99,102,241,.55); color: #fff; }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25);
+      color: rgba(255,255,255,.85); font-family: var(--disp); font-size: 15px; font-weight: 600;
+      padding: 13px 26px; border-radius: 99px; cursor: pointer;
+      transition: background .15s; text-decoration: none;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* ── Layout ──────────────────────────── */
+    .main { max-width: var(--maxw); margin: 0 auto; padding: 0 24px 88px; }
+
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 16px;
+    }
+
+    /* ── Card Grid (lifted) ───────────────── */
+    .card-grid-wrap { margin-top: -68px; margin-bottom: 72px; }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── Card ─────────────────────────────── */
+    .card {
+      background: var(--bg); border-radius: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07), 0 0 0 1px rgba(0,0,0,.04);
+      overflow: hidden; display: flex; flex-direction: column;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 10px 36px rgba(0,0,0,.13); }
+
+    .thumb {
+      height: 148px; display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden; flex-shrink: 0;
+    }
+    .thumb.app   { background: linear-gradient(140deg, #6366f1 0%, #7c3aed 100%); }
+    .thumb.appv1 { background: linear-gradient(140deg, #94a3b8 0%, #64748b 100%); }
+
+    /* Mini phone mockup */
+    .miniphone {
+      width: 62px; height: 100px; background: rgba(255,255,255,.15);
+      border-radius: 11px; border: 2px solid rgba(255,255,255,.3);
+      display: flex; flex-direction: column; padding: 7px 6px; gap: 4px;
+      backdrop-filter: blur(4px);
+    }
+    .mp-bar  { height: 4px; background: rgba(255,255,255,.65); border-radius: 2px; }
+    .mp-row  { display: flex; gap: 3px; }
+    .mp-chip { flex: 1; height: 12px; background: rgba(255,255,255,.4); border-radius: 3px; }
+    .mp-chip.w { flex: 2; }
+    .mp-chip.s { height: 8px; }
+    .mp-tabs { display: flex; gap: 3px; margin-top: auto; }
+    .mp-tab  { flex: 1; height: 7px; background: rgba(255,255,255,.22); border-radius: 2px; }
+    .mp-tab.on { background: rgba(255,255,255,.8); }
+
+    .badge {
+      position: absolute; top: 12px; left: 12px;
+      background: rgba(0,0,0,.3); color: #fff;
+      font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 99px;
+      letter-spacing: .04em;
+    }
+
+    .cbody { padding: 20px 22px 22px; flex: 1; display: flex; flex-direction: column; }
+    .cbody h3 {
+      font-family: var(--disp); font-size: 17px; font-weight: 700;
+      margin-bottom: 3px; color: var(--ink);
+    }
+    .role { font-size: 10px; font-weight: 700; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+    .cbody p { font-size: 13.5px; color: var(--text-sub); line-height: 1.65; flex: 1; margin-bottom: 14px; }
+
+    .checks { list-style: none; margin-bottom: 18px; display: flex; flex-direction: column; gap: 6px; }
+    .checks li { display: flex; align-items: flex-start; gap: 7px; font-size: 12.5px; color: var(--text-sub); }
+    .checks li svg { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-open {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 13px; font-weight: 700;
+      padding: 9px 17px; border-radius: 99px; border: none; cursor: pointer;
+      text-decoration: none; transition: opacity .12s;
+    }
+    .btn-open:hover { opacity: .86; color: #fff; }
+    .btn-open.outline {
+      background: transparent; border: 1.5px solid var(--line);
+      color: var(--text-sub);
+    }
+    .btn-open.outline:hover {
+      border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+    }
+
+    /* ── Section ─────────────────────────── */
+    .section { margin-bottom: 68px; }
+    .section-head { margin-bottom: 20px; }
+    .section-head h2 {
+      font-family: var(--disp); font-size: 21px; font-weight: 700; color: var(--ink);
+    }
+    .section-head p { font-size: 13.5px; color: var(--text-sub); margin-top: 4px; }
+
+    /* ── Resource list ───────────────────── */
+    .resource-list { display: flex; flex-direction: column; gap: 10px; }
+    .resource-item {
+      background: var(--bg); border-radius: 14px; padding: 16px 20px;
+      border: 1px solid var(--line);
+      display: flex; align-items: center; gap: 16px;
+      cursor: pointer; transition: border-color .12s, box-shadow .12s;
+    }
+    .resource-item:hover {
+      border-color: var(--accent); box-shadow: 0 2px 14px rgba(99,102,241,.1);
+    }
+    .res-icon {
+      width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+      background: var(--accent-soft); display: grid; place-items: center;
+      color: var(--accent);
+    }
+    .res-info { flex: 1; min-width: 0; }
+    .res-title { font-family: var(--disp); font-size: 14px; font-weight: 700; color: var(--ink); }
+    .res-desc  {
+      font-size: 12.5px; color: var(--muted); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .res-tag {
+      flex-shrink: 0;
+      font-size: 10px; font-weight: 700; letter-spacing: .06em;
+      padding: 3px 9px; border-radius: 99px;
+      background: var(--accent-soft); color: var(--accent);
+    }
+    .res-chev { flex-shrink: 0; color: var(--muted); }
+
+    /* ── Roadmap timeline ────────────────── */
+    .timeline { display: flex; flex-direction: column; gap: 14px; }
+    .phase {
+      background: var(--bg); border-radius: 16px; padding: 20px 24px;
+      border: 1px solid var(--line);
+      display: flex; gap: 18px; align-items: flex-start;
+      transition: border-color .12s, box-shadow .12s;
+    }
+    .phase:hover { border-color: var(--accent); box-shadow: 0 2px 14px rgba(99,102,241,.08); }
+    .phase-num {
+      width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0;
+      display: grid; place-items: center;
+      font-family: var(--disp); font-weight: 800; font-size: 13px;
+      background: var(--accent-soft); color: var(--accent);
+      line-height: 1.1; text-align: center;
+    }
+    .phase.done .phase-num { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .phase-body { flex: 1; min-width: 0; }
+    .phase-title {
+      font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink);
+      display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    }
+    .phase-cost {
+      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 99px;
+      background: var(--bg3); color: var(--text-sub);
+    }
+    .phase.done .phase-cost { background: #dcfce7; color: #166534; }
+    .phase-desc { font-size: 13px; color: var(--text-sub); margin-top: 5px; line-height: 1.6; }
+    .roadmap-note {
+      font-size: 12px; color: var(--muted); margin-top: 14px; text-align: right;
+    }
+    .roadmap-note a { color: var(--accent); font-weight: 600; }
+
+    /* ── Footer ──────────────────────────── */
+    footer {
+      background: var(--bg-dark); color: rgba(255,255,255,.45);
+      text-align: center; padding: 44px 24px;
+      font-size: 13px; line-height: 1.8;
+    }
+    footer strong { color: rgba(255,255,255,.8); font-family: var(--disp); font-size: 15px; }
+
+    /* ── Modal ───────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(14,16,21,.72); backdrop-filter: blur(5px);
+      z-index: 1000; align-items: flex-start; justify-content: center;
+      padding: 40px 16px; overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg); border-radius: 20px;
+      width: 100%; max-width: 780px;
+      overflow: hidden; box-shadow: 0 28px 80px rgba(0,0,0,.32);
+      margin: auto;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; background: var(--bg); z-index: 1;
+    }
+    .modal-title { font-family: var(--disp); font-size: 15px; font-weight: 700; color: var(--ink); }
+    .modal-hright { display: flex; align-items: center; gap: 12px; }
+    .modal-dl {
+      font-size: 12px; color: var(--accent); font-weight: 600;
+      text-decoration: none; display: none;
+    }
+    .modal-dl:hover { text-decoration: underline; }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: var(--bg3); cursor: pointer; font-size: 16px;
+      color: var(--text-sub); display: grid; place-items: center;
+      transition: background .12s;
+    }
+    .modal-close:hover { background: var(--line); color: var(--ink); }
+
+    .modal-body { padding: 24px; min-height: 200px; }
+    .loading { text-align: center; color: var(--muted); font-size: 14px; padding: 48px 24px; }
+    .loading a { color: var(--accent); }
+
+    /* Markdown */
+    .md-body { font-size: 14.5px; line-height: 1.82; color: var(--ink2); }
+    .md-body h1 { font-family: var(--disp); font-size: 22px; font-weight: 800; margin: 0 0 16px; color: var(--ink); }
+    .md-body h2 {
+      font-family: var(--disp); font-size: 17px; font-weight: 700;
+      margin: 28px 0 10px; color: var(--ink);
+      border-bottom: 1px solid var(--line); padding-bottom: 6px;
+    }
+    .md-body h3 { font-family: var(--disp); font-size: 15px; font-weight: 700; margin: 20px 0 8px; }
+    .md-body p { margin: 0 0 12px; }
+    .md-body ul, .md-body ol { padding-left: 20px; margin: 0 0 14px; }
+    .md-body li { margin-bottom: 4px; }
+    .md-body blockquote {
+      border-left: 3px solid var(--accent); padding: 8px 16px;
+      background: var(--accent-soft); border-radius: 0 8px 8px 0;
+      margin: 16px 0; color: var(--text-sub); font-style: italic;
+    }
+    .md-body code {
+      font-family: monospace; background: var(--bg3);
+      padding: 1px 5px; border-radius: 4px; font-size: 13px;
+    }
+    .md-body pre {
+      background: var(--ink2); color: #e2e8f0;
+      padding: 16px; border-radius: 10px; overflow-x: auto; margin: 16px 0;
+    }
+    .md-body pre code { background: transparent; color: inherit; padding: 0; }
+    .md-body table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13.5px; }
+    .md-body th { background: var(--bg3); padding: 8px 12px; text-align: left; font-weight: 700; border: 1px solid var(--line); }
+    .md-body td { padding: 8px 12px; border: 1px solid var(--line); }
+    .md-body tr:nth-child(even) td { background: var(--bg2); }
+    .md-body a { color: var(--accent); }
+    .md-body a:hover { text-decoration: underline; }
+    .md-body hr { border: none; border-top: 1px solid var(--line); margin: 20px 0; }
+
+    /* ── Responsive ──────────────────────── */
+    @media (max-width: 640px) {
+      .hero { padding: 48px 20px 104px; }
+      .hero h1 { font-size: 1.75rem; }
+      .hero-meta { gap: 20px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .main { padding: 0 16px 64px; }
+      .card-grid-wrap { margin-top: -52px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SVG Symbols ─────────────────────────── -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-ext" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 3H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V9M10 2h4m0 0v4m0-4L7 9"/>
+  </symbol>
+  <symbol id="i-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 8.5l3.5 3.5L13 4"/>
+  </symbol>
+  <symbol id="i-doc" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 2H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V6L9 2z"/>
+    <path d="M9 2v4h4M5.5 9h5M5.5 12h3"/>
+  </symbol>
+  <symbol id="i-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 4l4 4-4 4"/>
+  </symbol>
+</svg>
+
+<!-- ═══════════ Hero ═══════════ -->
+<header class="hero" role="banner">
+  <div class="hero-inner">
+    <div class="brand-row">
+      <div class="monogram" aria-hidden="true">お</div>
+      <span class="brand-name">おうちのおつかい</span>
+    </div>
+
+    <div class="status-chip">
+      <span class="status-dot" aria-hidden="true"></span>
+      稼働中 · GitHub Pages
+    </div>
+
+    <h1>家族のおつかい、<br>もっとかんたんに。</h1>
+    <p class="hero-sub">買い物リスト・在庫管理・ミッションを家族でリアルタイム共有するホームアシスタントPWA。</p>
+
+    <div class="hero-meta" role="list" aria-label="プロジェクト指標">
+      <div class="meta-item" role="listitem">
+        <span class="meta-num">2</span>
+        <span class="meta-label">プロトタイプ</span>
+      </div>
+      <div class="meta-item" role="listitem">
+        <span class="meta-num">3</span>
+        <span class="meta-label">ドキュメント</span>
+      </div>
+      <div class="meta-item" role="listitem">
+        <span class="meta-num">4</span>
+        <span class="meta-label">主要機能</span>
+      </div>
+      <div class="meta-item" role="listitem">
+        <span class="meta-num">3</span>
+        <span class="meta-label">ロール権限</span>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <a href="./" target="_blank" rel="noopener" class="btn-primary">
+        アプリを開く
+        <svg width="14" height="14" aria-hidden="true"><use href="#i-ext"/></svg>
+      </a>
+      <a href="https://b-w-hiroki.github.io/otsukai/" target="_blank" rel="noopener" class="btn-ghost">
+        ライブデモ ↗
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ Main ═══════════ -->
+<main class="main" id="main" tabindex="-1">
+
+  <!-- ── Card Grid ── -->
+  <div class="card-grid-wrap">
+    <p class="section-label">プロトタイプ / 画面</p>
+    <div class="card-grid">
+
+      <!-- Card 1: Current app -->
+      <article class="card">
+        <div class="thumb app" aria-hidden="true">
+          <span class="badge">現行版 PWA</span>
+          <div class="miniphone">
+            <div class="mp-bar"></div>
+            <div class="mp-row" style="margin-top:5px">
+              <div class="mp-chip w"></div>
+              <div class="mp-chip"></div>
+            </div>
+            <div class="mp-row">
+              <div class="mp-chip"></div>
+              <div class="mp-chip w"></div>
+            </div>
+            <div class="mp-row">
+              <div class="mp-chip w"></div>
+            </div>
+            <div class="mp-row">
+              <div class="mp-chip s"></div>
+              <div class="mp-chip s w"></div>
+            </div>
+            <div class="mp-tabs" style="margin-top:auto">
+              <div class="mp-tab on"></div>
+              <div class="mp-tab"></div>
+              <div class="mp-tab"></div>
+              <div class="mp-tab"></div>
+              <div class="mp-tab"></div>
+            </div>
+          </div>
+        </div>
+        <div class="cbody">
+          <h3>メインアプリ</h3>
+          <div class="role">FOR FAMILY</div>
+          <p>買い物リスト・在庫管理・ミッション・家族管理をひとつのPWAで。Firebase Realtime Database によるリアルタイム同期。</p>
+          <ul class="checks">
+            <li>
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg>
+              買い物リスト（よく買うもの・コメント・進捗）
+            </li>
+            <li>
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg>
+              在庫管理・ミッション・3ロール権限システム
+            </li>
+            <li>
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg>
+              リアルタイム同期・サウンド通知・PWA対応
+            </li>
+          </ul>
+          <div class="card-actions">
+            <a href="./" target="_blank" rel="noopener" class="btn-open">
+              開く ↗
+            </a>
+            <a href="https://b-w-hiroki.github.io/otsukai/" target="_blank" rel="noopener" class="btn-open outline">
+              ライブデモ
+            </a>
+          </div>
+        </div>
+      </article>
+
+      <!-- Card 2: v1 -->
+      <article class="card">
+        <div class="thumb appv1" aria-hidden="true">
+          <span class="badge">アーカイブ v1</span>
+          <div class="miniphone">
+            <div class="mp-bar" style="background:rgba(255,255,255,.4)"></div>
+            <div class="mp-row" style="margin-top:5px">
+              <div class="mp-chip w" style="background:rgba(255,255,255,.3)"></div>
+            </div>
+            <div class="mp-row">
+              <div class="mp-chip" style="background:rgba(255,255,255,.28)"></div>
+              <div class="mp-chip w" style="background:rgba(255,255,255,.2)"></div>
+            </div>
+            <div class="mp-row">
+              <div class="mp-chip w" style="background:rgba(255,255,255,.2)"></div>
+              <div class="mp-chip" style="background:rgba(255,255,255,.15)"></div>
+            </div>
+            <div class="mp-tabs" style="margin-top:auto">
+              <div class="mp-tab" style="background:rgba(255,255,255,.4)"></div>
+              <div class="mp-tab" style="background:rgba(255,255,255,.2)"></div>
+              <div class="mp-tab" style="background:rgba(255,255,255,.2)"></div>
+            </div>
+          </div>
+        </div>
+        <div class="cbody">
+          <h3>旧バージョン v1</h3>
+          <div class="role">FOR REFERENCE</div>
+          <p>現行版の前身となる初期実装。シンプルな買い物リスト機能が中心。開発経緯の確認・比較用アーカイブ。</p>
+          <ul class="checks">
+            <li>
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg>
+              基本的な買い物リスト機能
+            </li>
+            <li>
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg>
+              Firebase 連携の原型
+            </li>
+            <li>
+              <svg width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg>
+              シンプルUI（現行版との比較参照）
+            </li>
+          </ul>
+          <div class="card-actions">
+            <a href="app.v1.html" target="_blank" rel="noopener" class="btn-open">
+              開く ↗
+            </a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <!-- ── Documents ── -->
+  <section class="section" aria-labelledby="hd-docs">
+    <div class="section-head">
+      <h2 id="hd-docs">📄 ドキュメント</h2>
+      <p>仕様書・検討メモ</p>
+    </div>
+    <div class="resource-list">
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
+        aria-label="リリース計画をページ内で開く"
+        onclick="openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">Android / iOS リリース計画</div>
+          <div class="res-desc">ストア配信のコスト最小ルート（PWA → Android → iOS）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
+
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
+        aria-label="収益化アイデアメモをページ内で開く"
+        onclick="openDoc('docs/monetization-ideas.md','収益化アイデアメモ','docs/monetization-ideas.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/monetization-ideas.md','収益化アイデアメモ','docs/monetization-ideas.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">収益化アイデアメモ</div>
+          <div class="res-desc">広告・お布施・サポート配置の検討メモ（実装前）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
+
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
+        aria-label="バナー生成プロンプト集をページ内で開く"
+        onclick="openDoc('docs/banner-prompt.md','バナー生成プロンプト集','docs/banner-prompt.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/banner-prompt.md','バナー生成プロンプト集','docs/banner-prompt.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">バナー生成プロンプト集</div>
+          <div class="res-desc">画像生成AI向けのバナー作成プロンプト（ブランド設定込み）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Roadmap ── -->
+  <section class="section" aria-labelledby="hd-roadmap">
+    <div class="section-head">
+      <h2 id="hd-roadmap">🗺️ ロードマップ</h2>
+      <p>フェーズ・リリース計画</p>
+    </div>
+    <div class="timeline">
+      <div class="phase done">
+        <div class="phase-num">Phase<br>0</div>
+        <div class="phase-body">
+          <div class="phase-title">
+            PWA のまま（現状）
+            <span class="phase-cost">0円 · 完了</span>
+          </div>
+          <p class="phase-desc">GitHub Pages で配信中。Safari / Chrome の「ホーム画面に追加」でインストール可能。家族・知人にURL共有で試用できる段階。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase<br>1</div>
+        <div class="phase-body">
+          <div class="phase-title">
+            Android（Google Play）リリース
+            <span class="phase-cost">約 ¥3,800（初回のみ）</span>
+          </div>
+          <p class="phase-desc">TWA / Capacitor で現コードをそのままラップしてストア配信。Play Console 登録は一括 $25。ユーザーが増えてきたタイミングで着手。</p>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase<br>2</div>
+        <div class="phase-body">
+          <div class="phase-title">
+            iOS（App Store）リリース
+            <span class="phase-cost">¥15,000/年 + Mac</span>
+          </div>
+          <p class="phase-desc">Apple Developer Program が年 $99 の継続コスト。Android で収益・反応を確認してから踏み出すのが安全な順序。</p>
+        </div>
+      </div>
+    </div>
+    <p class="roadmap-note">
+      出典：<a href="#" onclick="openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md');return false;">リリース計画 →</a>
+    </p>
+  </section>
+
+</main>
+
+<!-- ═══════════ Footer ═══════════ -->
+<footer>
+  <strong>おうちのおつかい</strong><br>
+  家族向けホームアシスタントPWA · Firebase + GitHub Pages<br>
+  <span style="margin-top:8px;display:block">© 2025 おうちのおつかい</span>
+</footer>
+
+<!-- ═══════════ Modal ═══════════ -->
+<div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title"></h2>
+      <div class="modal-hright">
+        <a href="#" class="modal-dl" id="modal-dl" target="_blank" rel="noopener">元ファイル ↗</a>
+        <button class="modal-close" id="modal-close" aria-label="閉じる">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════ Script ═══════════ -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Modal ── */
+  const overlay   = document.getElementById('modal');
+  const mTitle    = document.getElementById('modal-title');
+  const mDl       = document.getElementById('modal-dl');
+  const mBody     = document.getElementById('modal-body');
+  const mClose    = document.getElementById('modal-close');
+  let prevFocus   = null;
+
+  function showModal() {
+    prevFocus = document.activeElement;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    mClose.focus();
+  }
+  function hideModal() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    if (prevFocus) prevFocus.focus();
+  }
+
+  /* ── Markdown viewer ── */
+  const MARKED_CDN = 'https://cdn.jsdelivr.net/npm/marked@9/marked.min.js';
+  let markedReady = false;
+  function loadMarked(cb) {
+    if (markedReady) { cb(); return; }
+    const s = document.createElement('script');
+    s.src = MARKED_CDN;
+    s.onload  = function () { markedReady = true; cb(); };
+    s.onerror = function () { cb(); };
+    document.head.appendChild(s);
+  }
+
+  window.openDoc = function (file, title, dlHref) {
+    mTitle.textContent = title;
+    mDl.href = dlHref; mDl.style.display = '';
+    mBody.innerHTML = '<div class="loading">読み込み中…</div>';
+    showModal();
+    loadMarked(function () {
+      fetch(file)
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (md) {
+          var html = window.marked
+            ? marked.parse(md)
+            : md.replace(/[&<>]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+          mBody.innerHTML = '<div class="md-body">' + html + '</div>';
+          if (!window.marked) mBody.querySelector('.md-body').style.whiteSpace = 'pre-wrap';
+        })
+        .catch(function () {
+          mBody.innerHTML =
+            '<div class="loading">表示できませんでした。' +
+            '<a href="' + file + '" target="_blank" rel="noopener">元ファイルを開く ↗</a></div>';
+        });
+    });
+  };
+
+  /* ── Close ── */
+  mClose.addEventListener('click', hideModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) hideModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) hideModal();
+  });
+
+  /* ── SW registration (hub shell) ── */
+  if ('serviceWorker' in navigator) {
+    var base = document.querySelector('link[rel="manifest"]');
+    if (base) {
+      var swPath = new URL('sw.js', base.href).pathname;
+      navigator.serviceWorker.register(swPath).catch(function () {});
+    }
+  }
+})();
+</script>
+</body>
+</html>
