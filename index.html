@@ -1737,8 +1737,8 @@
 
     // ===== Real-time listeners =====
     const listenerRefs = [];
-    function attach(ref, event, cb) {
-      ref.on(event, cb);
+    function attach(ref, event, cb, errCb) {
+      ref.on(event, cb, errCb);
       listenerRefs.push({ ref, event, cb });
     }
     function detachListeners() {
@@ -1747,17 +1747,36 @@
     }
     function familyRef() { return db.ref("families/" + state.familyId); }
 
+    // 家族から外された／アクセス権を失ったときの処理。
+    // メンバー一覧の読み取りが PERMISSION_DENIED になった = もう家族の一員ではない。
+    let familyAccessLost = false;
+    async function handleFamilyAccessLost(err) {
+      if (familyAccessLost || !state.familyId) return;
+      if (!err || err.code !== "PERMISSION_DENIED") return;
+      familyAccessLost = true;
+      detachListeners();
+      try { await db.ref("users/" + state.uid + "/familyId").remove(); } catch (e) {}
+      state.familyId = null; state.family = null; state.myRole = null;
+      state.requests = {}; state.stats = {}; state.shortcuts = {}; state.stocks = {}; state.missions = {}; state.missionLogs = {};
+      showScreen("family");
+      showToast("家族から外れました");
+    }
+
     function attachFamilyListeners() {
       detachListeners();
       state.prevRequests = {};
-      state.muteNotifications = true;
+      familyAccessLost = false;
+      // 各ストリームの「初回スナップショット」を判定するためのフラグ。
+      // 初回（＝ページ読込時にもともと存在していたデータ）は通知しない。
+      let requestsInit = false;
+      let commentsInit = false;
       // Family meta + members
       attach(familyRef().child("meta"), "value", (s) => {
         state.family = state.family || {};
         state.family.meta = s.val() || {};
         renderTopbar();
         renderSettings();
-      });
+      }, handleFamilyAccessLost);
       attach(familyRef().child("members"), "value", (s) => {
         state.family = state.family || {};
         state.family.members = s.val() || {};
@@ -1769,7 +1788,7 @@
         renderRequests();
         renderHistory();
         renderMissions();
-      });
+      }, handleFamilyAccessLost);
       // Requests
       let _lastRequestsJson = "";
       attach(familyRef().child("requests"), "value", (s) => {
@@ -1778,17 +1797,18 @@
         const changed = nextJson !== _lastRequestsJson;
         _lastRequestsJson = nextJson;
         if (changed) {
-          detectAndNotify(state.prevRequests, next);
+          // 初回スナップショットでは通知しない（既存の依頼を新着扱いしない）
+          if (requestsInit) detectAndNotify(state.prevRequests, next);
           state.prevRequests = next;
           state.requests = next;
         }
-        state.muteNotifications = false;
+        requestsInit = true;
         if (changed) {
           renderRequests();
           renderHistory();
           renderBadge();
         }
-      });
+      }, handleFamilyAccessLost);
       // Stats
       attach(familyRef().child("stats"), "value", (s) => {
         state.stats = s.val() || {};
@@ -1797,7 +1817,11 @@
       // Comments
       attach(db.ref(`families/${state.familyId}/comments`), "value", (s) => {
         const next = s.val() || {};
-        if (!state.muteNotifications) {
+        // 初回スナップショットでは通知しない（既存コメントを新着扱いしない）。
+        // 以前は共有フラグ muteNotifications を使っていたが、requests リスナーが
+        // 先にフラグを解除すると初回コメントが毎回通知される不具合があったため、
+        // コメント専用の初期化フラグで判定する。
+        if (commentsInit) {
           Object.entries(next).forEach(([reqId, comments]) => {
             const prev = state.prevComments[reqId] || {};
             Object.entries(comments || {}).forEach(([cid, c]) => {
@@ -1809,11 +1833,12 @@
             });
           });
         }
+        commentsInit = true;
         state.prevComments = JSON.parse(JSON.stringify(next));
         state.comments = next;
         updateUnreadComments();
         renderRequests();
-      });
+      }, handleFamilyAccessLost);
       // Shortcuts
       attach(familyRef().child("shortcuts"), "value", (s) => {
         state.shortcuts = s.val() || {};
@@ -1926,8 +1951,8 @@
     }
 
     // ===== Notification diff =====
+    // 呼び出し側で初回スナップショットを除外しているため、ここでは差分のみ通知する。
     function detectAndNotify(prev, next) {
-      if (state.muteNotifications) return;
       Object.entries(next).forEach(([id, r]) => {
         const before = prev[id];
         const requesterName = memberName(r.requestedBy);
@@ -2656,6 +2681,8 @@
 
     // ===== Rendering =====
     const ROLE_LABEL = { parent: "保護者", "sub-parent": "副保護者", child: "こども" };
+    const ROLE_ORDER = { parent: 0, "sub-parent": 1, child: 2 };
+    function roleRank(role) { return role in ROLE_ORDER ? ROLE_ORDER[role] : 99; }
     function isParent() { return state.myRole === "parent" || state.myRole === "sub-parent"; }
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
@@ -3064,14 +3091,21 @@
       if (!state.family || !state.family.members) return "";
       const canManage = state.myRole === "parent";
       const members = state.family.members;
-      return Object.entries(members).map(([uid, m]) => {
+      // 保護者 → 副保護者 → こども の順に並べる（同ロール内は名前順）
+      const sorted = Object.entries(members).sort(([, a], [, b]) => {
+        const r = roleRank(a.memberRole) - roleRank(b.memberRole);
+        if (r !== 0) return r;
+        return (a.name || "").localeCompare(b.name || "", "ja");
+      });
+      const cards = sorted.map(([uid, m]) => {
         const s = state.stats[uid] || {};
         const roleLabel = ROLE_LABEL[m.memberRole] || "未設定";
         const isMe = uid === state.uid;
         const manageHtml = (canManage && !isMe) ? `
-          <div style="display:flex;gap:6px;margin-top:8px;">
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
             <button class="ghost tiny-btn" style="font-size:11px;" data-set-role="${uid}" data-role-val="sub-parent">副保護者</button>
             <button class="ghost tiny-btn" style="font-size:11px;" data-set-role="${uid}" data-role-val="child">子ども</button>
+            <button class="danger tiny-btn" style="font-size:11px;" data-remove-member="${uid}" data-member-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>
           </div>` : "";
         return `
           <div class="stat-card">
@@ -3090,6 +3124,12 @@
             ${manageHtml}
           </div>`;
       }).join("");
+      // 統計リセット（保護者のみ）
+      const resetHtml = canManage ? `
+        <button class="ghost" id="btn-reset-stats" style="width:100%;margin-top:14px;font-size:13px;color:var(--c-urgent);">
+          📊 依頼・担当・完了の数をリセット
+        </button>` : "";
+      return cards + resetHtml;
     }
     function renderMemberStats() {} // 互換性のため残置
 
@@ -3206,6 +3246,36 @@
           showToast(newRole === "sub-parent" ? "副保護者に設定しました" : "子どもに設定しました", { sound: false });
         });
       });
+      // Wire remove-member buttons (parent only)
+      $("family-sheet-body").querySelectorAll("[data-remove-member]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const targetUid = btn.dataset.removeMember;
+          const name = btn.dataset.memberName || "このメンバー";
+          if (!confirm(`${name} さんを家族から外しますか？\n\n外すと、この人はおうちの買い物リストやミッションを見られなくなります。（本人のアカウントは消えません）`)) return;
+          try {
+            await familyRef().child(`members/${targetUid}`).remove();
+            await familyRef().child(`stats/${targetUid}`).remove();
+            showToast(`${name} さんを家族から外しました`, { sound: false });
+            openFamilySheet(); // 一覧を再描画
+          } catch (e) {
+            showToast("外せませんでした: " + ((e && e.message) || e), { sound: false });
+          }
+        });
+      });
+      // Wire reset-stats button (parent only)
+      const resetBtn = $("btn-reset-stats");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", async () => {
+          if (!confirm("全員の「依頼・担当・完了」の数を 0 にリセットしますか？\n\n買い物リストやミッションは消えません。集計の数だけがリセットされます。")) return;
+          try {
+            await familyRef().child("stats").remove();
+            showToast("依頼・担当・完了の数をリセットしました", { sound: false });
+            openFamilySheet();
+          } catch (e) {
+            showToast("リセットできませんでした: " + ((e && e.message) || e), { sound: false });
+          }
+        });
+      }
       $("family-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
     }
