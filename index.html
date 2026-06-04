@@ -2659,7 +2659,7 @@
     function isParent() { return state.myRole === "parent" || state.myRole === "sub-parent"; }
     function renderTopbar() {
       if (!state.profile || !state.family || !state.family.meta) return;
-      $("top-family-text").textContent = state.family.meta.name || "家族";
+      $("top-family-text").textContent = state.profile.name || "ユーザー";
       $("my-avatar").textContent = state.profile.emoji || "🙂";
       const badge = $("top-role-badge");
       const roleLabel = state.myRole ? ROLE_LABEL[state.myRole] : null;
