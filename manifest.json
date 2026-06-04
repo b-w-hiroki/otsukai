@@ -3,7 +3,7 @@
   "short_name": "おつかい",
   "description": "家族でおつかいを依頼・分担できるアプリ",
   "lang": "ja",
-  "start_url": "./app.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
