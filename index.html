@@ -1526,7 +1526,7 @@
       myRole: null
     };
 
-    const expandedGroups = new Set(["group-open", "group-mine"]);
+    const expandedGroups = new Set(["group-open", "group-claimed"]);
     let editingRequestId = null;
     let shortcutMode = false;
 
@@ -2847,21 +2847,18 @@
         .filter(r => r.status === "open")
         .sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || a.requestedAt - b.requestedAt);
 
-      // Group 2: items I claimed (any non-open status)
-      const mineItems = items
-        .filter(r => r.status !== "open" && r.claimedBy === state.uid)
+      // Group 2: items someone declared they'll buy (claimed/done), regardless of who.
+      // 自分・他の人を区別せず1グループに統合。誰が担当かは各カードのバッジで分かる。
+      const claimedItems = items
+        .filter(r => r.status !== "open")
         .sort((a, b) => {
+          // 完了済みは下に
           if (a.status === "done" && b.status !== "done") return 1;
           if (b.status === "done" && a.status !== "done") return -1;
-          return (a.claimedAt || 0) - (b.claimedAt || 0);
-        });
-
-      // Group 3: items others claimed (any non-open status)
-      const othersItems = items
-        .filter(r => r.status !== "open" && r.claimedBy && r.claimedBy !== state.uid)
-        .sort((a, b) => {
-          if (a.status === "done" && b.status !== "done") return 1;
-          if (b.status === "done" && a.status !== "done") return -1;
+          // 同じ状態なら自分の担当を先に、その後は宣言した順
+          const aMine = a.claimedBy === state.uid ? 0 : 1;
+          const bMine = b.claimedBy === state.uid ? 0 : 1;
+          if (aMine !== bMine) return aMine - bMine;
           return (a.claimedAt || 0) - (b.claimedAt || 0);
         });
 
@@ -2876,14 +2873,9 @@
           ? openItems.map((r, i) => compactCard(r, i)).join("")
           : `<div class="empty" style="padding:12px 4px 8px;font-size:12px;">新しい依頼はありません</div>`;
         html += groupHtml("group-open", "🛒 買い物リスト", openItems.length, openBody);
-        if (mineItems.length) {
-          const myName = (state.profile && state.profile.name) ? state.profile.name : "自分";
-          html += groupHtml("group-mine", `🙋 ${myName}のリスト`, mineItems.length,
-            mineItems.map((r, i) => compactCard(r, i)).join(""));
-        }
-        if (othersItems.length) {
-          html += groupHtml("group-others", "👥 他の人のリスト", othersItems.length,
-            othersItems.map((r, i) => compactCard(r, i)).join(""));
+        if (claimedItems.length) {
+          html += groupHtml("group-claimed", "🙋 宣言済みリスト", claimedItems.length,
+            claimedItems.map((r, i) => compactCard(r, i)).join(""));
         }
       }
 
