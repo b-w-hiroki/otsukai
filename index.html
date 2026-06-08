@@ -855,7 +855,13 @@
       transform: translateX(-50%);
       bottom: calc(var(--nav-height) + 52px);
       z-index: 29;
+      display: flex; align-items: center; gap: 10px;
     }
+    .shortcut-float-btn.history {
+      background: linear-gradient(135deg, #7c3aed 0%, #5b5ef4 100%);
+      box-shadow: 0 4px 18px rgba(124,58,237,0.40), 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .shortcut-float-btn.history:hover:not(:disabled) { box-shadow: 0 6px 22px rgba(124,58,237,0.52), 0 2px 8px rgba(0,0,0,0.14); }
     .shortcut-float-btn {
       display: inline-flex; align-items: center; gap: 8px;
       background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
@@ -1257,6 +1263,7 @@
     <!-- Shortcut float button (fixed above footer, requests tab only) -->
     <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
       <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買うもの</button>
+      <button id="btn-history-float" class="shortcut-float-btn history"><span style="font-size:17px;line-height:1;">🧾</span> 履歴</button>
       <div id="shortcut-panel" class="shortcut-panel">
         <div id="shortcut-chips" class="shortcut-chips"></div>
         <div class="shortcut-add-row">
@@ -1838,6 +1845,7 @@
         state.comments = next;
         updateUnreadComments();
         renderRequests();
+        renderHistory();
       }, handleFamilyAccessLost);
       // Shortcuts
       attach(familyRef().child("shortcuts"), "value", (s) => {
@@ -1887,6 +1895,7 @@
         markCommentsSeen(reqId);
       }
       renderRequests();
+      renderHistory();
     }
     async function postComment(reqId, text, parentId) {
       if (!text.trim()) return;
@@ -2859,8 +2868,6 @@
           return (a.claimedAt || 0) - (b.claimedAt || 0);
         });
 
-      const doneCount = items.filter(r => r.status === "done").length;
-
       const hasAny = items.length > 0;
       $("btn-howto").style.display = hasAny ? "" : "none";
 
@@ -2880,15 +2887,7 @@
 
       $("list-open").innerHTML = html;
       $("list-claimed").innerHTML = "";
-      // 購入完了済み履歴への入口（完了アイテムがある時だけ表示）
-      $("list-done").innerHTML = doneCount
-        ? `<button id="btn-purchase-history" class="ghost" style="width:100%;margin-top:10px;padding:14px 16px;border-radius:14px;font-size:14px;font-weight:700;text-align:left;display:flex;align-items:center;gap:8px;">
-             <span>✅ 購入完了済み履歴</span>
-             <span class="section-count" style="margin-left:auto;">${doneCount}</span>
-           </button>`
-        : "";
-      const histBtn = document.getElementById("btn-purchase-history");
-      if (histBtn) histBtn.addEventListener("click", openHistorySheet);
+      $("list-done").innerHTML = "";
       wireRequestButtons();
       wireGroupToggles();
     }
@@ -3016,8 +3015,8 @@
         </div>
       `;
     }
-    function wireRequestButtons() {
-      document.querySelectorAll(".req-row [data-act]").forEach((b) => {
+    function wireRequestButtons(root = document) {
+      root.querySelectorAll(".req-row [data-act]").forEach((b) => {
         b.addEventListener("click", () => {
           const id = b.dataset.id;
           const act = b.dataset.act;
@@ -3028,12 +3027,12 @@
           else if (act === "delete") deleteRequest(id);
         });
       });
-      document.querySelectorAll("[data-toggle]").forEach((b) => {
+      root.querySelectorAll("[data-toggle]").forEach((b) => {
         b.addEventListener("click", () => toggleComments(b.dataset.toggle));
       });
-      document.querySelectorAll(".reply-btn[data-reply]").forEach((b) => {
+      root.querySelectorAll(".reply-btn[data-reply]").forEach((b) => {
         b.addEventListener("click", () => {
-          const row = document.querySelector(`.comment-input-row[data-req="${b.dataset.req}"]`);
+          const row = root.querySelector(`.comment-input-row[data-req="${b.dataset.req}"]`);
           if (!row) return;
           row.dataset.parent = b.dataset.reply;
           const input = row.querySelector(".comment-input");
@@ -3041,7 +3040,7 @@
           input.focus();
         });
       });
-      document.querySelectorAll(".comment-input-row").forEach((row) => {
+      root.querySelectorAll(".comment-input-row").forEach((row) => {
         const input = row.querySelector(".comment-input");
         const send = row.querySelector(".comment-send");
         const doSend = () => {
@@ -3057,7 +3056,7 @@
         input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } });
       });
       // 名前コラムタップで編集
-      document.querySelectorAll(".req-row-name-col[data-edit-id]").forEach((col) => {
+      root.querySelectorAll(".req-row-name-col[data-edit-id]").forEach((col) => {
         col.addEventListener("click", () => {
           const id = col.dataset.editId;
           const raw = state.requests[id];
@@ -3067,25 +3066,22 @@
     }
 
     function renderHistoryHtml() {
+      // 通常の買い物リストと同じカード(compactCard)フォーマットで表示する。
       const items = Object.entries(state.requests)
         .filter(([,r]) => r.status === "done")
         .sort((a,b) => (b[1].completedAt || 0) - (a[1].completedAt || 0))
-        .slice(0, 50);
+        .slice(0, 50)
+        .map(([id, r]) => ({ id, ...r }));
       if (!items.length) return emptyHtml("まだ完了履歴がありません。");
-      return items.map(([id, r]) => {
-        const d = new Date(r.completedAt || 0);
-        const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
-        return `
-          <div class="row" style="padding:8px 4px; border-bottom: 1px solid var(--border);">
-            <span class="muted" style="width:40px;flex-shrink:0;">${dateStr}</span>
-            <span class="grow" style="font-size:14px;">${escapeHtml(r.name)}</span>
-            <span class="tiny">${memberEmoji(r.requestedBy)}→${memberEmoji(r.completedBy)}</span>
-            <button class="ghost rc-btn" data-history-reopen="${id}" style="flex-shrink:0;margin-left:6px;" aria-label="買い物リストに戻す">↩️</button>
-          </div>
-        `;
-      }).join("");
+      return items.map((r, i) => compactCard(r, i)).join("");
     }
-    function renderHistory() {} // 互換性のため残置（履歴はプレイヤーシートで表示）
+    // 履歴シートが開いている間は requests/comments の変更でライブ再描画する。
+    function renderHistory() {
+      const sheet = $("history-sheet");
+      if (!sheet || !sheet.classList.contains("open")) return;
+      $("history-list").innerHTML = renderHistoryHtml();
+      wireRequestButtons($("history-list"));
+    }
 
     function renderMemberStatsHtml() {
       if (!state.family || !state.family.members) return "";
@@ -3178,22 +3174,9 @@
     // ===== History sheet =====
     function openHistorySheet() {
       $("history-list").innerHTML = renderHistoryHtml();
-      wireHistoryButtons();
+      wireRequestButtons($("history-list"));
       $("history-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
-    }
-    function wireHistoryButtons() {
-      document.querySelectorAll("#history-list [data-history-reopen]").forEach((b) => {
-        b.addEventListener("click", async () => {
-          const id = b.dataset.historyReopen;
-          await reopenRequest(id);
-          // 履歴から消えるので再描画。履歴が空なら自動で閉じる。
-          $("history-list").innerHTML = renderHistoryHtml();
-          wireHistoryButtons();
-          if (!Object.values(state.requests).some(r => r.status === "done")) closeHistorySheet();
-          showToast("買い物リストに戻しました ↩️", { sound: false });
-        });
-      });
     }
     function closeHistorySheet() {
       $("history-sheet").classList.remove("open");
@@ -3407,6 +3390,7 @@
       $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); });
       $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
       $("btn-shortcut-register").addEventListener("click", openShortcutRegisterSheet);
+      $("btn-history-float").addEventListener("click", openHistorySheet);
       $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
       $("btn-logout").addEventListener("click", signOut);
       $("btn-copy-code").addEventListener("click", async () => {
