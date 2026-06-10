@@ -890,6 +890,15 @@
     }
     .shortcut-panel.open { display: block; }
 
+    .history-date-hdr {
+      font-size: 12px; font-weight: 800; color: var(--muted);
+      letter-spacing: .02em;
+      padding: 14px 4px 6px;
+      position: sticky; top: 0; z-index: 1;
+      background: var(--surface);
+    }
+    .history-date-hdr:first-child { padding-top: 2px; }
+
     /* ======= Collapsible groups ======= */
     .req-group { margin-bottom: 2px; }
     .req-group-hdr {
@@ -3066,14 +3075,35 @@
     }
 
     function renderHistoryHtml() {
-      // 通常の買い物リストと同じカード(compactCard)フォーマットで表示する。
+      // 通常の買い物リストと同じカード(compactCard)フォーマットで、完了日ごとに見出しを付けて表示する。
       const items = Object.entries(state.requests)
         .filter(([,r]) => r.status === "done")
         .sort((a,b) => (b[1].completedAt || 0) - (a[1].completedAt || 0))
         .slice(0, 50)
         .map(([id, r]) => ({ id, ...r }));
       if (!items.length) return emptyHtml("まだ完了履歴がありません。");
-      return items.map((r, i) => compactCard(r, i)).join("");
+      let html = "";
+      let curKey = null;
+      items.forEach((r, i) => {
+        const d = new Date(r.completedAt || 0);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if (key !== curKey) {
+          curKey = key;
+          html += `<div class="history-date-hdr">${historyDateLabel(r.completedAt)}</div>`;
+        }
+        html += compactCard(r, i);
+      });
+      return html;
+    }
+    // 完了日を「今日／昨日／M月D日(曜)」のラベルにする。
+    function historyDateLabel(ts) {
+      const d = new Date(ts || 0);
+      const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+      const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86400000);
+      if (diffDays === 0) return "今日";
+      if (diffDays === 1) return "昨日";
+      const wd = ["日","月","火","水","木","金","土"][d.getDay()];
+      return `${d.getMonth()+1}月${d.getDate()}日(${wd})`;
     }
     // 履歴シートが開いている間は requests/comments の変更でライブ再描画する。
     function renderHistory() {
