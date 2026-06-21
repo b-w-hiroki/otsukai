@@ -1205,6 +1205,24 @@
             <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
             <span>サウンドを鳴らす</span>
           </label>
+
+          <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+            <div class="row" style="justify-content:space-between;align-items:center;">
+              <span style="font-weight:700;">📱 買い物リマインド</span>
+              <button id="btn-enable-push" class="ghost tiny-btn" style="white-space:nowrap;">通知をオンにする</button>
+            </div>
+            <p id="push-status" class="muted" style="font-size:12px;margin-top:6px;"></p>
+
+            <div style="margin-top:12px;">
+              <label class="muted" style="font-size:13px;">通知する時刻（毎日・家族で共有）</label>
+              <div id="reminder-times-list" class="row wrap" style="gap:6px;margin:8px 0;"></div>
+              <div class="row" style="gap:6px;">
+                <input type="time" id="reminder-time-input" style="flex:1;" />
+                <button id="btn-add-reminder-time" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
+              </div>
+              <p class="muted" style="font-size:11px;margin-top:6px;">設定した時刻に、未完了の買い物があると家族へ通知します。</p>
+            </div>
+          </div>
         </div>
         <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
@@ -1493,6 +1511,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
   <script>
     // ===== Firebase config (set your own values) =====
     const firebaseConfig = {
@@ -1506,6 +1525,14 @@
       measurementId: "G-12RXRBWGVP"
     };
     const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
+
+    // FCM Web Push 用の VAPID 公開鍵。
+    // Firebase Console → プロジェクト設定 → Cloud Messaging → 「ウェブプッシュ証明書」で生成し、
+    // ここに貼り付けると「閉じてても届くプッシュ通知」が有効化できます（未設定だと有効化できません）。
+    const VAPID_KEY = "YOUR_VAPID_KEY";
+    const pushSupported = ("Notification" in window) &&
+      ("serviceWorker" in navigator) &&
+      (typeof firebase !== "undefined") && !!firebase.messaging;
 
     // ===== Constants =====
     const EMOJI_CHOICES = [
@@ -1535,6 +1562,7 @@
       expandedItems: new Set(),
       unreadComments: new Set(),
       muteNotifications: true,
+      reminderTimes: {},
       shortcuts: {},
       stocks: {},
       missions: {},
@@ -1805,6 +1833,11 @@
         renderHistory();
         renderMissions();
       }, handleFamilyAccessLost);
+      // Reminder times（家族共有の通知時刻）
+      attach(familyRef().child("reminderTimes"), "value", (s) => {
+        state.reminderTimes = s.val() || {};
+        renderReminderTimes();
+      });
       // Requests
       let _lastRequestsJson = "";
       attach(familyRef().child("requests"), "value", (s) => {
@@ -3175,6 +3208,120 @@
       `).join("");
     }
 
+    // ===== Push notifications (FCM) & reminder times =====
+    let messaging = null;
+    let fcmSwReg = null;
+
+    function getMessaging() {
+      if (!pushSupported) return null;
+      if (!messaging) {
+        try { messaging = firebase.messaging(); } catch (e) { messaging = null; }
+      }
+      return messaging;
+    }
+
+    function updatePushStatus(msg, isError) {
+      const el = $("push-status");
+      if (!el) return;
+      el.textContent = msg || "";
+      el.style.color = isError ? "#dc2626" : "var(--muted)";
+    }
+
+    async function enablePush() {
+      if (!pushSupported) {
+        updatePushStatus("この端末/ブラウザはプッシュ通知に対応していません（iOSはホーム画面に追加＋16.4以上が必要）。", true);
+        return;
+      }
+      if (VAPID_KEY.startsWith("YOUR_")) {
+        updatePushStatus("VAPIDキーが未設定です。Firebase Consoleのウェブプッシュ証明書を index.html の VAPID_KEY に設定してください。", true);
+        return;
+      }
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") {
+          updatePushStatus("通知が許可されませんでした。端末の設定から許可してください。", true);
+          return;
+        }
+        if (!fcmSwReg) {
+          fcmSwReg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+        }
+        const m = getMessaging();
+        const token = await m.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: fcmSwReg });
+        if (!token) {
+          updatePushStatus("通知トークンを取得できませんでした。もう一度お試しください。", true);
+          return;
+        }
+        await familyRef().child("pushTokens/" + token).set({
+          uid: state.uid,
+          name: (state.profile && state.profile.name) || "",
+          updatedAt: now()
+        });
+        localStorage.setItem("pushToken", token);
+        updatePushStatus("✅ プッシュ通知をオンにしました。");
+        setupForegroundMessages();
+      } catch (e) {
+        updatePushStatus("有効化に失敗しました: " + (e && e.message ? e.message : e), true);
+      }
+    }
+
+    function setupForegroundMessages() {
+      const m = getMessaging();
+      if (!m) return;
+      try {
+        m.onMessage((payload) => {
+          const n = (payload && payload.notification) || {};
+          showToast("🔔 " + (n.title || "お知らせ") + (n.body ? "：" + n.body : ""));
+        });
+      } catch (e) {}
+    }
+
+    function initPushOnLoad() {
+      if (!pushSupported) {
+        updatePushStatus("この端末/ブラウザはプッシュ通知に対応していません。", true);
+        return;
+      }
+      if (Notification.permission === "granted" && !VAPID_KEY.startsWith("YOUR_")) {
+        updatePushStatus("✅ プッシュ通知はオンです。");
+        setupForegroundMessages();
+      } else {
+        updatePushStatus("「通知をオンにする」で買い物リマインドを受け取れます。");
+      }
+    }
+
+    function renderReminderTimes() {
+      const wrap = $("reminder-times-list");
+      if (!wrap) return;
+      const times = Object.keys(state.reminderTimes || {}).sort();
+      if (!times.length) {
+        wrap.innerHTML = `<span class="muted" style="font-size:12px;">まだ設定されていません</span>`;
+        return;
+      }
+      wrap.innerHTML = times.map((t) => `
+        <span class="member-chip">
+          ⏰ ${escapeHtml(t)}
+          <button data-remove-time="${escapeHtml(t)}" aria-label="削除" style="margin-left:6px;background:none;border:none;cursor:pointer;color:var(--muted);font-weight:800;font-size:15px;line-height:1;">×</button>
+        </span>
+      `).join("");
+      wrap.querySelectorAll("[data-remove-time]").forEach((b) => {
+        b.addEventListener("click", () => removeReminderTime(b.dataset.removeTime));
+      });
+    }
+
+    async function addReminderTime() {
+      if (!state.familyId) return;
+      const input = $("reminder-time-input");
+      const val = (input.value || "").trim();
+      if (!/^\d{2}:\d{2}$/.test(val)) { showToast("時刻を選んでください"); return; }
+      await familyRef().child("reminderTimes/" + val).set(true);
+      input.value = "";
+      showToast(`⏰ ${val} にリマインドを設定しました`, { sound: false });
+    }
+
+    async function removeReminderTime(t) {
+      if (!state.familyId) return;
+      await familyRef().child("reminderTimes/" + t).remove();
+    }
+
     function renderEmojiPicker(elId, stateKey) {
       const cur = state[stateKey];
       $(elId).innerHTML = EMOJI_CHOICES.map((e) => `
@@ -3434,6 +3581,10 @@
         state.soundOn = e.target.checked;
         localStorage.setItem("soundOn", String(state.soundOn));
       });
+      $("btn-enable-push").addEventListener("click", enablePush);
+      $("btn-add-reminder-time").addEventListener("click", addReminderTime);
+      $("reminder-time-input").addEventListener("keydown", (e) => { if (e.key === "Enter") addReminderTime(); });
+      initPushOnLoad();
       $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else addRequest(); } });
       $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
       document.addEventListener("keydown", (e) => {
