@@ -2,7 +2,7 @@
 // ナビゲーションはネットワーク優先（オンライン時は常に最新）、
 // オフライン時のみキャッシュしたページを返す。
 // アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
-const CACHE = "otsukai-v8";
+const CACHE = "otsukai-v9";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
