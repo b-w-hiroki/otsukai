@@ -50,12 +50,14 @@ Cloud Functions / Cloud Scheduler は **Blaze（従量課金）プラン**が必
 
 ## デプロイ手順
 
+`firebase.json` と `.firebaserc`（プロジェクト `otsukai-app-4b62b` 指定）はリポジトリに同梱済みなので、`firebase init` は不要です。
+
 ```bash
 # 初回のみ
 npm install -g firebase-tools
 firebase login
 
-# このリポジトリのルートで（firebase.json が無ければ firebase init で functions を選択）
+# 依存をインストール
 cd functions
 npm install
 cd ..
@@ -64,8 +66,9 @@ cd ..
 firebase deploy --only functions
 ```
 
-`firebase init` を使う場合は **Functions** を選び、言語は JavaScript、既存の `functions/` を
-上書きしないように注意してください（この `index.js` / `package.json` を使います）。
+> `firebase.json` は **functions のみ**を対象にしています（Realtime Database のルールや
+> Hosting は含めていません）。これは既存の DB ルールや GitHub Pages 配信を
+> デプロイで上書きしないための配慮です。DB ルールは Firebase Console から手動で調整してください。
 
 ---
 
