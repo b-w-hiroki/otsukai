@@ -971,3 +971,20 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   padding: 8px 12px 10px 14px;
   border-top: 1px solid var(--border);
 }
+
+/* ======= Category chips（追加シート） ======= */
+.cat-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.cat-chip {
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--r-full);
+  padding: 7px 14px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.cat-chip.selected {
+  border-color: var(--pri);
+  background: #eeecfb;
+  color: var(--pri-dark);
+}

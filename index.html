@@ -254,6 +254,8 @@
         </div>
         <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
+          <button id="btn-delete-account" class="danger" style="width:100%;margin-top:10px;">⚠️ アカウントを削除する</button>
+          <p class="muted" style="font-size:11px;margin-top:8px;">アカウントを削除しても、あなたが追加した依頼やコメントは家族のリストに残ります。</p>
         </div>
       </section>
     </div>
@@ -375,6 +377,14 @@
         </div>
         <div class="setup-form">
           <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" />
+          <div>
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">カテゴリ（任意・もう一度タップで解除）</label>
+            <div id="new-category" class="cat-chips">
+              <button type="button" class="cat-chip" data-cat="food">🍎 食品</button>
+              <button type="button" class="cat-chip" data-cat="daily">🧻 日用品</button>
+              <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
+            </div>
+          </div>
           <div class="row" style="gap:8px;">
             <div style="flex:1;">
               <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">手間</label>
