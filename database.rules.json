@@ -17,6 +17,11 @@
       }
     },
 
+    "errors": {
+      ".read": false,
+      ".write": "auth != null"
+    },
+
     "reminderIndex": {
       "$time": {
         "$familyId": {

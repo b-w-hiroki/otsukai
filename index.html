@@ -1223,6 +1223,10 @@
           </div>
         </div>
         <div class="card">
+          <h2>📊 今月のおかいもの</h2>
+          <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
+        </div>
+        <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
         </div>
       </section>
@@ -1572,6 +1576,31 @@
       db = firebase.database();
     }
 
+    // ===== 簡易エラーロギング =====
+    // 実機で何が起きているか見えるよう、未捕捉エラーを DB の errors/ に記録する
+    // （読み取りは Firebase Console から）。1セッション最大10件・ログイン後のみ。
+    let errorLogCount = 0;
+    function logClientError(message, stack) {
+      if (!db || !state.uid || errorLogCount >= 10) return;
+      errorLogCount++;
+      try {
+        db.ref("errors").push({
+          uid: state.uid,
+          message: String(message || "").slice(0, 500),
+          stack: String(stack || "").slice(0, 1500),
+          ua: navigator.userAgent,
+          at: Date.now()
+        });
+      } catch (e) { /* ロギング自体の失敗は握りつぶす */ }
+    }
+    window.addEventListener("error", (e) => {
+      logClientError(e.message, e.error && e.error.stack);
+    });
+    window.addEventListener("unhandledrejection", (e) => {
+      const r = e.reason || {};
+      logClientError(r.message || String(e.reason), r.stack);
+    });
+
     // ===== Screens =====
     function showScreen(name) {
       document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
@@ -1844,6 +1873,7 @@
           renderRequests();
           renderHistory();
           renderBadge();
+          renderMonthlySummary();
         }
       }, handleFamilyAccessLost);
       // Stats
@@ -3130,11 +3160,14 @@
       el.style.color = isError ? "#dc2626" : "var(--muted)";
     }
 
+    // 「この端末では通知を受け取らない」フラグ（端末ローカル・個人設定）
+    function pushOptedOut() { return localStorage.getItem("pushOptOut") === "1"; }
+
     // 現在の FCM トークンを取得して家族の pushTokens に登録する。
     // トークンはローテーションされるため、家族に入るたび（起動時）にも呼んで最新を保つ。
     // 古いトークンが残っていれば削除して付け替える。
     async function registerPushToken() {
-      if (!pushSupported || VAPID_KEY.startsWith("YOUR_")) return null;
+      if (!pushSupported || VAPID_KEY.startsWith("YOUR_") || pushOptedOut()) return null;
       if (Notification.permission !== "granted" || !state.familyId) return null;
       try {
         if (!fcmSwReg) {
@@ -3179,6 +3212,7 @@
         return;
       }
       try {
+        localStorage.removeItem("pushOptOut");
         const perm = await Notification.requestPermission();
         if (perm !== "granted") {
           updatePushStatus("通知が許可されませんでした。端末の設定から許可してください。", true);
@@ -3194,6 +3228,31 @@
       } catch (e) {
         updatePushStatus("有効化に失敗しました: " + (e && e.message ? e.message : e), true);
       }
+      renderPushToggle();
+    }
+
+    // この端末だけ通知を止める（家族の設定時刻はそのまま）
+    async function disablePush() {
+      localStorage.setItem("pushOptOut", "1");
+      await unregisterPushToken(state.familyId);
+      localStorage.removeItem("pushToken");
+      updatePushStatus("この端末では通知を受け取りません。");
+      renderPushToggle();
+    }
+
+    // 通知ボタンの表示をオン/オフ状態に合わせる
+    function renderPushToggle() {
+      const btn = $("btn-enable-push");
+      if (!btn) return;
+      const active = pushSupported && !VAPID_KEY.startsWith("YOUR_") &&
+        Notification.permission === "granted" && !pushOptedOut() && !!localStorage.getItem("pushToken");
+      btn.textContent = active ? "通知をオフにする" : "通知をオンにする";
+      btn.dataset.pushActive = active ? "1" : "";
+    }
+
+    function togglePush() {
+      if ($("btn-enable-push").dataset.pushActive === "1") disablePush();
+      else enablePush();
     }
 
     function setupForegroundMessages() {
@@ -3201,6 +3260,10 @@
       if (!m) return;
       try {
         m.onMessage((payload) => {
+          const data = (payload && payload.data) || {};
+          // イベント型（依頼追加・立候補・完了）はアプリ起動中なら DB リスナーが
+          // 同じ内容をトーストするため、二重表示を避けてスキップする。
+          if (data.type === "event") return;
           const n = (payload && payload.notification) || {};
           showToast("🔔 " + (n.title || "お知らせ") + (n.body ? "：" + n.body : ""));
         });
@@ -3212,7 +3275,9 @@
         updatePushStatus("この端末/ブラウザはプッシュ通知に対応していません。", true);
         return;
       }
-      if (Notification.permission === "granted" && !VAPID_KEY.startsWith("YOUR_")) {
+      if (pushOptedOut()) {
+        updatePushStatus("この端末では通知を受け取りません。");
+      } else if (Notification.permission === "granted" && !VAPID_KEY.startsWith("YOUR_")) {
         updatePushStatus("✅ プッシュ通知はオンです。");
         setupForegroundMessages();
         // トークンローテーションに追従（家族に入っていれば再登録）
@@ -3220,6 +3285,7 @@
       } else {
         updatePushStatus("「通知をオンにする」で買い物リマインドを受け取れます。");
       }
+      renderPushToggle();
     }
 
     function renderReminderTimes() {
@@ -3239,6 +3305,28 @@
       wrap.querySelectorAll("[data-remove-time]").forEach((b) => {
         b.addEventListener("click", () => removeReminderTime(b.dataset.removeTime));
       });
+    }
+
+    // ===== Monthly summary（設定タブ） =====
+    function renderMonthlySummary() {
+      const el = $("monthly-summary");
+      if (!el) return;
+      const nowD = new Date();
+      const monthStart = new Date(nowD.getFullYear(), nowD.getMonth(), 1).getTime();
+      const done = Object.values(state.requests || {})
+        .filter((r) => r && r.status === "done" && (r.completedAt || 0) >= monthStart);
+      if (!done.length) {
+        el.textContent = "今月の完了はまだありません";
+        return;
+      }
+      const budgetSum = done.reduce((sum, r) => sum + (r.budget > 0 ? r.budget : 0), 0);
+      const budgeted = done.filter((r) => r.budget > 0).length;
+      el.innerHTML = `
+        <div class="stat-grid" style="margin-top:0;">
+          <div class="stat"><b>${done.length}</b><span>完了した買い物</span></div>
+          <div class="stat"><b>${budgetSum > 0 ? budgetSum.toLocaleString() + "円" : "—"}</b><span>予算の合計${budgeted ? `（${budgeted}件分）` : ""}</span></div>
+        </div>
+        <p class="muted" style="font-size:11px;margin-top:8px;">※ 予算は依頼時に入力された「〜円以下」の合計です（実際の支払額ではありません）</p>`;
     }
 
     async function addReminderTime() {
@@ -3524,7 +3612,7 @@
         state.soundOn = e.target.checked;
         localStorage.setItem("soundOn", String(state.soundOn));
       });
-      $("btn-enable-push").addEventListener("click", enablePush);
+      $("btn-enable-push").addEventListener("click", togglePush);
       $("btn-add-reminder-time").addEventListener("click", addReminderTime);
       $("reminder-time-input").addEventListener("keydown", (e) => { if (e.key === "Enter") addReminderTime(); });
       initPushOnLoad();
