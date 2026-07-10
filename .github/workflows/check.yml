@@ -1,0 +1,63 @@
+name: check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: JS 構文チェック（単体ファイル）
+        run: |
+          node --check sw.js
+          node --check firebase-messaging-sw.js
+          node --check firebase-config.js
+          node --check functions/index.js
+
+      - name: index.html インラインスクリプトの構文チェック
+        run: |
+          node -e '
+            const fs = require("fs");
+            const html = fs.readFileSync("index.html", "utf8");
+            const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+            let m, count = 0, errors = 0;
+            while ((m = re.exec(html))) {
+              count++;
+              try { new Function(m[1]); }
+              catch (e) { errors++; console.error("Script #" + count + ": " + e.message); }
+            }
+            console.log("inline scripts: " + count + ", errors: " + errors);
+            if (errors > 0) process.exit(1);
+          '
+
+      - name: JSON 妥当性チェック
+        run: |
+          node -e '
+            const fs = require("fs");
+            for (const f of ["manifest.json", "database.rules.json", "firebase.json", ".firebaserc", "functions/package.json"]) {
+              JSON.parse(fs.readFileSync(f, "utf8"));
+              console.log(f + " OK");
+            }
+          '
+
+      - name: sw.js のプリキャッシュ対象が存在するか
+        run: |
+          node -e '
+            const fs = require("fs");
+            const sw = fs.readFileSync("sw.js", "utf8");
+            const missing = [...sw.matchAll(/"\.\/([^"]+)"/g)]
+              .map((m) => m[1])
+              .filter((p) => !fs.existsSync(p));
+            if (missing.length) {
+              console.error("missing precache files:", missing);
+              process.exit(1);
+            }
+            console.log("precache files all exist");
+          '

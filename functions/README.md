@@ -93,8 +93,21 @@ firebase functions:log --only shoppingReminder
 
 ---
 
+## 含まれる関数（4つ）
+
+| 関数 | トリガー | 内容 |
+|---|---|---|
+| `shoppingReminder` | 毎分（Scheduler） | 設定時刻に未完了の買い物があれば家族へリマインド |
+| `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
+| `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
+| `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動 |
+
+`firebase deploy --only functions` で4つまとめてデプロイされます。
+
 ## メモ / 調整ポイント
 
 - 通知時刻は **家族で共有**（`families/{id}/reminderTimes`）。各メンバーが「通知をオン」にすると、その端末トークンが家族の `pushTokens` に登録され、設定時刻に届きます。
+- 通知を受け取りたくないメンバーは、アプリの設定 → 通知 → 「通知をオフにする」で**端末単位**で止められます（家族の設定時刻には影響しません）。
 - 毎分起動が気になる場合は、`index.js` の `schedule("* * * * *")` を `"*/5 * * * *"` 等に変え、アプリ側の時刻入力も5分刻みに丸めると呼び出し回数を減らせます。
 - 無効になった端末トークンは送信失敗時に自動削除されます。
+- アーカイブの保持期間は `index.js` の `ARCHIVE_AFTER_DAYS`（既定90日）で調整できます。アーカイブされたデータは削除ではなく `families/{id}/archive/` に残ります。
