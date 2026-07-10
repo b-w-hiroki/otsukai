@@ -1148,8 +1148,6 @@
       <!-- Tab: Requests -->
       <section id="tab-requests" class="tab active">
         <div id="list-open"></div>
-        <div id="list-claimed"></div>
-        <div id="list-done"></div>
         <!-- 広告枠 (i-mobile「トップページ バナー」スポット)
              initAdSlots() / injectImobileBanner() で SP/PC 別タグを端末判定して注入。
              スポットIDの差し替えは index.html 末尾の initAdSlots() の引数で行う。 -->
@@ -1512,24 +1510,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+  <script src="./firebase-config.js"></script>
   <script>
-    // ===== Firebase config (set your own values) =====
-    const firebaseConfig = {
-      apiKey: "AIzaSyCvG_SliXyI3grYhYS-GhFk-qCP1DMyGqI",
-      authDomain: "otsukai-app-4b62b.firebaseapp.com",
-      databaseURL: "https://otsukai-app-4b62b-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "otsukai-app-4b62b",
-      storageBucket: "otsukai-app-4b62b.firebasestorage.app",
-      messagingSenderId: "422978533670",
-      appId: "1:422978533670:web:aab3f42c2c9cea61ad29e7",
-      measurementId: "G-12RXRBWGVP"
-    };
+    // ===== Firebase config =====
+    // 実体は firebase-config.js（firebase-messaging-sw.js と共有）。
+    const firebaseConfig = self.FIREBASE_CONFIG;
     const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
-
-    // FCM Web Push 用の VAPID 公開鍵。
-    // Firebase Console → プロジェクト設定 → Cloud Messaging → 「ウェブプッシュ証明書」で生成し、
-    // ここに貼り付けると「閉じてても届くプッシュ通知」が有効化できます（未設定だと有効化できません）。
-    const VAPID_KEY = "YOUR_VAPID_KEY";
+    const VAPID_KEY = self.FIREBASE_VAPID_KEY;
     const pushSupported = ("Notification" in window) &&
       ("serviceWorker" in navigator) &&
       (typeof firebase !== "undefined") && !!firebase.messaging;
@@ -1561,7 +1548,6 @@
       prevComments: {},
       expandedItems: new Set(),
       unreadComments: new Set(),
-      muteNotifications: true,
       reminderTimes: {},
       shortcuts: {},
       stocks: {},
@@ -1681,6 +1667,7 @@
     function showAuthError(msg) { const el = $("auth-error"); el.textContent = msg; el.style.display = "block"; }
     function hideAuthError() { $("auth-error").style.display = "none"; }
     async function signOut() {
+      await unregisterPushToken(state.familyId); // この端末への通知を止める
       detachListeners();
       state.uid = null; state.profile = null; state.familyId = null; state.family = null;
       state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
@@ -1828,7 +1815,6 @@
         state.myRole = myMember ? (myMember.memberRole || null) : null;
         renderTopbar();
         renderSettings();
-        renderMemberStats();
         renderRequests();
         renderHistory();
         renderMissions();
@@ -1838,6 +1824,8 @@
         state.reminderTimes = s.val() || {};
         renderReminderTimes();
       });
+      // 通知許可済みならトークンをこの家族に登録し直す（ローテーション追従）
+      registerPushToken();
       // Requests
       let _lastRequestsJson = "";
       attach(familyRef().child("requests"), "value", (s) => {
@@ -1861,7 +1849,6 @@
       // Stats
       attach(familyRef().child("stats"), "value", (s) => {
         state.stats = s.val() || {};
-        renderMemberStats();
       });
       // Comments
       attach(db.ref(`families/${state.familyId}/comments`), "value", (s) => {
@@ -1943,64 +1930,17 @@
       if (!text.trim()) return;
       const ref = db.ref(`families/${state.familyId}/comments/${reqId}`);
       const cid = ref.push().key;
-      await ref.child(cid).set({
+      // 注: 以前はここで requests/{id}/lastCommentAt も更新していたが、どこからも
+      // 参照されておらず、requests リスナーの全再描画を無駄に誘発するだけなので廃止。
+      await dbOp(ref.child(cid).set({
         text: text.trim(),
         authorUid: state.uid,
         authorEmoji: state.profile.emoji,
         authorName: state.profile.name,
         createdAt: now(),
         parentId: parentId || null
-      });
-      await familyRef().child(`requests/${reqId}`).update({ lastCommentAt: now() });
+      }), "コメントを送信できませんでした");
     }
-    function commentThread(r) {
-      const reqId = r.id;
-      const expanded = state.expandedItems.has(reqId);
-      const allComments = state.comments[reqId] || {};
-      const commentList = Object.entries(allComments).map(([id, c]) => ({ id, ...c }));
-      const count = commentList.length;
-      const hasUnread = state.unreadComments.has(reqId);
-      let html = `<div class="comment-footer">
-        <button class="comment-toggle${hasUnread ? ' has-unread' : ''}" data-toggle="${reqId}">
-          💬 ${count > 0 ? count + '件のコメント' : 'コメントする'} ${hasUnread ? '🔴 ' : ''}${expanded ? '▲' : '▼'}
-        </button>`;
-      if (expanded) {
-        const roots = commentList.filter(c => !c.parentId).sort((a,b) => a.createdAt - b.createdAt);
-        const replies = commentList.filter(c => !!c.parentId);
-        html += `<div class="comment-thread">`;
-        if (roots.length === 0) html += `<p class="muted" style="font-size:12px;text-align:center;">まだコメントはありません</p>`;
-        roots.forEach(root => {
-          const rootReplies = replies.filter(rp => rp.parentId === root.id).sort((a,b) => a.createdAt - b.createdAt);
-          html += `<div class="comment-root">
-            <div class="comment-item">
-              <span class="avatar sm">${escapeHtml(root.authorEmoji)}</span>
-              <div class="comment-body">
-                <div class="comment-author">${escapeHtml(root.authorName)} <span class="tiny">${timeAgo(root.createdAt)}</span></div>
-                <div class="comment-text">${escapeHtml(root.text)}</div>
-                <button class="reply-btn" data-reply="${root.id}" data-name="${escapeHtml(root.authorName)}" data-req="${reqId}">↩️ 返信</button>
-              </div>
-            </div>`;
-          rootReplies.forEach(rep => {
-            html += `<div class="comment-item reply">
-              <span class="avatar sm">${escapeHtml(rep.authorEmoji)}</span>
-              <div class="comment-body">
-                <div class="comment-author">${escapeHtml(rep.authorName)} <span class="tiny">${timeAgo(rep.createdAt)}</span></div>
-                <div class="comment-text">${escapeHtml(rep.text)}</div>
-              </div>
-            </div>`;
-          });
-          html += `</div>`;
-        });
-        html += `<div class="comment-input-row" data-req="${reqId}" data-parent="">
-          <span class="avatar sm">${state.profile ? escapeHtml(state.profile.emoji) : '🙂'}</span>
-          <input class="comment-input" placeholder="コメントを追加..." />
-          <button class="comment-send">送信</button>
-        </div></div>`;
-      }
-      html += `</div>`;
-      return html;
-    }
-
     // ===== Notification diff =====
     // 呼び出し側で初回スナップショットを除外しているため、ここでは差分のみ通知する。
     function detectAndNotify(prev, next) {
@@ -2029,9 +1969,10 @@
       const m = state.family && state.family.members && state.family.members[uid];
       return m ? m.name : "誰か";
     }
+    // 絵文字も DB 由来の文字列なので innerHTML へ入れる前にエスケープする（XSS対策）
     function memberEmoji(uid) {
       const m = state.family && state.family.members && state.family.members[uid];
-      return m ? m.emoji : "👤";
+      return m && m.emoji ? escapeHtml(m.emoji) : "👤";
     }
 
     // ===== How-to modal =====
@@ -2058,18 +1999,21 @@
       $("new-diff").value = "normal";
       $("new-assignee").value = "";
     }
-    function openSheet() {
-      // 指名セレクトにメンバー一覧を注入
+    // 指名セレクト（#new-assignee）にメンバー一覧を注入する（自分は除外）
+    function populateAssigneeSelect(suffix = "に頼む") {
       const sel = $("new-assignee");
       sel.innerHTML = '<option value="">👥 誰でもOK（指名なし）</option>';
       const members = state.family && state.family.members ? state.family.members : {};
       Object.entries(members).forEach(([uid, m]) => {
-        if (uid === state.uid) return; // 自分は除外
+        if (uid === state.uid) return;
         const opt = document.createElement("option");
         opt.value = uid;
-        opt.textContent = (m.emoji || "👤") + " " + (m.name || "メンバー") + "に頼む";
+        opt.textContent = (m.emoji || "👤") + " " + (m.name || "メンバー") + suffix;
         sel.appendChild(opt);
       });
+    }
+    function openSheet() {
+      populateAssigneeSelect();
       $("sheet-add").classList.add("open");
       $("sheet-backdrop").classList.add("open");
       $("fab-add").classList.add("open");
@@ -2083,46 +2027,56 @@
     }
 
     // ===== Request CRUD =====
+    // Firebase 書き込みの共通エラーハンドラ。
+    // 失敗（権限・通信）をユーザーに知らせずに成功トーストを出さないため、
+    // 書き込みは必ずこれを通し、false が返ったら後続処理を中断する。
+    async function dbOp(promise, errMsg = "保存できませんでした") {
+      try { await promise; return true; }
+      catch (e) {
+        console.error(errMsg, e);
+        const denied = e && e.code === "PERMISSION_DENIED";
+        showToast(`⚠️ ${errMsg}${denied ? "（権限がありません）" : "。通信環境を確認してください"}`);
+        return false;
+      }
+    }
+
+    let addingRequest = false; // 二度押し防止
     async function addRequest() {
       const name = $("new-name").value.trim();
       if (!name) return showToast("品名を入力してください");
-      const diff = $("new-diff").value;
-      const urgent = $("new-urgent").checked;
-      const memo = $("new-memo").value.trim();
-      const budget = parseInt($("new-budget").value, 10);
-      const brand = $("new-brand").value.trim();
-      const id = familyRef().child("requests").push().key;
-      const ts = now();
-      const assignedTo = $("new-assignee").value;
-      const req = { name, diff, urgent, status: "open", requestedBy: state.uid, requestedAt: ts };
-      if (memo) req.memo = memo;
-      if (budget > 0) req.budget = budget;
-      if (brand) req.brand = brand;
-      if (assignedTo) req.assignedTo = assignedTo;
-      await familyRef().child("requests/" + id).set(req);
-      await bumpStat("requestedCount");
-      $("new-name").value = "";
-      $("new-memo").value = "";
-      $("new-budget").value = "";
-      $("new-brand").value = "";
-      $("new-urgent").checked = false;
-      $("new-assignee").value = "";
-      closeSheet();
-      showToast("追加しました 🛒", { sound: false });
+      if (addingRequest) return;
+      addingRequest = true;
+      try {
+        const diff = $("new-diff").value;
+        const urgent = $("new-urgent").checked;
+        const memo = $("new-memo").value.trim();
+        const budget = parseInt($("new-budget").value, 10);
+        const brand = $("new-brand").value.trim();
+        const id = familyRef().child("requests").push().key;
+        const ts = now();
+        const assignedTo = $("new-assignee").value;
+        const req = { name, diff, urgent, status: "open", requestedBy: state.uid, requestedAt: ts };
+        if (memo) req.memo = memo;
+        if (budget > 0) req.budget = budget;
+        if (brand) req.brand = brand;
+        if (assignedTo) req.assignedTo = assignedTo;
+        if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
+        bumpStat("requestedCount");
+        $("new-name").value = "";
+        $("new-memo").value = "";
+        $("new-budget").value = "";
+        $("new-brand").value = "";
+        $("new-urgent").checked = false;
+        $("new-assignee").value = "";
+        closeSheet();
+        showToast("追加しました 🛒", { sound: false });
+      } finally {
+        addingRequest = false;
+      }
     }
     function openEditSheet(r) {
       editingRequestId = r.id;
-      // メンバーセレクトを再構築
-      const sel = $("new-assignee");
-      sel.innerHTML = '<option value="">👥 誰でもOK（指名なし）</option>';
-      const members = state.family && state.family.members ? state.family.members : {};
-      Object.entries(members).forEach(([uid, m]) => {
-        if (uid === state.uid) return;
-        const opt = document.createElement("option");
-        opt.value = uid;
-        opt.textContent = (m.emoji || "👤") + " " + (m.name || "メンバー") + "に頼む";
-        sel.appendChild(opt);
-      });
+      populateAssigneeSelect();
       // フィールドに既存値を注入
       $("new-name").value = r.name || "";
       $("new-diff").value = r.diff || "normal";
@@ -2154,7 +2108,7 @@
       updates.budget = budget > 0 ? budget : null;
       updates.brand = brand || null;
       updates.assignedTo = assignedTo || null;
-      await familyRef().child("requests/" + editingRequestId).update(updates);
+      if (!(await dbOp(familyRef().child("requests/" + editingRequestId).update(updates), "更新できませんでした"))) return;
       closeSheet();
       showToast("更新しました ✏️");
     }
@@ -2164,12 +2118,12 @@
       const diff = $("new-diff").value;
       const urgent = $("new-urgent").checked;
       const ref = familyRef().child("shortcuts").push();
-      await ref.set({ name, diff, urgent: urgent || false, createdAt: now(), createdBy: state.uid });
+      if (!(await dbOp(ref.set({ name, diff, urgent: urgent || false, createdAt: now(), createdBy: state.uid }), "登録できませんでした"))) return;
       closeSheet();
       showToast(`⭐ 「${name}」をショートカット登録しました`);
     }
     async function deleteShortcut(id) {
-      await familyRef().child("shortcuts/" + id).remove();
+      await dbOp(familyRef().child("shortcuts/" + id).remove(), "削除できませんでした");
     }
     async function addFromShortcut(s) {
       const id = familyRef().child("requests").push().key;
@@ -2178,8 +2132,8 @@
       if (s.budget > 0) req.budget = s.budget;
       if (s.brand) req.brand = s.brand;
       if (s.assignedTo) req.assignedTo = s.assignedTo;
-      await familyRef().child("requests/" + id).set(req);
-      await bumpStat("requestedCount");
+      if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
+      bumpStat("requestedCount");
       showToast(`🛒 「${s.name}」を追加しました`);
     }
     function updateShortcutVisibility() {
@@ -2191,17 +2145,7 @@
       shortcutMode = true;
       editingRequestId = null;
       closeShortcutPanel();
-      // メンバーセレクトを再構築
-      const sel = $("new-assignee");
-      sel.innerHTML = '<option value="">👥 誰でもOK（指名なし）</option>';
-      const members = state.family && state.family.members ? state.family.members : {};
-      Object.entries(members).forEach(([uid, m]) => {
-        if (uid === state.uid) return;
-        const opt = document.createElement("option");
-        opt.value = uid;
-        opt.textContent = (m.emoji || "👤") + " " + (m.name || uid);
-        sel.appendChild(opt);
-      });
+      populateAssigneeSelect("");
       // フィールドをクリア
       $("new-name").value = "";
       $("new-memo").value = "";
@@ -2233,7 +2177,7 @@
       if (brand) entry.brand = brand;
       if (assignedTo) entry.assignedTo = assignedTo;
       const ref = familyRef().child("shortcuts").push();
-      await ref.set(entry);
+      if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
       closeSheet();
       showToast(`⭐ 「${name}」をよく買うものに登録しました`);
     }
@@ -2287,34 +2231,56 @@
       if (btn) btn.classList.remove("open");
     }
     async function claimRequest(id) {
-      await familyRef().child("requests/" + id).update({
-        status: "claimed", claimedBy: state.uid, claimedAt: now()
-      });
-      await bumpStat("claimedCount");
+      // トランザクションで「open のときだけ」立候補する。
+      // 2人が同時に押しても後から来た方は中断され、担当の上書きと統計の二重加算を防ぐ。
+      try {
+        const res = await familyRef().child("requests/" + id).transaction((cur) => {
+          if (cur === null) return cur;       // まだローカルに無い/削除済み → そのまま
+          if (cur.status !== "open") return;  // 先に誰かが立候補 → 中断
+          return { ...cur, status: "claimed", claimedBy: state.uid, claimedAt: now() };
+        });
+        const after = res.snapshot ? res.snapshot.val() : null;
+        if (!res.committed || !after || after.claimedBy !== state.uid) {
+          if (after && after.claimedBy && after.claimedBy !== state.uid) {
+            showToast(`🙋 ひと足先に${memberName(after.claimedBy)}さんが立候補していました`);
+          }
+          return;
+        }
+        bumpStat("claimedCount");
+      } catch (e) {
+        console.error(e);
+        showToast("⚠️ 立候補できませんでした。通信環境を確認してください");
+      }
     }
     async function unclaimRequest(id) {
-      await familyRef().child("requests/" + id).update({
+      await dbOp(familyRef().child("requests/" + id).update({
         status: "open", claimedBy: null, claimedAt: null
-      });
+      }), "変更できませんでした");
     }
     async function completeRequest(id) {
-      await familyRef().child("requests/" + id).update({
+      if (!(await dbOp(familyRef().child("requests/" + id).update({
         status: "done", completedBy: state.uid, completedAt: now()
-      });
-      await bumpStat("completedCount");
+      }), "完了にできませんでした"))) return;
+      bumpStat("completedCount");
     }
     async function reopenRequest(id) {
-      await familyRef().child("requests/" + id).update({
+      await dbOp(familyRef().child("requests/" + id).update({
         status: "open", completedBy: null, completedAt: null, claimedBy: null, claimedAt: null
-      });
+      }), "戻せませんでした");
     }
     async function deleteRequest(id) {
-      await familyRef().child("requests/" + id).remove();
+      const r = state.requests[id];
+      const label = r && r.name ? `「${r.name}」` : "この依頼";
+      if (!confirm(`${label}を削除しますか？\n\n一度削除すると元に戻せません。`)) return;
+      await dbOp(familyRef().child("requests/" + id).remove(), "削除できませんでした");
     }
     async function bumpStat(field) {
-      const ref = familyRef().child(`stats/${state.uid}/${field}`);
-      await ref.transaction((v) => (v || 0) + 1);
-      await familyRef().child(`stats/${state.uid}/lastActiveAt`).set(now());
+      // 統計はおまけなので、失敗しても本処理を止めない（エラートーストも出さない）
+      try {
+        const ref = familyRef().child(`stats/${state.uid}/${field}`);
+        await ref.transaction((v) => (v || 0) + 1);
+        await familyRef().child(`stats/${state.uid}/lastActiveAt`).set(now());
+      } catch (e) { console.error("bumpStat failed", e); }
     }
 
     // ===== Stock Management =====
@@ -2368,30 +2334,37 @@
       const memo = $("stock-memo").value.trim();
       const budget = parseInt($("stock-budget").value, 10);
       const photoFile = $("stock-photo-input").files[0];
-      const id = familyRef().child("stocks").push().key;
-      const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
-      if (memo) item.memo = memo;
-      if (budget > 0) item.budget = budget;
-      if (photoFile) {
-        showToast("写真をアップロード中...", { sound: false });
-        try {
-          item.photoUrl = await uploadStockPhoto(photoFile, id);
-        } catch (e) {
-          showToast("写真のアップロードに失敗しました");
+      const addBtn = $("btn-add-stock");
+      if (addBtn && addBtn.disabled) return; // アップロード中の二度押し防止
+      if (addBtn) addBtn.disabled = true;
+      try {
+        const id = familyRef().child("stocks").push().key;
+        const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
+        if (memo) item.memo = memo;
+        if (budget > 0) item.budget = budget;
+        if (photoFile) {
+          showToast("写真をアップロード中...", { sound: false });
+          try {
+            item.photoUrl = await uploadStockPhoto(photoFile, id);
+          } catch (e) {
+            showToast("写真のアップロードに失敗しました");
+          }
         }
+        if (!(await dbOp(familyRef().child("stocks/" + id).set(item), "登録できませんでした"))) return;
+        closeStockSheet();
+        showToast("登録しました 📦", { sound: false });
+      } finally {
+        if (addBtn) addBtn.disabled = false;
       }
-      await familyRef().child("stocks/" + id).set(item);
-      closeStockSheet();
-      showToast("登録しました 📦", { sound: false });
     }
     async function updateStockLevel(id, level) {
-      await familyRef().child(`stocks/${id}`).update({ level, updatedBy: state.uid, updatedAt: now() });
+      await dbOp(familyRef().child(`stocks/${id}`).update({ level, updatedBy: state.uid, updatedAt: now() }), "変更できませんでした");
     }
     async function deleteStock(id) {
       const s = state.stocks[id];
       if (!s) return;
       if (!confirm(`「${s.name}」をストックから削除しますか？\n\n一度削除すると元に戻せません。`)) return;
-      await familyRef().child("stocks/" + id).remove();
+      if (!(await dbOp(familyRef().child("stocks/" + id).remove(), "削除できませんでした"))) return;
       showToast(`「${s.name}」を削除しました`, { sound: false });
     }
     async function addStockToRequest(s) {
@@ -2399,8 +2372,8 @@
       const req = { name: s.name, diff: "normal", urgent: s.level === "out", status: "open", requestedBy: state.uid, requestedAt: now() };
       if (s.budget > 0) req.budget = s.budget;
       if (s.memo) req.brand = s.memo;
-      await familyRef().child("requests/" + id).set(req);
-      await bumpStat("requestedCount");
+      if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
+      bumpStat("requestedCount");
       showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
     }
     function stockCard(s, i) {
@@ -2794,7 +2767,7 @@
 
       let actHtml = "";
       if (isDone) {
-        actHtml = `<button class="ghost rc-btn" data-act="reopen" data-id="${r.id}">↩️</button>`;
+        actHtml = `<button class="ghost rc-btn" data-act="reopen" data-id="${r.id}" aria-label="買い物リストに戻す">↩️</button>`;
         if (r.requestedBy === state.uid) {
           actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
         }
@@ -2812,7 +2785,7 @@
       const dot = hasUnread
         ? `<span class="comment-dot unread"></span>`
         : commentCount > 0 ? `<span class="comment-dot seen"></span>` : '';
-      actHtml += `<button class="rc-comment-btn${expanded ? ' open' : ''}" data-toggle="${r.id}">💬${dot}</button>`;
+      actHtml += `<button class="rc-comment-btn${expanded ? ' open' : ''}" data-toggle="${r.id}" aria-label="コメントを開く">💬${dot}</button>`;
 
       // Extra info hints: budget / brand / memo / assignee
       const hintParts = [];
@@ -2928,9 +2901,7 @@
       }
 
       $("list-open").innerHTML = html;
-      $("list-claimed").innerHTML = "";
-      $("list-done").innerHTML = "";
-      wireRequestButtons();
+      wireRequestButtons($("list-open"));
       wireGroupToggles();
     }
     function sectionHtml(title, count, body) {
@@ -2968,14 +2939,6 @@
         </div>
       </div>`;
     }
-    function reqHints(r) {
-      const parts = [];
-      if (r.budget) parts.push(`💰 ${Number(r.budget).toLocaleString()}円以下で`);
-      if (r.brand)  parts.push(`🏷️ ${escapeHtml(r.brand)}`);
-      if (!parts.length) return "";
-      return `<div class="req-hints">${parts.map((p) => `<span class="req-hint">${p}</span>`).join("")}</div>`;
-    }
-
     function timeAgo(ts) {
       if (!ts) return "";
       const diff = now() - ts;
@@ -2986,76 +2949,6 @@
       if (hr < 24) return hr + "時間前";
       const day = Math.floor(hr / 24);
       return day + "日前";
-    }
-    function openCard(r, i = 0) {
-      const hasUnread = state.unreadComments.has(r.id);
-      const isAssignedToMe = r.assignedTo === state.uid;
-      const assignedName = r.assignedTo ? memberName(r.assignedTo) : null;
-      const assignedEmoji = r.assignedTo ? memberEmoji(r.assignedTo) : null;
-      const claimLabel = isAssignedToMe ? "✋ 担当する（指名されました）" : "🙋 立候補する";
-      const claimClass = isAssignedToMe ? "warn" : "success";
-      return `
-        <div class="req ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}${isAssignedToMe ? ' assigned-to-me' : ''}" style="--i:${i}">
-          <div class="head">
-            <span class="name">${escapeHtml(r.name)}</span>
-            ${r.diff && r.diff !== "normal" ? `<span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>` : ""}
-            ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
-          </div>
-          ${assignedName ? `<div class="assignee-badge">📌 ${assignedEmoji} <b>${escapeHtml(assignedName)}</b> さんにお願い</div>` : ""}
-          <div class="meta">${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ <span data-timeago="${r.requestedAt}">${timeAgo(r.requestedAt)}</span></div>
-          ${reqHints(r)}
-          ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
-          <div class="actions">
-            <button data-act="claim" data-id="${r.id}" class="${claimClass}">${claimLabel}</button>
-            ${r.requestedBy === state.uid ? `<button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>` : ''}
-          </div>
-          ${commentThread(r)}
-        </div>
-      `;
-    }
-    function claimedCard(r, i = 0) {
-      const mine = r.claimedBy === state.uid;
-      const hasUnread = state.unreadComments.has(r.id);
-      return `
-        <div class="req claimed ${r.urgent ? 'urgent' : ''}${hasUnread ? ' has-unread-comment' : ''}" style="--i:${i}">
-          <div class="head">
-            <span class="name">${escapeHtml(r.name)}</span>
-            ${r.diff && r.diff !== "normal" ? `<span class="pill diff-${r.diff}">${DIFF_LABEL[r.diff] || ""}</span>` : ""}
-            ${r.urgent ? '<span class="pill urgent">🔥急ぎ</span>' : ''}
-          </div>
-          <div class="claimer-badge">
-            <div class="avatar">${memberEmoji(r.claimedBy)}</div>
-            <div>
-              <div class="claimer-badge-name">${escapeHtml(memberName(r.claimedBy))}さん${mine ? ' (あなた)' : ''}</div>
-              <div class="claimer-badge-status">🛒 買いに行きます・<span data-timeago="${r.claimedAt}">${timeAgo(r.claimedAt)}</span>に立候補</div>
-            </div>
-          </div>
-          ${reqHints(r)}
-          ${r.memo ? `<div class="memo">📝 ${escapeHtml(r.memo)}</div>` : ''}
-          <div class="actions">
-            ${mine ? `<button data-act="complete" data-id="${r.id}" class="success">✅ 購入しました</button>` : ''}
-            ${mine ? `<button data-act="unclaim" data-id="${r.id}" class="ghost">↩️ やめる</button>` : ''}
-          </div>
-          ${commentThread(r)}
-        </div>
-      `;
-    }
-    function doneCard(r, i = 0) {
-      const hasUnread = state.unreadComments.has(r.id);
-      return `
-        <div class="req done${hasUnread ? ' has-unread-comment' : ''}" style="--i:${i}">
-          <div class="head">
-            <span class="name">${escapeHtml(r.name)}</span>
-            <span class="pill s-done">✅完了</span>
-          </div>
-          <div class="meta">${memberEmoji(r.completedBy)} ${escapeHtml(memberName(r.completedBy))}さんが完了 ・ <span data-timeago="${r.completedAt}">${timeAgo(r.completedAt)}</span></div>
-          <div class="actions">
-            <button data-act="reopen" data-id="${r.id}" class="ghost tiny-btn">↩️ 戻す</button>
-            <button data-act="delete" data-id="${r.id}" class="icon-btn" aria-label="削除">×</button>
-          </div>
-          ${commentThread(r)}
-        </div>
-      `;
     }
     function wireRequestButtons(root = document) {
       root.querySelectorAll(".req-row [data-act]").forEach((b) => {
@@ -3107,14 +3000,15 @@
       });
     }
 
+    let historyLimit = 50; // 「もっと見る」で 50 件ずつ増える
     function renderHistoryHtml() {
       // 通常の買い物リストと同じカード(compactCard)フォーマットで、完了日ごとに見出しを付けて表示する。
-      const items = Object.entries(state.requests)
+      const all = Object.entries(state.requests)
         .filter(([,r]) => r.status === "done")
         .sort((a,b) => (b[1].completedAt || 0) - (a[1].completedAt || 0))
-        .slice(0, 50)
         .map(([id, r]) => ({ id, ...r }));
-      if (!items.length) return emptyHtml("まだ完了履歴がありません。");
+      if (!all.length) return emptyHtml("まだ完了履歴がありません。");
+      const items = all.slice(0, historyLimit);
       let html = "";
       let curKey = null;
       items.forEach((r, i) => {
@@ -3126,6 +3020,9 @@
         }
         html += compactCard(r, i);
       });
+      if (all.length > historyLimit) {
+        html += `<button data-history-more class="ghost" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;font-size:13px;font-weight:700;">さらに表示（残り ${all.length - historyLimit} 件）</button>`;
+      }
       return html;
     }
     // 完了日を「今日／昨日／M月D日(曜)」のラベルにする。
@@ -3138,12 +3035,19 @@
       const wd = ["日","月","火","水","木","金","土"][d.getDay()];
       return `${d.getMonth()+1}月${d.getDate()}日(${wd})`;
     }
+    // 履歴リストの描画＋結線（「もっと見る」含む）
+    function refreshHistoryList() {
+      const el = $("history-list");
+      el.innerHTML = renderHistoryHtml();
+      wireRequestButtons(el);
+      const more = el.querySelector("[data-history-more]");
+      if (more) more.addEventListener("click", () => { historyLimit += 50; refreshHistoryList(); });
+    }
     // 履歴シートが開いている間は requests/comments の変更でライブ再描画する。
     function renderHistory() {
       const sheet = $("history-sheet");
       if (!sheet || !sheet.classList.contains("open")) return;
-      $("history-list").innerHTML = renderHistoryHtml();
-      wireRequestButtons($("history-list"));
+      refreshHistoryList();
     }
 
     function renderMemberStatsHtml() {
@@ -3169,7 +3073,7 @@
         return `
           <div class="stat-card">
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-              <span style="font-size:28px;">${m.emoji || "👤"}</span>
+              <span style="font-size:28px;">${escapeHtml(m.emoji || "👤")}</span>
               <div>
                 <div style="font-weight:700;font-size:14px;">${escapeHtml(m.name || "メンバー")}${isMe ? " <span style='color:var(--muted);font-size:11px;'>(自分)</span>" : ""}</div>
                 <div style="font-size:11px;color:var(--muted);">${roleLabel}</div>
@@ -3190,7 +3094,6 @@
         </button>` : "";
       return cards + resetHtml;
     }
-    function renderMemberStats() {} // 互換性のため残置
 
     function renderSettings() {
       if (!state.profile || !state.family) return;
@@ -3202,7 +3105,7 @@
       const members = (state.family && state.family.members) || {};
       $("member-list").innerHTML = Object.entries(members).map(([uid, m]) => `
         <span class="member-chip">
-          <span class="avatar sm">${m.emoji || "👤"}</span>
+          <span class="avatar sm">${escapeHtml(m.emoji || "👤")}</span>
           ${escapeHtml(m.name)}${uid === state.uid ? "（自分）" : ""}
         </span>
       `).join("");
@@ -3227,13 +3130,52 @@
       el.style.color = isError ? "#dc2626" : "var(--muted)";
     }
 
+    // 現在の FCM トークンを取得して家族の pushTokens に登録する。
+    // トークンはローテーションされるため、家族に入るたび（起動時）にも呼んで最新を保つ。
+    // 古いトークンが残っていれば削除して付け替える。
+    async function registerPushToken() {
+      if (!pushSupported || VAPID_KEY.startsWith("YOUR_")) return null;
+      if (Notification.permission !== "granted" || !state.familyId) return null;
+      try {
+        if (!fcmSwReg) {
+          fcmSwReg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
+        }
+        const m = getMessaging();
+        if (!m) return null;
+        const token = await m.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: fcmSwReg });
+        if (!token) return null;
+        const old = localStorage.getItem("pushToken");
+        if (old && old !== token) {
+          await familyRef().child("pushTokens/" + old).remove().catch(() => {});
+        }
+        await familyRef().child("pushTokens/" + token).set({
+          uid: state.uid,
+          name: (state.profile && state.profile.name) || "",
+          updatedAt: now()
+        });
+        localStorage.setItem("pushToken", token);
+        return token;
+      } catch (e) {
+        console.error("registerPushToken failed", e);
+        return null;
+      }
+    }
+
+    // ログアウトや家族離脱時に、この端末のトークンを家族から外す（外し損ねても
+    // サーバー側の無効トークン掃除が最終防衛線になる）。
+    async function unregisterPushToken(familyId) {
+      const token = localStorage.getItem("pushToken");
+      if (!token || !familyId) return;
+      try { await db.ref(`families/${familyId}/pushTokens/${token}`).remove(); } catch (e) {}
+    }
+
     async function enablePush() {
       if (!pushSupported) {
         updatePushStatus("この端末/ブラウザはプッシュ通知に対応していません（iOSはホーム画面に追加＋16.4以上が必要）。", true);
         return;
       }
       if (VAPID_KEY.startsWith("YOUR_")) {
-        updatePushStatus("VAPIDキーが未設定です。Firebase Consoleのウェブプッシュ証明書を index.html の VAPID_KEY に設定してください。", true);
+        updatePushStatus("VAPIDキーが未設定です。firebase-config.js の FIREBASE_VAPID_KEY にウェブプッシュ証明書を設定してください。", true);
         return;
       }
       try {
@@ -3242,21 +3184,11 @@
           updatePushStatus("通知が許可されませんでした。端末の設定から許可してください。", true);
           return;
         }
-        if (!fcmSwReg) {
-          fcmSwReg = await navigator.serviceWorker.register("./firebase-messaging-sw.js");
-        }
-        const m = getMessaging();
-        const token = await m.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: fcmSwReg });
+        const token = await registerPushToken();
         if (!token) {
           updatePushStatus("通知トークンを取得できませんでした。もう一度お試しください。", true);
           return;
         }
-        await familyRef().child("pushTokens/" + token).set({
-          uid: state.uid,
-          name: (state.profile && state.profile.name) || "",
-          updatedAt: now()
-        });
-        localStorage.setItem("pushToken", token);
         updatePushStatus("✅ プッシュ通知をオンにしました。");
         setupForegroundMessages();
       } catch (e) {
@@ -3283,6 +3215,8 @@
       if (Notification.permission === "granted" && !VAPID_KEY.startsWith("YOUR_")) {
         updatePushStatus("✅ プッシュ通知はオンです。");
         setupForegroundMessages();
+        // トークンローテーションに追従（家族に入っていれば再登録）
+        registerPushToken();
       } else {
         updatePushStatus("「通知をオンにする」で買い物リマインドを受け取れます。");
       }
@@ -3312,14 +3246,23 @@
       const input = $("reminder-time-input");
       const val = (input.value || "").trim();
       if (!/^\d{2}:\d{2}$/.test(val)) { showToast("時刻を選んでください"); return; }
-      await familyRef().child("reminderTimes/" + val).set(true);
+      // reminderIndex はサーバー（Cloud Functions）が「この時刻に通知すべき家族」を
+      // 全家族スキャンなしで引けるようにするための逆引き索引。
+      const ok = await dbOp(Promise.all([
+        familyRef().child("reminderTimes/" + val).set(true),
+        db.ref(`reminderIndex/${val}/${state.familyId}`).set(true)
+      ]), "設定できませんでした");
+      if (!ok) return;
       input.value = "";
       showToast(`⏰ ${val} にリマインドを設定しました`, { sound: false });
     }
 
     async function removeReminderTime(t) {
       if (!state.familyId) return;
-      await familyRef().child("reminderTimes/" + t).remove();
+      await dbOp(Promise.all([
+        familyRef().child("reminderTimes/" + t).remove(),
+        db.ref(`reminderIndex/${t}/${state.familyId}`).remove()
+      ]), "削除できませんでした");
     }
 
     function renderEmojiPicker(elId, stateKey) {
@@ -3350,8 +3293,8 @@
 
     // ===== History sheet =====
     function openHistorySheet() {
-      $("history-list").innerHTML = renderHistoryHtml();
-      wireRequestButtons($("history-list"));
+      historyLimit = 50; // 開き直したら表示件数をリセット
+      refreshHistoryList();
       $("history-sheet").classList.add("open");
       $("sheet-backdrop").classList.add("open");
     }
