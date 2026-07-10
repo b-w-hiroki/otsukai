@@ -188,6 +188,67 @@ async function signOut() {
   await auth.signOut();
 }
 
+// ===== アカウント削除 =====
+// 方針: 本人のアカウント情報（users/・メンバー登録・統計・通知トークン）を消し、
+// 追加した依頼・コメントは家族の記録として残す。
+// 自分が家族の最後の1人だった場合は、家族データと招待コードも丸ごと削除する。
+async function deleteAccount() {
+  if (!confirm("アカウントを削除しますか？\n\nあなたのプロフィール・統計は削除されます。\n追加した依頼やコメントは家族のリストに残ります。")) return;
+  if (!confirm("本当に削除しますか？ この操作は元に戻せません。")) return;
+
+  // Firebase は「最近のログイン」がないと認証アカウントの削除を拒否する。
+  // データを消した後に拒否されると中途半端な状態になるため、先に確認する。
+  const lastSignIn = new Date(auth.currentUser.metadata.lastSignInTime).getTime();
+  if (now() - lastSignIn > 4 * 60 * 1000) {
+    alert("安全のため、アカウント削除には「ログイン直後」の操作が必要です。\n\n一度ログアウトして再ログインし、そのままもう一度お試しください。");
+    return;
+  }
+
+  const uid = state.uid;
+  const familyId = state.familyId;
+  // 失敗時に書き戻せるようスナップショットを取っておく
+  const profileBackup = (await db.ref("users/" + uid).once("value")).val();
+  const memberBackup = familyId
+    ? (await db.ref(`families/${familyId}/members/${uid}`).once("value")).val()
+    : null;
+  const members = (state.family && state.family.members) || {};
+  const isLastMember = familyId && Object.keys(members).length <= 1;
+  const inviteCode = state.family && state.family.meta && state.family.meta.inviteCode;
+
+  try {
+    detachListeners(); // 自分のメンバー削除で PERMISSION_DENIED が飛ぶ前にリスナーを外す
+    // 1. 家族側のデータを片付ける（家族に入っていない場合はスキップ）
+    if (familyId) {
+      await unregisterPushToken(familyId);
+      if (isLastMember) {
+        await db.ref("families/" + familyId).remove();
+        if (inviteCode) await db.ref("invites/" + inviteCode).remove().catch(() => {});
+      } else {
+        await db.ref(`families/${familyId}/members/${uid}`).remove();
+        await db.ref(`families/${familyId}/stats/${uid}`).remove().catch(() => {});
+      }
+    }
+    // 2. ユーザープロフィールを削除
+    await db.ref("users/" + uid).remove();
+    // 3. 認証アカウントを削除
+    await auth.currentUser.delete();
+    state.uid = null; state.profile = null; state.familyId = null; state.family = null;
+    state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
+    state.missions = {}; state.missionLogs = {}; state.myRole = null;
+    showToast("アカウントを削除しました");
+    showScreen("auth");
+  } catch (e) {
+    console.error("deleteAccount failed", e);
+    // 消した分を可能な範囲で書き戻す（最後の1人で家族ごと消した後の失敗は復元不可）
+    try {
+      if (profileBackup) await db.ref("users/" + uid).set(profileBackup);
+      if (memberBackup && !isLastMember) await db.ref(`families/${familyId}/members/${uid}`).set(memberBackup);
+    } catch (restoreErr) { console.error("restore failed", restoreErr); }
+    showToast("⚠️ 削除に失敗しました: " + (e && e.message ? e.message : e));
+    if (state.familyId) attachFamilyListeners();
+  }
+}
+
 // ===== User profile =====
 async function loadUserProfile() {
   const snap = await db.ref("users/" + state.uid).once("value");
@@ -499,6 +560,34 @@ function closeHowto() {
   $("howto-modal-backdrop").classList.remove("open");
 }
 
+// ===== Category =====
+// 固定3種のカテゴリ。任意入力（未選択 = 分類なし）。
+const CATEGORY = {
+  food:  { emoji: "🍎", label: "食品",   order: 0 },
+  daily: { emoji: "🧻", label: "日用品", order: 1 },
+  other: { emoji: "📦", label: "その他", order: 2 },
+};
+const CATEGORY_NONE_ORDER = 3; // 未分類はカテゴリ付きの後ろに並べる
+let selectedCategory = null;
+
+function setSelectedCategory(cat) {
+  selectedCategory = cat && CATEGORY[cat] ? cat : null;
+  document.querySelectorAll("#new-category .cat-chip").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.cat === selectedCategory);
+  });
+}
+function wireCategoryChips() {
+  document.querySelectorAll("#new-category .cat-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      // 同じチップをもう一度タップで解除
+      setSelectedCategory(b.dataset.cat === selectedCategory ? null : b.dataset.cat);
+    });
+  });
+}
+function categoryOrder(r) {
+  return r.category && CATEGORY[r.category] ? CATEGORY[r.category].order : CATEGORY_NONE_ORDER;
+}
+
 // ===== Bottom sheet =====
 function resetSheetToAddMode() {
   editingRequestId = null;
@@ -512,6 +601,7 @@ function resetSheetToAddMode() {
   $("new-urgent").checked = false;
   $("new-diff").value = "normal";
   $("new-assignee").value = "";
+  setSelectedCategory(null);
 }
 // 指名セレクト（#new-assignee）にメンバー一覧を注入する（自分は除外）
 function populateAssigneeSelect(suffix = "に頼む") {
@@ -574,6 +664,7 @@ async function addRequest() {
     if (budget > 0) req.budget = budget;
     if (brand) req.brand = brand;
     if (assignedTo) req.assignedTo = assignedTo;
+    if (selectedCategory) req.category = selectedCategory;
     if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
     bumpStat("requestedCount");
     $("new-name").value = "";
@@ -599,6 +690,7 @@ function openEditSheet(r) {
   $("new-budget").value = r.budget > 0 ? r.budget : "";
   $("new-brand").value = r.brand || "";
   $("new-assignee").value = r.assignedTo || "";
+  setSelectedCategory(r.category || null);
   // 編集モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "✏️ おつかいを編集";
   $("btn-add-request").textContent = "更新する";
@@ -622,6 +714,7 @@ async function updateRequest() {
   updates.budget = budget > 0 ? budget : null;
   updates.brand = brand || null;
   updates.assignedTo = assignedTo || null;
+  updates.category = selectedCategory || null;
   if (!(await dbOp(familyRef().child("requests/" + editingRequestId).update(updates), "更新できませんでした"))) return;
   closeSheet();
   showToast("更新しました ✏️");
@@ -646,6 +739,7 @@ async function addFromShortcut(s) {
   if (s.budget > 0) req.budget = s.budget;
   if (s.brand) req.brand = s.brand;
   if (s.assignedTo) req.assignedTo = s.assignedTo;
+  if (s.category) req.category = s.category;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」を追加しました`);
@@ -690,6 +784,7 @@ async function addShortcutFromSheet() {
   if (budget > 0) entry.budget = budget;
   if (brand) entry.brand = brand;
   if (assignedTo) entry.assignedTo = assignedTo;
+  if (selectedCategory) entry.category = selectedCategory;
   const ref = familyRef().child("shortcuts").push();
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
   closeSheet();
@@ -1303,6 +1398,7 @@ function compactCard(r, i = 0) {
 
   // Extra info hints: budget / brand / memo / assignee
   const hintParts = [];
+  if (r.category && CATEGORY[r.category]) hintParts.push(`${CATEGORY[r.category].emoji} ${CATEGORY[r.category].label}`);
   if (r.budget > 0) hintParts.push(`💰 ${Number(r.budget).toLocaleString()}円以下`);
   if (r.brand) hintParts.push(`🏷️ ${escapeHtml(r.brand)}`);
   if (r.memo) hintParts.push(`📝 ${escapeHtml(r.memo)}`);
@@ -1383,7 +1479,10 @@ function renderRequests() {
   // Group 1: unclaimed open items
   const openItems = items
     .filter(r => r.status === "open")
-    .sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) || a.requestedAt - b.requestedAt);
+    .sort((a, b) =>
+      (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) ||        // 急ぎが最優先
+      categoryOrder(a) - categoryOrder(b) ||             // 次にカテゴリ（食品→日用品→その他→未分類）
+      a.requestedAt - b.requestedAt);
 
   // Group 2: items someone declared they'll buy (claimed, in-progress).
   // 完了(done)はリストから外し「購入完了済み履歴」に格納する。
@@ -2085,6 +2184,8 @@ function wireGlobalEvents() {
   $("btn-history-float").addEventListener("click", openHistorySheet);
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
+  $("btn-delete-account").addEventListener("click", deleteAccount);
+  wireCategoryChips();
   $("btn-copy-code").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("set-invite-code").value);
