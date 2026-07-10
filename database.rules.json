@@ -1,0 +1,52 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "invites": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && (!data.exists() || root.child('families/' + data.val() + '/members/' + auth.uid + '/role').val() === 'admin')"
+      }
+    },
+
+    "reminderIndex": {
+      "$time": {
+        "$familyId": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        }
+      }
+    },
+
+    "families": {
+      "$familyId": {
+        ".read": "auth != null && data.child('members/' + auth.uid).exists()",
+        ".write": "auth != null && (!data.exists() || data.child('members/' + auth.uid + '/role').val() === 'admin')",
+
+        "members": {
+          "$uid": {
+            ".write": "auth != null && ($uid === auth.uid || root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent')"
+          }
+        },
+
+        "requests":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "comments":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "stats":         { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "shortcuts":     { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "stocks":        { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "missions":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "missionLogs":   { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "reminderTimes": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "pushTokens":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" }
+      }
+    }
+  }
+}

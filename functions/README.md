@@ -11,11 +11,13 @@
 
 ```
 [設定画面で時刻を登録] ──→ families/{id}/reminderTimes/{"HH:MM"} = true
+                        └→ reminderIndex/{"HH:MM"}/{familyId}    = true（逆引き索引）
 [通知をオンにする]      ──→ families/{id}/pushTokens/{token}      = {uid,name,updatedAt}
 
          ┌──────────── Cloud Scheduler（毎分・Asia/Tokyo）────────────┐
-         │ shoppingReminder: 現在時刻 HH:MM に一致する reminderTimes を持つ │
-         │ 家族で、未完了(open/claimed)の買い物があれば pushTokens へ FCM 送信 │
+         │ shoppingReminder: reminderIndex/{現在時刻} を読み、該当家族の   │
+         │ 未完了(open/claimed)の買い物があれば pushTokens へ FCM 送信      │
+         │（該当なしの分は索引ノード1つの読み取りだけで終了）              │
          └────────────────────────────────────────────────────────────┘
 ```
 
@@ -25,10 +27,10 @@
 
 1. Firebase Console → ⚙️ プロジェクトの設定 → **Cloud Messaging** タブ
 2. 「ウェブプッシュ証明書（Web Push certificates）」で鍵ペアを生成
-3. 表示された公開鍵を `index.html` の以下に貼り付ける：
+3. 表示された公開鍵をリポジトリ直下の **`firebase-config.js`** に貼り付ける：
 
 ```js
-const VAPID_KEY = "ここに貼り付け";
+self.FIREBASE_VAPID_KEY = "ここに貼り付け";
 ```
 
 これを設定しないと、アプリの「通知をオンにする」は有効化できません。
@@ -41,10 +43,14 @@ Cloud Functions / Cloud Scheduler は **Blaze（従量課金）プラン**が必
 
 ## 3. Realtime Database のルール（必須）
 
-家族メンバーが `reminderTimes` と `pushTokens` を読み書きできるよう、ルールを確認してください。
-家族ノード配下を家族メンバーに許可しているなら、多くの場合そのままで動きます。
-個別にルールを書いている場合は、`families/$fid/reminderTimes` と `families/$fid/pushTokens`
-への read/write を家族メンバーに許可してください。
+リポジトリ直下に **`database.rules.json`（ドラフト）** を用意しています。
+家族メンバーだけが家族データを読み書きでき、`reminderTimes` / `pushTokens` /
+`reminderIndex` も動作するよう構成しています。
+
+> ⚠️ 適用前に、**現在 Firebase Console に設定されているルールと必ず突き合わせてください**。
+> 意図的に `firebase.json` には含めていないため `firebase deploy` では上書きされません。
+> 内容を確認のうえ、Firebase Console → Realtime Database → ルール に手動で貼り付けて
+> 「シミュレーター」でログイン/参加/追加の各操作を試してから公開するのが安全です。
 
 ---
 

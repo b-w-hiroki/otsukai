@@ -4,17 +4,9 @@
  */
 importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js");
+importScripts("./firebase-config.js");
 
-firebase.initializeApp({
-  apiKey: "AIzaSyCvG_SliXyI3grYhYS-GhFk-qCP1DMyGqI",
-  authDomain: "otsukai-app-4b62b.firebaseapp.com",
-  databaseURL: "https://otsukai-app-4b62b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "otsukai-app-4b62b",
-  storageBucket: "otsukai-app-4b62b.firebasestorage.app",
-  messagingSenderId: "422978533670",
-  appId: "1:422978533670:web:aab3f42c2c9cea61ad29e7",
-  measurementId: "G-12RXRBWGVP"
-});
+firebase.initializeApp(self.FIREBASE_CONFIG);
 
 const messaging = firebase.messaging();
 
