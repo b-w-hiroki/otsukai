@@ -93,7 +93,7 @@ firebase functions:log --only shoppingReminder
 
 ---
 
-## 含まれる関数（7つ）
+## 含まれる関数（8つ）
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
@@ -101,6 +101,7 @@ firebase functions:log --only shoppingReminder
 | `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
 | `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
 | `notifyReaction` | reactions onCreate | 「ありがとう」リアクションを完了した本人へプッシュ |
+| `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外の家族へプッシュ |
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動 |
 | `deleteMemberAccount` | callable（保護者のみ） | メンバーのアカウント完全削除（設定→メンバー管理から） |

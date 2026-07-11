@@ -41,6 +41,9 @@ const state = {
   stocks: {},
   missions: {},
   missionLogs: {},
+  points: {},
+  rewards: {},
+  rewardLogs: {},
   myRole: null
 };
 
@@ -185,6 +188,7 @@ async function signOut() {
   state.uid = null; state.profile = null; state.familyId = null; state.family = null;
   state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
   state.missions = {}; state.missionLogs = {}; state.myRole = null;
+  state.points = {}; state.rewards = {}; state.rewardLogs = {};
   await auth.signOut();
 }
 
@@ -255,6 +259,7 @@ async function adminDeleteAccount(targetUid, name) {
       state.uid = null; state.profile = null; state.familyId = null; state.family = null;
       state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
       state.missions = {}; state.missionLogs = {}; state.myRole = null;
+  state.points = {}; state.rewards = {}; state.rewardLogs = {};
       showScreen("auth");
       showToast("アカウントを削除しました");
       try { await auth.signOut(); } catch (e) {}
@@ -383,6 +388,7 @@ async function handleFamilyAccessLost(err) {
   try { await db.ref("users/" + state.uid + "/familyId").remove(); } catch (e) {}
   state.familyId = null; state.family = null; state.myRole = null;
   state.requests = {}; state.stats = {}; state.shortcuts = {}; state.stocks = {}; state.missions = {}; state.missionLogs = {};
+  state.points = {}; state.rewards = {}; state.rewardLogs = {};
   showScreen("family");
   showToast("家族から外れました");
 }
@@ -412,6 +418,7 @@ function attachFamilyListeners() {
     renderRequests();
     renderHistory();
     renderMissions();
+    renderRewards();
   }, handleFamilyAccessLost);
   // Reminder times（家族共有の通知時刻）
   attach(familyRef().child("reminderTimes"), "value", (s) => {
@@ -493,6 +500,19 @@ function attachFamilyListeners() {
     state.missionLogs = s.val() || {};
     renderMissions();
     renderMissionBadge();
+  });
+  // ごほうびポイント
+  attach(familyRef().child("points"), "value", (s) => {
+    state.points = s.val() || {};
+    renderRewards();
+  });
+  attach(familyRef().child("rewards"), "value", (s) => {
+    state.rewards = s.val() || {};
+    renderRewards();
+  });
+  attach(familyRef().child("rewardLogs"), "value", (s) => {
+    state.rewardLogs = s.val() || {};
+    renderRewards();
   });
   showScreen("main");
 }
@@ -895,16 +915,39 @@ async function unclaimRequest(id) {
     status: "open", claimedBy: null, claimedAt: null
   }), "変更できませんでした");
 }
+// ===== ごほうびポイント =====
+// おつかい完了で獲得。難易度が基本値（ふつう1 / ちょっと大変2 / めちゃ大変3）、急ぎは+1。
+// 難易度・急ぎから決定的に計算できるので、完了取り消し時は同額を返却できる。
+function requestPoints(r) {
+  const base = r.diff === "extreme" ? 3 : r.diff === "hard" ? 2 : 1;
+  return base + (r.urgent ? 1 : 0);
+}
+// ポイント残高を増減する（残高が負にならないようクランプ）。おまけ機能なので失敗は握りつぶす。
+async function adjustPoints(uid, delta) {
+  if (!uid || !delta) return;
+  try {
+    await familyRef().child(`points/${uid}`).transaction((v) => Math.max(0, (v || 0) + delta));
+  } catch (e) { console.error("adjustPoints failed", e); }
+}
+
 async function completeRequest(id) {
+  const r = state.requests[id];
   if (!(await dbOp(familyRef().child("requests/" + id).update({
     status: "done", completedBy: state.uid, completedAt: now()
   }), "完了にできませんでした"))) return;
   bumpStat("completedCount");
+  const pts = requestPoints(r || {});
+  adjustPoints(state.uid, pts);
+  showToast(`✅ 完了！ 🪙 +${pts}pt ゲット`, { sound: false });
 }
 async function reopenRequest(id) {
-  await dbOp(familyRef().child("requests/" + id).update({
+  // 取り消し時は、完了時に付与したポイントを返却する（誰が戻しても完了者から引く）
+  const r = state.requests[id];
+  const refund = r && r.status === "done" && r.completedBy ? { uid: r.completedBy, pts: requestPoints(r) } : null;
+  if (!(await dbOp(familyRef().child("requests/" + id).update({
     status: "open", completedBy: null, completedAt: null, claimedBy: null, claimedAt: null
-  }), "戻せませんでした");
+  }), "戻せませんでした"))) return;
+  if (refund) adjustPoints(refund.uid, -refund.pts);
 }
 async function deleteRequest(id) {
   const r = state.requests[id];
@@ -919,6 +962,96 @@ async function bumpStat(field) {
     await ref.transaction((v) => (v || 0) + 1);
     await familyRef().child(`stats/${state.uid}/lastActiveAt`).set(now());
   } catch (e) { console.error("bumpStat failed", e); }
+}
+
+// ===== ごほうび（ミッションタブ） =====
+function renderRewards() {
+  const el = $("rewards-section");
+  if (!el) return;
+  const myPts = (state.points && state.points[state.uid]) || 0;
+  const isParent = state.myRole === "parent";
+  const rewards = Object.entries(state.rewards || {})
+    .sort(([, a], [, b]) => (a.cost || 0) - (b.cost || 0));
+  const logs = Object.entries(state.rewardLogs || {})
+    .map(([id, l]) => ({ id, ...l }))
+    .sort((a, b) => (b.at || 0) - (a.at || 0))
+    .slice(0, 5);
+
+  let html = `<div class="card">
+    <h2>🎁 ごほうび</h2>
+    <div class="reward-balance">🪙 じぶんのポイント：<b>${myPts}</b> pt</div>
+    <p class="muted" style="font-size:11px;margin:4px 0 10px;">おつかい完了でポイントが貯まります（ふつう1pt・💪2pt・😅3pt、🔥急ぎは+1pt）</p>`;
+  if (!rewards.length) {
+    html += `<p class="muted" style="font-size:12px;">${isParent
+      ? "下の入力欄から、ポイントと交換できるごほうびを登録しましょう。"
+      : "まだごほうびがありません。保護者に登録してもらいましょう。"}</p>`;
+  } else {
+    html += rewards.map(([id, rw]) => `
+      <div class="reward-row">
+        <span class="reward-name">${escapeHtml(rw.name)}</span>
+        <span class="reward-cost">🪙 ${Number(rw.cost) || 0}pt</span>
+        <button class="success tiny-btn" data-redeem="${id}" ${myPts < rw.cost ? "disabled" : ""}>交換する</button>
+        ${isParent ? `<button class="danger tiny-btn" data-reward-del="${id}" aria-label="ごほうびを削除">×</button>` : ""}
+      </div>`).join("");
+  }
+  if (isParent) {
+    html += `<div class="row" style="gap:6px;margin-top:10px;">
+      <input id="reward-name-input" placeholder="ごほうび名（例: アイス）" maxlength="30" style="flex:2;min-width:0;" />
+      <input id="reward-cost-input" type="number" min="1" max="9999" placeholder="pt" style="flex:0.8;min-width:56px;" />
+      <button id="btn-add-reward" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
+    </div>`;
+  }
+  if (logs.length) {
+    html += `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px;">` +
+      logs.map((l) => `<div class="muted" style="font-size:12px;padding:2px 0;">${memberEmoji(l.uid)} ${escapeHtml(memberName(l.uid))}さんが「${escapeHtml(l.name)}」と交換（${Number(l.cost) || 0}pt）・<span data-timeago="${l.at}">${timeAgo(l.at)}</span></div>`).join("") +
+      `</div>`;
+  }
+  html += `</div>`;
+  el.innerHTML = html;
+
+  el.querySelectorAll("[data-redeem]").forEach((b) => b.addEventListener("click", () => redeemReward(b.dataset.redeem)));
+  el.querySelectorAll("[data-reward-del]").forEach((b) => b.addEventListener("click", () => deleteReward(b.dataset.rewardDel)));
+  const addBtn = el.querySelector("#btn-add-reward");
+  if (addBtn) addBtn.addEventListener("click", addReward);
+}
+
+async function addReward() {
+  const name = $("reward-name-input").value.trim();
+  const cost = parseInt($("reward-cost-input").value, 10);
+  if (!name) return showToast("ごほうび名を入力してください");
+  if (!(cost > 0)) return showToast("必要ポイントを入力してください");
+  const ref = familyRef().child("rewards").push();
+  if (!(await dbOp(ref.set({ name, cost, createdBy: state.uid, createdAt: now() }), "登録できませんでした"))) return;
+  showToast(`🎁 「${name}」を登録しました`, { sound: false });
+}
+
+async function deleteReward(id) {
+  const rw = state.rewards[id];
+  if (!rw) return;
+  if (!confirm(`ごほうび「${rw.name}」を削除しますか？`)) return;
+  await dbOp(familyRef().child("rewards/" + id).remove(), "削除できませんでした");
+}
+
+async function redeemReward(id) {
+  const rw = state.rewards[id];
+  if (!rw) return;
+  if (!confirm(`「${rw.name}」を ${rw.cost}pt で交換しますか？`)) return;
+  try {
+    // トランザクションで残高を確認しながら引く（不足していたら中断）
+    const res = await familyRef().child(`points/${state.uid}`).transaction((v) => {
+      const cur = v || 0;
+      if (cur < rw.cost) return;
+      return cur - rw.cost;
+    });
+    if (!res.committed) { showToast("🪙 ポイントが足りません"); return; }
+    await familyRef().child("rewardLogs").push().set({
+      rewardId: id, name: rw.name, cost: rw.cost, uid: state.uid, at: now()
+    });
+    showToast(`🎉 「${rw.name}」と交換しました！保護者に見せてね`);
+  } catch (e) {
+    console.error("redeemReward failed", e);
+    showToast("⚠️ 交換できませんでした。通信環境を確認してください");
+  }
 }
 
 // ===== Stock Management =====

@@ -1016,3 +1016,21 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .react-count {
   font-size: 11px; font-weight: 800; color: var(--pri-dark);
 }
+
+/* ======= Rewards（ごほうびポイント） ======= */
+.reward-balance {
+  font-size: 15px; font-weight: 700;
+  background: #eeecfb;
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+  margin-bottom: 4px;
+}
+.reward-balance b { color: var(--pri-dark); font-size: 18px; }
+.reward-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.reward-name { flex: 1; font-weight: 700; font-size: 14px; min-width: 0; }
+.reward-cost { font-size: 12px; font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.reward-row button[disabled] { opacity: 0.45; cursor: not-allowed; }

@@ -50,7 +50,10 @@
         "missions":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "missionLogs":   { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "reminderTimes": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "pushTokens":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" }
+        "pushTokens":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "points":        { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "rewards":       { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "rewardLogs":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" }
       }
     }
   }
