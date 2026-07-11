@@ -279,3 +279,144 @@ exports.archiveOldRequests = functions
     console.log(`archived ${moved} requests (older than ${ARCHIVE_AFTER_DAYS} days)`);
     return null;
   });
+
+/**
+ * イベント型プッシュ③: 完了アイテムに「ありがとう」リアクションが付いたとき。
+ * 完了した本人にだけ通知する（本人が自分に付けた場合は送らない）。
+ */
+exports.notifyReaction = functions
+  .region("asia-northeast1")
+  .database.instance(DB_INSTANCE)
+  .ref("/families/{familyId}/requests/{requestId}/reactions/{uid}")
+  .onCreate(async (snap, context) => {
+    const emoji = snap.val();
+    const { familyId, requestId, uid } = context.params;
+    try {
+      const reqSnap = await admin
+        .database()
+        .ref(`families/${familyId}/requests/${requestId}`)
+        .once("value");
+      const r = reqSnap.val();
+      if (!r || !r.completedBy || r.completedBy === uid) return null;
+      const reactor = await memberName(familyId, uid);
+      await sendToFamily(familyId, {
+        title: `${emoji} ありがとうが届きました`,
+        body: `${reactor}さんから「${r.name}」にありがとう！`,
+        tag: `reaction-${requestId}`,
+        filterUid: { only: r.completedBy },
+      });
+    } catch (e) {
+      console.error("notifyReaction failed", familyId, e);
+    }
+    return null;
+  });
+
+/**
+ * 週間サマリー（毎週日曜 20:00 JST）。
+ * この1週間に完了したおつかいの件数と MVP（最多完了者）を家族全員へ配信する。
+ * 完了ゼロの家族には送らない。
+ */
+exports.weeklySummary = functions
+  .region("asia-northeast1")
+  .pubsub.schedule("0 20 * * 0")
+  .timeZone("Asia/Tokyo")
+  .onRun(async () => {
+    const db = admin.database();
+    const since = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const famSnap = await db.ref("families").once("value");
+    const families = famSnap.val() || {};
+
+    for (const [familyId, fam] of Object.entries(families)) {
+      if (!fam || !fam.requests) continue;
+      const doneList = Object.values(fam.requests).filter(
+        (r) => r && r.status === "done" && (r.completedAt || 0) >= since
+      );
+      if (!doneList.length) continue;
+
+      const byUser = {};
+      doneList.forEach((r) => {
+        if (r.completedBy) byUser[r.completedBy] = (byUser[r.completedBy] || 0) + 1;
+      });
+      const top = Object.entries(byUser).sort((a, b) => b[1] - a[1])[0];
+      const mvpName =
+        top && fam.members && fam.members[top[0]] && fam.members[top[0]].name;
+      const body = mvpName
+        ? `今週は家族で${doneList.length}件のおつかいが完了！MVPは ${mvpName} さん（${top[1]}件）🏆`
+        : `今週は家族で${doneList.length}件のおつかいが完了！`;
+
+      try {
+        await sendToFamily(familyId, {
+          title: "📣 今週のおつかいまとめ",
+          body,
+          tag: `weekly-${familyId}`,
+        });
+      } catch (e) {
+        console.error("weeklySummary failed", familyId, e);
+      }
+    }
+    return null;
+  });
+
+/**
+ * メンバーのアカウント削除（保護者専用・callable）。
+ * クライアントから他人の認証アカウントは消せないため、Admin SDK で行う。
+ * 呼び出し元がその家族の保護者であることをサーバー側で検証する。
+ * 対象が家族の最後の1人なら家族データと招待コードも削除する。
+ * 依頼・コメントは家族の記録として残す（消さない）。
+ */
+exports.deleteMemberAccount = functions
+  .region("asia-northeast1")
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
+    }
+    const callerUid = context.auth.uid;
+    const familyId = data && data.familyId;
+    const targetUid = data && data.targetUid;
+    if (!familyId || !targetUid) {
+      throw new functions.https.HttpsError("invalid-argument", "familyId と targetUid が必要です");
+    }
+
+    const db = admin.database();
+    const membersSnap = await db.ref(`families/${familyId}/members`).once("value");
+    const members = membersSnap.val() || {};
+    const caller = members[callerUid];
+    if (!caller || caller.memberRole !== "parent") {
+      throw new functions.https.HttpsError("permission-denied", "保護者のみが実行できます");
+    }
+    if (!members[targetUid]) {
+      throw new functions.https.HttpsError("not-found", "対象のメンバーが見つかりません");
+    }
+
+    const isLastMember = Object.keys(members).length <= 1;
+    if (isLastMember) {
+      // 最後の1人（= 呼び出し元自身）→ 家族ごと削除
+      const codeSnap = await db.ref(`families/${familyId}/meta/inviteCode`).once("value");
+      await db.ref(`families/${familyId}`).remove();
+      const code = codeSnap.val();
+      if (code) await db.ref(`invites/${code}`).remove().catch(() => {});
+    } else {
+      await db.ref().update({
+        [`families/${familyId}/members/${targetUid}`]: null,
+        [`families/${familyId}/stats/${targetUid}`]: null,
+      });
+      // 対象ユーザーの通知トークンを掃除
+      const tokensSnap = await db.ref(`families/${familyId}/pushTokens`).once("value");
+      await Promise.all(
+        Object.entries(tokensSnap.val() || {})
+          .filter(([, v]) => v && v.uid === targetUid)
+          .map(([t]) => db.ref(`families/${familyId}/pushTokens/${t}`).remove())
+      );
+    }
+
+    // プロフィールと認証アカウントを削除（Admin SDK は再ログイン要件なし）
+    await db.ref(`users/${targetUid}`).remove();
+    try {
+      await admin.auth().deleteUser(targetUid);
+    } catch (e) {
+      if (e.code !== "auth/user-not-found") {
+        throw new functions.https.HttpsError("internal", "認証アカウントの削除に失敗しました");
+      }
+    }
+    return { ok: true };
+  });
