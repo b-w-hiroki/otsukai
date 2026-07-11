@@ -188,64 +188,84 @@ async function signOut() {
   await auth.signOut();
 }
 
-// ===== アカウント削除 =====
-// 方針: 本人のアカウント情報（users/・メンバー登録・統計・通知トークン）を消し、
-// 追加した依頼・コメントは家族の記録として残す。
-// 自分が家族の最後の1人だった場合は、家族データと招待コードも丸ごと削除する。
-async function deleteAccount() {
-  if (!confirm("アカウントを削除しますか？\n\nあなたのプロフィール・統計は削除されます。\n追加した依頼やコメントは家族のリストに残ります。")) return;
-  if (!confirm("本当に削除しますか？ この操作は元に戻せません。")) return;
+// ===== メンバー管理（保護者専用） =====
+// 誤操作防止のため、アカウント削除は本人のボタンではなく保護者の管理機能として提供する。
+// 実際の削除は Cloud Functions の deleteMemberAccount（Admin SDK）で行い、
+// 保護者権限の検証・認証アカウントの削除・データ掃除をサーバー側で完結させる。
+// 依頼・コメントは家族の記録として残る。
 
-  // Firebase は「最近のログイン」がないと認証アカウントの削除を拒否する。
-  // データを消した後に拒否されると中途半端な状態になるため、先に確認する。
-  const lastSignIn = new Date(auth.currentUser.metadata.lastSignInTime).getTime();
-  if (now() - lastSignIn > 4 * 60 * 1000) {
-    alert("安全のため、アカウント削除には「ログイン直後」の操作が必要です。\n\n一度ログアウトして再ログインし、そのままもう一度お試しください。");
-    return;
-  }
-
-  const uid = state.uid;
-  const familyId = state.familyId;
-  // 失敗時に書き戻せるようスナップショットを取っておく
-  const profileBackup = (await db.ref("users/" + uid).once("value")).val();
-  const memberBackup = familyId
-    ? (await db.ref(`families/${familyId}/members/${uid}`).once("value")).val()
-    : null;
+// 設定タブのメンバー管理カードを描画（保護者にだけ表示）
+function renderMemberAdmin() {
+  const card = $("member-admin-card");
+  if (!card) return;
+  const isParent = state.myRole === "parent";
+  card.style.display = isParent ? "" : "none";
+  if (!isParent) return;
   const members = (state.family && state.family.members) || {};
-  const isLastMember = familyId && Object.keys(members).length <= 1;
-  const inviteCode = state.family && state.family.meta && state.family.meta.inviteCode;
+  const sorted = Object.entries(members).sort(([, a], [, b]) => {
+    const r = roleRank(a.memberRole) - roleRank(b.memberRole);
+    if (r !== 0) return r;
+    return (a.name || "").localeCompare(b.name || "", "ja");
+  });
+  $("member-admin-list").innerHTML = sorted.map(([uid, m]) => `
+    <div class="row" style="justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+        <span class="avatar sm">${escapeHtml(m.emoji || "👤")}</span>
+        <span style="font-weight:700;font-size:14px;">${escapeHtml(m.name || "メンバー")}${uid === state.uid ? "（自分）" : ""}</span>
+        <span class="muted" style="font-size:11px;">${ROLE_LABEL[m.memberRole] || "未設定"}</span>
+      </span>
+      <span style="display:flex;gap:6px;flex-shrink:0;">
+        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : ""}
+        <button class="danger tiny-btn" style="font-size:11px;" data-admin-delete="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">アカウント削除</button>
+      </span>
+    </div>`).join("");
+  $("member-admin-list").querySelectorAll("[data-admin-remove]").forEach((btn) => {
+    btn.addEventListener("click", () => removeMemberFromFamily(btn.dataset.adminRemove, btn.dataset.name));
+  });
+  $("member-admin-list").querySelectorAll("[data-admin-delete]").forEach((btn) => {
+    btn.addEventListener("click", () => adminDeleteAccount(btn.dataset.adminDelete, btn.dataset.name));
+  });
+}
 
+// 家族から外す（アカウント自体は残る）
+async function removeMemberFromFamily(targetUid, name) {
+  if (!confirm(`${name} さんを家族から外しますか？\n\n外すと、この人はおうちの買い物リストやミッションを見られなくなります。（本人のアカウントは消えません）`)) return;
+  const ok = await dbOp(Promise.all([
+    familyRef().child(`members/${targetUid}`).remove(),
+    familyRef().child(`stats/${targetUid}`).remove()
+  ]), "外せませんでした");
+  if (ok) showToast(`${name} さんを家族から外しました`, { sound: false });
+}
+
+// アカウント完全削除（Cloud Functions 経由・保護者のみ）
+async function adminDeleteAccount(targetUid, name) {
+  const isSelf = targetUid === state.uid;
+  const first = isSelf
+    ? "自分のアカウントを削除しますか？\n\nプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。"
+    : `${name} さんのアカウントを完全に削除しますか？\n\n本人のプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。`;
+  if (!confirm(first)) return;
+  if (!confirm("本当に削除しますか？ この操作は元に戻せません。")) return;
   try {
-    detachListeners(); // 自分のメンバー削除で PERMISSION_DENIED が飛ぶ前にリスナーを外す
-    // 1. 家族側のデータを片付ける（家族に入っていない場合はスキップ）
-    if (familyId) {
-      await unregisterPushToken(familyId);
-      if (isLastMember) {
-        await db.ref("families/" + familyId).remove();
-        if (inviteCode) await db.ref("invites/" + inviteCode).remove().catch(() => {});
-      } else {
-        await db.ref(`families/${familyId}/members/${uid}`).remove();
-        await db.ref(`families/${familyId}/stats/${uid}`).remove().catch(() => {});
-      }
+    const fn = firebase.app().functions("asia-northeast1").httpsCallable("deleteMemberAccount");
+    await fn({ familyId: state.familyId, targetUid });
+    if (isSelf) {
+      // 認証アカウントはサーバー側で削除済み。ローカルもサインアウト状態に揃える
+      detachListeners();
+      localStorage.removeItem("pushToken");
+      state.uid = null; state.profile = null; state.familyId = null; state.family = null;
+      state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
+      state.missions = {}; state.missionLogs = {}; state.myRole = null;
+      showScreen("auth");
+      showToast("アカウントを削除しました");
+      try { await auth.signOut(); } catch (e) {}
+    } else {
+      showToast(`${name} さんのアカウントを削除しました`, { sound: false });
     }
-    // 2. ユーザープロフィールを削除
-    await db.ref("users/" + uid).remove();
-    // 3. 認証アカウントを削除
-    await auth.currentUser.delete();
-    state.uid = null; state.profile = null; state.familyId = null; state.family = null;
-    state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
-    state.missions = {}; state.missionLogs = {}; state.myRole = null;
-    showToast("アカウントを削除しました");
-    showScreen("auth");
   } catch (e) {
-    console.error("deleteAccount failed", e);
-    // 消した分を可能な範囲で書き戻す（最後の1人で家族ごと消した後の失敗は復元不可）
-    try {
-      if (profileBackup) await db.ref("users/" + uid).set(profileBackup);
-      if (memberBackup && !isLastMember) await db.ref(`families/${familyId}/members/${uid}`).set(memberBackup);
-    } catch (restoreErr) { console.error("restore failed", restoreErr); }
-    showToast("⚠️ 削除に失敗しました: " + (e && e.message ? e.message : e));
-    if (state.familyId) attachFamilyListeners();
+    console.error("adminDeleteAccount failed", e);
+    const msg = (e && e.message) || String(e);
+    // functions 未デプロイ時は not-found / internal で返る
+    showToast("⚠️ 削除できませんでした: " + msg);
   }
 }
 
@@ -1757,6 +1777,7 @@ function renderSettings() {
       ${escapeHtml(m.name)}${uid === state.uid ? "（自分）" : ""}
     </span>
   `).join("");
+  renderMemberAdmin();
 }
 
 // ===== Push notifications (FCM) & reminder times =====
@@ -2219,7 +2240,6 @@ function wireGlobalEvents() {
   $("btn-history-float").addEventListener("click", openHistorySheet);
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
-  $("btn-delete-account").addEventListener("click", deleteAccount);
   wireCategoryChips();
   $("btn-copy-code").addEventListener("click", async () => {
     try {

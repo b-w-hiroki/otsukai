@@ -248,14 +248,17 @@
             </div>
           </div>
         </div>
+        <div id="member-admin-card" class="card" style="display:none;">
+          <h2>🛡️ メンバー管理（保護者）</h2>
+          <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
+          <div id="member-admin-list"></div>
+        </div>
         <div class="card">
           <h2>📊 今月のおかいもの</h2>
           <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
         </div>
         <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
-          <button id="btn-delete-account" class="danger" style="width:100%;margin-top:10px;">⚠️ アカウントを削除する</button>
-          <p class="muted" style="font-size:11px;margin-top:8px;">アカウントを削除しても、あなたが追加した依頼やコメントは家族のリストに残ります。</p>
         </div>
       </section>
     </div>
@@ -550,6 +553,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <script src="./firebase-config.js"></script>
   <script src="./app.js"></script>
 </body>

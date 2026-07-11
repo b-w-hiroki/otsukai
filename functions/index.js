@@ -356,3 +356,67 @@ exports.weeklySummary = functions
     }
     return null;
   });
+
+/**
+ * メンバーのアカウント削除（保護者専用・callable）。
+ * クライアントから他人の認証アカウントは消せないため、Admin SDK で行う。
+ * 呼び出し元がその家族の保護者であることをサーバー側で検証する。
+ * 対象が家族の最後の1人なら家族データと招待コードも削除する。
+ * 依頼・コメントは家族の記録として残す（消さない）。
+ */
+exports.deleteMemberAccount = functions
+  .region("asia-northeast1")
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
+    }
+    const callerUid = context.auth.uid;
+    const familyId = data && data.familyId;
+    const targetUid = data && data.targetUid;
+    if (!familyId || !targetUid) {
+      throw new functions.https.HttpsError("invalid-argument", "familyId と targetUid が必要です");
+    }
+
+    const db = admin.database();
+    const membersSnap = await db.ref(`families/${familyId}/members`).once("value");
+    const members = membersSnap.val() || {};
+    const caller = members[callerUid];
+    if (!caller || caller.memberRole !== "parent") {
+      throw new functions.https.HttpsError("permission-denied", "保護者のみが実行できます");
+    }
+    if (!members[targetUid]) {
+      throw new functions.https.HttpsError("not-found", "対象のメンバーが見つかりません");
+    }
+
+    const isLastMember = Object.keys(members).length <= 1;
+    if (isLastMember) {
+      // 最後の1人（= 呼び出し元自身）→ 家族ごと削除
+      const codeSnap = await db.ref(`families/${familyId}/meta/inviteCode`).once("value");
+      await db.ref(`families/${familyId}`).remove();
+      const code = codeSnap.val();
+      if (code) await db.ref(`invites/${code}`).remove().catch(() => {});
+    } else {
+      await db.ref().update({
+        [`families/${familyId}/members/${targetUid}`]: null,
+        [`families/${familyId}/stats/${targetUid}`]: null,
+      });
+      // 対象ユーザーの通知トークンを掃除
+      const tokensSnap = await db.ref(`families/${familyId}/pushTokens`).once("value");
+      await Promise.all(
+        Object.entries(tokensSnap.val() || {})
+          .filter(([, v]) => v && v.uid === targetUid)
+          .map(([t]) => db.ref(`families/${familyId}/pushTokens/${t}`).remove())
+      );
+    }
+
+    // プロフィールと認証アカウントを削除（Admin SDK は再ログイン要件なし）
+    await db.ref(`users/${targetUid}`).remove();
+    try {
+      await admin.auth().deleteUser(targetUid);
+    } catch (e) {
+      if (e.code !== "auth/user-not-found") {
+        throw new functions.https.HttpsError("internal", "認証アカウントの削除に失敗しました");
+      }
+    }
+    return { ok: true };
+  });

@@ -93,7 +93,7 @@ firebase functions:log --only shoppingReminder
 
 ---
 
-## 含まれる関数（6つ）
+## 含まれる関数（7つ）
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
@@ -103,8 +103,12 @@ firebase functions:log --only shoppingReminder
 | `notifyReaction` | reactions onCreate | 「ありがとう」リアクションを完了した本人へプッシュ |
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動 |
+| `deleteMemberAccount` | callable（保護者のみ） | メンバーのアカウント完全削除（設定→メンバー管理から） |
 
 `firebase deploy --only functions` でまとめてデプロイされます。
+
+> ⚠️ **アカウント削除（設定 → メンバー管理）は `deleteMemberAccount` のデプロイ後に動作します。**
+> 未デプロイの間はエラートーストになります。
 
 ## メモ / 調整ポイント
 
