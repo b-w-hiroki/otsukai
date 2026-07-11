@@ -93,16 +93,18 @@ firebase functions:log --only shoppingReminder
 
 ---
 
-## 含まれる関数（4つ）
+## 含まれる関数（6つ）
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
 | `shoppingReminder` | 毎分（Scheduler） | 設定時刻に未完了の買い物があれば家族へリマインド |
 | `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
 | `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
+| `notifyReaction` | reactions onCreate | 「ありがとう」リアクションを完了した本人へプッシュ |
+| `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動 |
 
-`firebase deploy --only functions` で4つまとめてデプロイされます。
+`firebase deploy --only functions` でまとめてデプロイされます。
 
 ## メモ / 調整ポイント
 

@@ -279,3 +279,80 @@ exports.archiveOldRequests = functions
     console.log(`archived ${moved} requests (older than ${ARCHIVE_AFTER_DAYS} days)`);
     return null;
   });
+
+/**
+ * イベント型プッシュ③: 完了アイテムに「ありがとう」リアクションが付いたとき。
+ * 完了した本人にだけ通知する（本人が自分に付けた場合は送らない）。
+ */
+exports.notifyReaction = functions
+  .region("asia-northeast1")
+  .database.instance(DB_INSTANCE)
+  .ref("/families/{familyId}/requests/{requestId}/reactions/{uid}")
+  .onCreate(async (snap, context) => {
+    const emoji = snap.val();
+    const { familyId, requestId, uid } = context.params;
+    try {
+      const reqSnap = await admin
+        .database()
+        .ref(`families/${familyId}/requests/${requestId}`)
+        .once("value");
+      const r = reqSnap.val();
+      if (!r || !r.completedBy || r.completedBy === uid) return null;
+      const reactor = await memberName(familyId, uid);
+      await sendToFamily(familyId, {
+        title: `${emoji} ありがとうが届きました`,
+        body: `${reactor}さんから「${r.name}」にありがとう！`,
+        tag: `reaction-${requestId}`,
+        filterUid: { only: r.completedBy },
+      });
+    } catch (e) {
+      console.error("notifyReaction failed", familyId, e);
+    }
+    return null;
+  });
+
+/**
+ * 週間サマリー（毎週日曜 20:00 JST）。
+ * この1週間に完了したおつかいの件数と MVP（最多完了者）を家族全員へ配信する。
+ * 完了ゼロの家族には送らない。
+ */
+exports.weeklySummary = functions
+  .region("asia-northeast1")
+  .pubsub.schedule("0 20 * * 0")
+  .timeZone("Asia/Tokyo")
+  .onRun(async () => {
+    const db = admin.database();
+    const since = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const famSnap = await db.ref("families").once("value");
+    const families = famSnap.val() || {};
+
+    for (const [familyId, fam] of Object.entries(families)) {
+      if (!fam || !fam.requests) continue;
+      const doneList = Object.values(fam.requests).filter(
+        (r) => r && r.status === "done" && (r.completedAt || 0) >= since
+      );
+      if (!doneList.length) continue;
+
+      const byUser = {};
+      doneList.forEach((r) => {
+        if (r.completedBy) byUser[r.completedBy] = (byUser[r.completedBy] || 0) + 1;
+      });
+      const top = Object.entries(byUser).sort((a, b) => b[1] - a[1])[0];
+      const mvpName =
+        top && fam.members && fam.members[top[0]] && fam.members[top[0]].name;
+      const body = mvpName
+        ? `今週は家族で${doneList.length}件のおつかいが完了！MVPは ${mvpName} さん（${top[1]}件）🏆`
+        : `今週は家族で${doneList.length}件のおつかいが完了！`;
+
+      try {
+        await sendToFamily(familyId, {
+          title: "📣 今週のおつかいまとめ",
+          body,
+          tag: `weekly-${familyId}`,
+        });
+      } catch (e) {
+        console.error("weeklySummary failed", familyId, e);
+      }
+    }
+    return null;
+  });

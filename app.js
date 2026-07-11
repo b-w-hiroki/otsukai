@@ -537,6 +537,15 @@ function detectAndNotify(prev, next) {
         showToast(`↩️ 「${r.name}」の担当が外れました`);
       }
     }
+    // 自分が完了した物に家族から「ありがとう」リアクションが付いたら知らせる
+    if (r.completedBy === state.uid) {
+      const prevReactions = before.reactions || {};
+      Object.entries(r.reactions || {}).forEach(([uid, emoji]) => {
+        if (uid !== state.uid && prevReactions[uid] !== emoji) {
+          showToast(`${emoji} ${memberName(uid)}さんから「${r.name}」にありがとう！`);
+        }
+      });
+    }
   });
 }
 function memberName(uid) {
@@ -1447,6 +1456,20 @@ function compactCard(r, i = 0) {
     commentBodyHtml = `<div class="req-row-comment-body">${threadHtml}</div>`;
   }
 
+  // 完了アイテムには「ありがとう」リアクション行を付ける（1人1つ・再タップで取消）
+  let reactionsHtml = "";
+  if (isDone) {
+    const reactions = r.reactions || {};
+    const myReaction = reactions[state.uid];
+    const counts = {};
+    Object.values(reactions).forEach((e) => { counts[e] = (counts[e] || 0) + 1; });
+    const QUICK_REACTIONS = ["❤️", "👏", "🎉"];
+    const btns = QUICK_REACTIONS.map((e) =>
+      `<button class="react-btn${myReaction === e ? " mine" : ""}" data-react="${e}" data-id="${r.id}" aria-label="ありがとうを送る ${e}">${e}${counts[e] ? `<span class="react-count">${counts[e]}</span>` : ""}</button>`
+    ).join("");
+    reactionsHtml = `<div class="req-row-reactions"><span class="react-label">ありがとう</span>${btns}</div>`;
+  }
+
   return `<div class="${rowClass}" style="--i:${i}">
     <div class="req-row-main">
       <div class="req-row-name-col${canEdit ? ' editable' : ''}"${canEdit ? ` data-edit-id="${r.id}"` : ''}>
@@ -1456,8 +1479,17 @@ function compactCard(r, i = 0) {
       <div class="req-row-meta">${claimerHtml}${pillsHtml}</div>
       <div class="req-row-actions">${actHtml}</div>
     </div>
+    ${reactionsHtml}
     ${commentBodyHtml}
   </div>`;
+}
+
+// リアクションの付け外し（同じ絵文字をもう一度タップで取消）
+async function toggleReaction(id, emoji) {
+  const r = state.requests[id];
+  const cur = r && r.reactions && r.reactions[state.uid];
+  const ref = familyRef().child(`requests/${id}/reactions/${state.uid}`);
+  await dbOp(cur === emoji ? ref.remove() : ref.set(emoji), "送れませんでした");
 }
 
 // ===== Wire group toggles =====
@@ -1574,6 +1606,9 @@ function wireRequestButtons(root = document) {
       else if (act === "reopen") reopenRequest(id);
       else if (act === "delete") deleteRequest(id);
     });
+  });
+  root.querySelectorAll("[data-react]").forEach((b) => {
+    b.addEventListener("click", () => toggleReaction(b.dataset.id, b.dataset.react));
   });
   root.querySelectorAll("[data-toggle]").forEach((b) => {
     b.addEventListener("click", () => toggleComments(b.dataset.toggle));
