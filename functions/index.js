@@ -420,3 +420,29 @@ exports.deleteMemberAccount = functions
     }
     return { ok: true };
   });
+
+/**
+ * イベント型プッシュ④: ごほうび交換が記録されたとき。
+ * 交換した本人以外の家族（主に保護者）へ知らせる。
+ */
+exports.notifyRewardRedeem = functions
+  .region("asia-northeast1")
+  .database.instance(DB_INSTANCE)
+  .ref("/families/{familyId}/rewardLogs/{logId}")
+  .onCreate(async (snap, context) => {
+    const log = snap.val();
+    if (!log || !log.uid) return null;
+    const { familyId } = context.params;
+    try {
+      const who = await memberName(familyId, log.uid);
+      await sendToFamily(familyId, {
+        title: "🎁 ごほうび交換",
+        body: `${who}さんが「${log.name}」と交換しました（${log.cost}pt）`,
+        tag: `reward-${context.params.logId}`,
+        filterUid: { exclude: log.uid },
+      });
+    } catch (e) {
+      console.error("notifyRewardRedeem failed", familyId, e);
+    }
+    return null;
+  });
