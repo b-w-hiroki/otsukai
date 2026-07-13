@@ -198,6 +198,20 @@ async function signOut() {
 // 保護者権限の検証・認証アカウントの削除・データ掃除をサーバー側で完結させる。
 // 依頼・コメントは家族の記録として残る。
 
+// 誤操作防止: 管理メニュー（アカウント削除等）はトグルで閉じておき、開いた時だけ操作できる
+let memberAdminOpen = false;
+function updateMemberAdminToggle() {
+  const body = $("member-admin-body");
+  const btn = $("btn-member-admin-toggle");
+  if (!body || !btn) return;
+  body.style.display = memberAdminOpen ? "" : "none";
+  btn.classList.toggle("open", memberAdminOpen);
+  btn.setAttribute("aria-expanded", String(memberAdminOpen));
+  btn.innerHTML = memberAdminOpen
+    ? '🔧 管理メニューを閉じる <span class="toggle-chevron">▴</span>'
+    : '🔧 管理メニューを開く <span class="toggle-chevron">▾</span>';
+}
+
 // 設定タブのメンバー管理カードを描画（保護者にだけ表示）
 function renderMemberAdmin() {
   const card = $("member-admin-card");
@@ -229,6 +243,7 @@ function renderMemberAdmin() {
   $("member-admin-list").querySelectorAll("[data-admin-delete]").forEach((btn) => {
     btn.addEventListener("click", () => adminDeleteAccount(btn.dataset.adminDelete, btn.dataset.name));
   });
+  updateMemberAdminToggle();
 }
 
 // 家族から外す（アカウント自体は残る）
@@ -965,11 +980,15 @@ async function bumpStat(field) {
 }
 
 // ===== ごほうび（ミッションタブ） =====
+// 誤操作防止: 削除×と追加フォームは「編集」トグルを開いた時だけ表示する
+// （子どもの「交換する」の隣に削除ボタンが常時並ばないように）。
+let rewardsEditMode = false;
 function renderRewards() {
   const el = $("rewards-section");
   if (!el) return;
   const myPts = (state.points && state.points[state.uid]) || 0;
   const isParent = state.myRole === "parent";
+  const editing = isParent && rewardsEditMode;
   const rewards = Object.entries(state.rewards || {})
     .sort(([, a], [, b]) => (a.cost || 0) - (b.cost || 0));
   const logs = Object.entries(state.rewardLogs || {})
@@ -983,7 +1002,7 @@ function renderRewards() {
     <p class="muted" style="font-size:11px;margin:4px 0 10px;">おつかい完了でポイントが貯まります（ふつう1pt・💪2pt・😅3pt、🔥急ぎは+1pt）</p>`;
   if (!rewards.length) {
     html += `<p class="muted" style="font-size:12px;">${isParent
-      ? "下の入力欄から、ポイントと交換できるごほうびを登録しましょう。"
+      ? "「ごほうびを編集」から、ポイントと交換できるごほうびを登録しましょう。"
       : "まだごほうびがありません。保護者に登録してもらいましょう。"}</p>`;
   } else {
     html += rewards.map(([id, rw]) => `
@@ -991,15 +1010,18 @@ function renderRewards() {
         <span class="reward-name">${escapeHtml(rw.name)}</span>
         <span class="reward-cost">🪙 ${Number(rw.cost) || 0}pt</span>
         <button class="success tiny-btn" data-redeem="${id}" ${myPts < rw.cost ? "disabled" : ""}>交換する</button>
-        ${isParent ? `<button class="danger tiny-btn" data-reward-del="${id}" aria-label="ごほうびを削除">×</button>` : ""}
+        ${editing ? `<button class="danger tiny-btn" data-reward-del="${id}" aria-label="ごほうびを削除">×</button>` : ""}
       </div>`).join("");
   }
   if (isParent) {
-    html += `<div class="row" style="gap:6px;margin-top:10px;">
-      <input id="reward-name-input" placeholder="ごほうび名（例: アイス）" maxlength="30" style="flex:2;min-width:0;" />
-      <input id="reward-cost-input" type="number" min="1" max="9999" placeholder="pt" style="flex:0.8;min-width:56px;" />
-      <button id="btn-add-reward" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
-    </div>`;
+    html += `<button id="btn-rewards-edit-toggle" class="section-toggle-btn${editing ? " open" : ""}" aria-expanded="${editing}" style="margin-top:10px;">✏️ ごほうびを編集${editing ? "（閉じる）" : ""} <span class="toggle-chevron">${editing ? "▴" : "▾"}</span></button>`;
+    if (editing) {
+      html += `<div class="row" style="gap:6px;">
+        <input id="reward-name-input" placeholder="ごほうび名（例: アイス）" maxlength="30" style="flex:2;min-width:0;" />
+        <input id="reward-cost-input" type="number" min="1" max="9999" placeholder="pt" style="flex:0.8;min-width:56px;" />
+        <button id="btn-add-reward" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
+      </div>`;
+    }
   }
   if (logs.length) {
     html += `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px;">` +
@@ -1013,6 +1035,11 @@ function renderRewards() {
   el.querySelectorAll("[data-reward-del]").forEach((b) => b.addEventListener("click", () => deleteReward(b.dataset.rewardDel)));
   const addBtn = el.querySelector("#btn-add-reward");
   if (addBtn) addBtn.addEventListener("click", addReward);
+  const editToggle = el.querySelector("#btn-rewards-edit-toggle");
+  if (editToggle) editToggle.addEventListener("click", () => {
+    rewardsEditMode = !rewardsEditMode;
+    renderRewards();
+  });
 }
 
 async function addReward() {
@@ -2374,6 +2401,10 @@ function wireGlobalEvents() {
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
   wireCategoryChips();
+  $("btn-member-admin-toggle").addEventListener("click", () => {
+    memberAdminOpen = !memberAdminOpen;
+    updateMemberAdminToggle();
+  });
   $("btn-copy-code").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("set-invite-code").value);
