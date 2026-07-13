@@ -251,8 +251,11 @@
         </div>
         <div id="member-admin-card" class="card" style="display:none;">
           <h2>🛡️ メンバー管理（保護者）</h2>
-          <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
-          <div id="member-admin-list"></div>
+          <button id="btn-member-admin-toggle" class="section-toggle-btn" aria-expanded="false">🔧 管理メニューを開く <span class="toggle-chevron">▾</span></button>
+          <div id="member-admin-body" style="display:none;">
+            <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
+            <div id="member-admin-list"></div>
+          </div>
         </div>
         <div class="card">
           <h2>📊 今月のおかいもの</h2>

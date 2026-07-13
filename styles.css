@@ -1034,3 +1034,27 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .reward-name { flex: 1; font-weight: 700; font-size: 14px; min-width: 0; }
 .reward-cost { font-size: 12px; font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
 .reward-row button[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+/* ======= Section toggle（誤操作防止の折りたたみ・ボタン風） ======= */
+.section-toggle-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  padding: 11px 14px;
+  font-size: 13px; font-weight: 800;
+  color: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: border-color .12s, background .12s, transform .08s;
+  margin: 4px 0 8px;
+}
+.section-toggle-btn:hover { border-color: var(--pri); }
+.section-toggle-btn:active { transform: scale(0.985); }
+.section-toggle-btn.open {
+  border-color: var(--pri);
+  background: #eeecfb;
+  color: var(--pri-dark);
+}
+.toggle-chevron { font-size: 11px; }
