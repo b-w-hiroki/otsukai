@@ -38,7 +38,7 @@
 
         "members": {
           "$uid": {
-            ".write": "auth != null && ($uid === auth.uid || root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent')"
+            ".write": "auth != null && (root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent' || ($uid === auth.uid && (!newData.exists() || (!data.exists() && newData.child('memberRole').val() === 'child') || (data.exists() && (newData.child('memberRole').val() === data.child('memberRole').val() || !data.child('memberRole').exists())))))"
           }
         },
 
@@ -51,9 +51,17 @@
         "missionLogs":   { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "reminderTimes": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "pushTokens":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "points":        { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "rewards":       { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "rewardLogs":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" }
+        "points": {
+          "$uid": {
+            ".write": "auth != null && (root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent' || ($uid === auth.uid && data.exists() && newData.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() <= data.val()))"
+          }
+        },
+        "rewards":       { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent'" },
+        "rewardLogs": {
+          "$logId": {
+            ".write": "auth != null && !data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+          }
+        }
       }
     }
   }

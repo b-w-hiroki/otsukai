@@ -292,6 +292,15 @@ exports.notifyReaction = functions
     const emoji = snap.val();
     const { familyId, requestId, uid } = context.params;
     try {
+      // リアクションをオン/オフし直すたびに onCreate が発火してプッシュが連発
+      // しないよう、(依頼, リアクションした人) の組につき1回だけ通知する。
+      const dedupRef = admin
+        .database()
+        .ref(`notifDedup/reactions/${familyId}/${requestId}_${uid}`);
+      const seen = await dedupRef.once("value");
+      if (seen.val()) return null;
+      await dedupRef.set(Date.now());
+
       const reqSnap = await admin
         .database()
         .ref(`families/${familyId}/requests/${requestId}`)
@@ -307,6 +316,47 @@ exports.notifyReaction = functions
       });
     } catch (e) {
       console.error("notifyReaction failed", familyId, e);
+    }
+    return null;
+  });
+
+/**
+ * ごほうびポイントの付与・返却（サーバー側）。
+ * クライアントで付与するとルールで偽造を防げないため、status の遷移を見て
+ * サーバーが加減算する。同じ update が二重に届いても遷移は1回しか起きないので
+ * 二重付与にならない。
+ * - claimed/open → done: 完了者に付与（ふつう1 / 大変2 / めちゃ大変3、急ぎ+1）
+ * - done → open: 完了していた人から同額を返却（0未満にはしない）
+ */
+function requestPoints(r) {
+  const base = r.diff === "extreme" ? 3 : r.diff === "hard" ? 2 : 1;
+  return base + (r.urgent ? 1 : 0);
+}
+
+exports.awardPoints = functions
+  .region("asia-northeast1")
+  .database.instance(DB_INSTANCE)
+  .ref("/families/{familyId}/requests/{requestId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.val() || {};
+    const after = change.after.val() || {};
+    if (before.status === after.status) return null;
+    const { familyId } = context.params;
+    const db = admin.database();
+    try {
+      if (after.status === "done" && before.status !== "done" && after.completedBy) {
+        const pts = requestPoints(after);
+        await db
+          .ref(`families/${familyId}/points/${after.completedBy}`)
+          .transaction((v) => Math.max(0, (v || 0) + pts));
+      } else if (before.status === "done" && after.status !== "done" && before.completedBy) {
+        const pts = requestPoints(before);
+        await db
+          .ref(`families/${familyId}/points/${before.completedBy}`)
+          .transaction((v) => Math.max(0, (v || 0) - pts));
+      }
+    } catch (e) {
+      console.error("awardPoints failed", familyId, e);
     }
     return null;
   });
@@ -388,6 +438,19 @@ exports.deleteMemberAccount = functions
       throw new functions.https.HttpsError("not-found", "対象のメンバーが見つかりません");
     }
 
+    // 他のメンバーが残るのに最後の保護者を消すと、ロール変更もごほうび管理も
+    // 誰もできない「ロックされた家族」が永久に残る。先に保護者を引き継がせる。
+    const targetIsParent = members[targetUid].memberRole === "parent";
+    const otherParents = Object.entries(members).filter(
+      ([uid, m]) => uid !== targetUid && m && m.memberRole === "parent"
+    ).length;
+    if (targetIsParent && Object.keys(members).length > 1 && otherParents === 0) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "他のメンバーが残っている家族では、最後の保護者は削除できません。先に別のメンバーを保護者にしてください。"
+      );
+    }
+
     const isLastMember = Object.keys(members).length <= 1;
     if (isLastMember) {
       // 最後の1人（= 呼び出し元自身）→ 家族ごと削除
@@ -441,6 +504,18 @@ exports.notifyRewardRedeem = functions
         tag: `reward-${context.params.logId}`,
         filterUid: { exclude: log.uid },
       });
+
+      // rewardLogs が無限に育たないよう、最新50件だけ残して古いものを削除する
+      const db = admin.database();
+      const logsSnap = await db.ref(`families/${familyId}/rewardLogs`).once("value");
+      const logs = Object.entries(logsSnap.val() || {}).sort(
+        (a, b) => (b[1].at || 0) - (a[1].at || 0)
+      );
+      if (logs.length > 50) {
+        await Promise.all(
+          logs.slice(50).map(([id]) => db.ref(`families/${familyId}/rewardLogs/${id}`).remove())
+        );
+      }
     } catch (e) {
       console.error("notifyRewardRedeem failed", familyId, e);
     }
