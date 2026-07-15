@@ -93,23 +93,27 @@ firebase functions:log --only shoppingReminder
 
 ---
 
-## 含まれる関数（8つ）
+## 含まれる関数（9つ）
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
 | `shoppingReminder` | 毎分（Scheduler） | 設定時刻に未完了の買い物があれば家族へリマインド |
 | `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
 | `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
-| `notifyReaction` | reactions onCreate | 「ありがとう」リアクションを完了した本人へプッシュ |
-| `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外の家族へプッシュ |
+| `notifyReaction` | reactions onCreate | 「ありがとう」を完了した本人へプッシュ（依頼×人ごとに1回だけ） |
+| `awardPoints` | requests onUpdate | 完了でポイント付与・取り消しで返却（**サーバー側で付与＝偽造不可**） |
+| `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外へプッシュ＋交換履歴を最新50件にローテーション |
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動 |
-| `deleteMemberAccount` | callable（保護者のみ） | メンバーのアカウント完全削除（設定→メンバー管理から） |
+| `deleteMemberAccount` | callable（保護者のみ） | メンバーのアカウント完全削除。**最後の保護者は削除不可**（家族ロック防止） |
 
 `firebase deploy --only functions` でまとめてデプロイされます。
 
-> ⚠️ **アカウント削除（設定 → メンバー管理）は `deleteMemberAccount` のデプロイ後に動作します。**
-> 未デプロイの間はエラートーストになります。
+> ⚠️ **デプロイ必須の機能**
+> - アカウント削除（設定 → メンバー管理）は `deleteMemberAccount` のデプロイ後に動作
+> - **ごほうびポイントの付与は `awardPoints` のデプロイ後に動作**します（子どもによる
+>   ポイント偽造を防ぐため、付与をサーバー側に移しました）。未デプロイの間は
+>   完了してもポイントが増えません（交換は残高があれば動きます）
 
 ## メモ / 調整ポイント
 

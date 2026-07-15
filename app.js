@@ -517,8 +517,16 @@ function attachFamilyListeners() {
     renderMissionBadge();
   });
   // ごほうびポイント
+  // 付与はサーバー側で行われるため、自分の残高が増えたらトーストで知らせる
+  // （初回スナップショットでは出さない）
+  _prevOwnPoints = null;
   attach(familyRef().child("points"), "value", (s) => {
     state.points = s.val() || {};
+    const mine = state.points[state.uid] || 0;
+    if (_prevOwnPoints !== null && mine > _prevOwnPoints) {
+      showToast(`🪙 +${mine - _prevOwnPoints}pt ゲット！`);
+    }
+    _prevOwnPoints = mine;
     renderRewards();
   });
   attach(familyRef().child("rewards"), "value", (s) => {
@@ -681,6 +689,8 @@ function populateAssigneeSelect(suffix = "に頼む") {
   });
 }
 function openSheet() {
+  // closeSheet 側のリセットに頼らず、開くときにも明示的にクリーンな追加モードにする
+  resetSheetToAddMode();
   populateAssigneeSelect();
   $("sheet-add").classList.add("open");
   $("sheet-backdrop").classList.add("open");
@@ -826,6 +836,7 @@ function openShortcutRegisterSheet() {
   $("new-urgent").checked = false;
   $("new-diff").value = "normal";
   $("new-assignee").value = "";
+  setSelectedCategory(null);
   // ショートカット登録モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "⭐ よく買うものを登録";
   $("btn-add-request").textContent = "登録する";
@@ -931,38 +942,41 @@ async function unclaimRequest(id) {
   }), "変更できませんでした");
 }
 // ===== ごほうびポイント =====
-// おつかい完了で獲得。難易度が基本値（ふつう1 / ちょっと大変2 / めちゃ大変3）、急ぎは+1。
-// 難易度・急ぎから決定的に計算できるので、完了取り消し時は同額を返却できる。
-function requestPoints(r) {
-  const base = r.diff === "extreme" ? 3 : r.diff === "hard" ? 2 : 1;
-  return base + (r.urgent ? 1 : 0);
-}
-// ポイント残高を増減する（残高が負にならないようクランプ）。おまけ機能なので失敗は握りつぶす。
-async function adjustPoints(uid, delta) {
-  if (!uid || !delta) return;
-  try {
-    await familyRef().child(`points/${uid}`).transaction((v) => Math.max(0, (v || 0) + delta));
-  } catch (e) { console.error("adjustPoints failed", e); }
-}
+// ポイントの付与・返却はサーバー側（Cloud Functions の awardPoints）が status の
+// 遷移を見て行う。クライアントで付与するとルールで偽造を防げないため。
+// 獲得トーストは points リスナーの残高差分で表示する（attachFamilyListeners 参照）。
 
+// 完了の二度押し・同時完了で二重付与にならないよう、
+// トランザクションで「done でないときだけ」完了させる。
+const completingIds = new Set();
 async function completeRequest(id) {
-  const r = state.requests[id];
-  if (!(await dbOp(familyRef().child("requests/" + id).update({
-    status: "done", completedBy: state.uid, completedAt: now()
-  }), "完了にできませんでした"))) return;
-  bumpStat("completedCount");
-  const pts = requestPoints(r || {});
-  adjustPoints(state.uid, pts);
-  showToast(`✅ 完了！ 🪙 +${pts}pt ゲット`, { sound: false });
+  if (completingIds.has(id)) return;
+  completingIds.add(id);
+  try {
+    const res = await familyRef().child("requests/" + id).transaction((cur) => {
+      if (cur === null) return cur;      // まだローカルに無い/削除済み → そのまま
+      if (cur.status === "done") return; // すでに完了 → 中断（二重付与防止）
+      return { ...cur, status: "done", completedBy: state.uid, completedAt: now() };
+    });
+    if (!res.committed) return;
+    bumpStat("completedCount");
+    showToast("✅ 完了！", { sound: false });
+  } catch (e) {
+    console.error(e);
+    showToast("⚠️ 完了にできませんでした。通信環境を確認してください");
+  } finally {
+    completingIds.delete(id);
+  }
 }
 async function reopenRequest(id) {
-  // 取り消し時は、完了時に付与したポイントを返却する（誰が戻しても完了者から引く）
+  // ポイント返却はサーバー側（awardPoints が done→open の遷移で実施）。
+  // 統計の完了数はここで戻す（完了→戻す→完了の繰り返しでMVP集計が水増しされないように）。
   const r = state.requests[id];
-  const refund = r && r.status === "done" && r.completedBy ? { uid: r.completedBy, pts: requestPoints(r) } : null;
+  const wasDoneBy = r && r.status === "done" ? r.completedBy : null;
   if (!(await dbOp(familyRef().child("requests/" + id).update({
     status: "open", completedBy: null, completedAt: null, claimedBy: null, claimedAt: null
   }), "戻せませんでした"))) return;
-  if (refund) adjustPoints(refund.uid, -refund.pts);
+  if (wasDoneBy) adjustStat(wasDoneBy, "completedCount", -1);
 }
 async function deleteRequest(id) {
   const r = state.requests[id];
@@ -978,14 +992,30 @@ async function bumpStat(field) {
     await familyRef().child(`stats/${state.uid}/lastActiveAt`).set(now());
   } catch (e) { console.error("bumpStat failed", e); }
 }
+// 任意メンバーの統計を増減（0未満にはしない）。完了取り消し時の完了数戻しに使う。
+async function adjustStat(uid, field, delta) {
+  if (!uid || !delta) return;
+  try {
+    await familyRef().child(`stats/${uid}/${field}`).transaction((v) => Math.max(0, (v || 0) + delta));
+  } catch (e) { console.error("adjustStat failed", e); }
+}
 
 // ===== ごほうび（ミッションタブ） =====
 // 誤操作防止: 削除×と追加フォームは「編集」トグルを開いた時だけ表示する
 // （子どもの「交換する」の隣に削除ボタンが常時並ばないように）。
 let rewardsEditMode = false;
+let _prevOwnPoints = null; // ポイント獲得トースト用（リスナーの残高差分）
 function renderRewards() {
   const el = $("rewards-section");
   if (!el) return;
+  // 再描画で入力中のごほうび名/ptが消えないよう退避（家族の操作で points 等が
+  // 変わるたびにこの関数が走るため）
+  const prevNameInput = el.querySelector("#reward-name-input");
+  const prevCostInput = el.querySelector("#reward-cost-input");
+  const savedName = prevNameInput ? prevNameInput.value : "";
+  const savedCost = prevCostInput ? prevCostInput.value : "";
+  const hadFocus = document.activeElement === prevNameInput ? "name"
+    : document.activeElement === prevCostInput ? "cost" : null;
   const myPts = (state.points && state.points[state.uid]) || 0;
   const isParent = state.myRole === "parent";
   const editing = isParent && rewardsEditMode;
@@ -1040,6 +1070,13 @@ function renderRewards() {
     rewardsEditMode = !rewardsEditMode;
     renderRewards();
   });
+  // 退避した入力値とフォーカスを復元
+  const nameInput = el.querySelector("#reward-name-input");
+  const costInput = el.querySelector("#reward-cost-input");
+  if (nameInput && savedName) nameInput.value = savedName;
+  if (costInput && savedCost) costInput.value = savedCost;
+  if (hadFocus === "name" && nameInput) nameInput.focus();
+  else if (hadFocus === "cost" && costInput) costInput.focus();
 }
 
 async function addReward() {
@@ -2420,7 +2457,9 @@ function wireGlobalEvents() {
   $("btn-add-reminder-time").addEventListener("click", addReminderTime);
   $("reminder-time-input").addEventListener("keydown", (e) => { if (e.key === "Enter") addReminderTime(); });
   initPushOnLoad();
-  $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else addRequest(); } });
+  // Enter キーも追加ボタンと同じ分岐（shortcutMode を無視すると⭐登録シートで
+  // 本物の依頼が作られてしまうバグがあった）
+  $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); } });
   $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
