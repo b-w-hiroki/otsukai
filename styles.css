@@ -364,30 +364,64 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   border: 1px solid rgba(255,255,255,0.88);
 }
 .shortcut-area-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
-.shortcut-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 0; }
+.shortcut-chips {
+  display: flex; flex-direction: column; gap: 5px;
+  margin-bottom: 10px;
+  max-height: min(48vh, 360px); overflow-y: auto;
+}
 .shortcut-chips:empty { margin-bottom: 0; }
 .shortcut-chips-empty { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 .shortcut-add-row { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px; }
-.shortcut-chip {
-  position: relative; display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px;
+
+/* カテゴリ見出し（スクロール中も上に貼り付く） */
+.shortcut-cat-hdr {
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  padding: 8px 2px 3px; letter-spacing: .03em;
+  position: sticky; top: 0; background: var(--surface); z-index: 1;
+}
+.shortcut-cat-hdr:first-child { padding-top: 0; }
+
+/* 1件 = 1行。品名を大きく、ヒントは下段。行タップで追加 */
+.shortcut-row {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
   background: var(--pri-soft); color: var(--pri);
-  border-radius: var(--r-md); padding: 7px 28px 7px 14px;
-  font-size: 13px; font-weight: 600; cursor: pointer; user-select: none;
-  border: 1.5px solid var(--pri-mid); box-shadow: 0 1px 4px rgba(99,102,241,0.10);
-  transition: background .12s, box-shadow .12s, transform .12s;
+  border: 1.5px solid var(--pri-mid);
+  border-radius: var(--r-md);
+  padding: 9px 12px;
+  cursor: pointer; user-select: none;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.10);
+  transition: background .12s, box-shadow .12s, transform .1s;
 }
-.shortcut-chip:hover { background: #e5e4fa; box-shadow: 0 3px 10px rgba(99,102,241,0.18); transform: translateY(-1px); }
-.shortcut-chip:active { transform: scale(0.96); }
-.shortcut-chip-label { display: flex; align-items: center; gap: 4px; width: 100%; }
-.shortcut-chip-hints { font-size: 10px; font-weight: 600; color: var(--pri-dark); opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-.chip-delete {
-  position: absolute; top: 4px; right: 4px;
-  background: transparent; border: none; color: var(--pri-mid); font-size: 15px;
-  padding: 0 2px; cursor: pointer; line-height: 1; border-radius: 50%;
-  width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: none; font-weight: 400; transition: color .12s;
+.shortcut-row:hover { background: #e5e4fa; box-shadow: 0 3px 10px rgba(99,102,241,0.18); }
+.shortcut-row:active { transform: scale(0.98); }
+.shortcut-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.shortcut-row-name {
+  font-size: 14px; font-weight: 700; color: var(--pri-dark);
+  display: flex; align-items: center; gap: 5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.chip-delete:hover { color: var(--c-urgent); transform: none; box-shadow: none; }
+.shortcut-row-hints {
+  font-size: 11px; font-weight: 600; color: var(--pri-dark); opacity: .65;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shortcut-row-add {
+  flex-shrink: 0; width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--pri); color: #fff;
+  font-size: 17px; font-weight: 800; line-height: 1;
+  box-shadow: 0 2px 6px rgba(99,102,241,0.35);
+}
+.shortcut-row-del {
+  flex-shrink: 0; width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 50%;
+  background: #fee2e2; color: #dc2626;
+  font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1;
+}
+.shortcut-row.editing { cursor: default; }
+.shortcut-row.editing:hover { background: var(--pri-soft); box-shadow: 0 1px 4px rgba(99,102,241,0.10); }
+#btn-shortcut-edit.open { border-color: var(--pri); background: #eeecfb; color: var(--pri-dark); }
 
 /* ======= Bottom nav (floating) ======= */
 .bottom-nav {

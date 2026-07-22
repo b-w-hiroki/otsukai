@@ -895,6 +895,8 @@ async function addShortcutFromSheet() {
   closeSheet();
   showToast(`⭐ 「${name}」をよく買うものに登録しました`);
 }
+// 誤操作防止: 削除×は「✏️ 編集」モードの中だけに表示する
+let shortcutsEditMode = false;
 function renderShortcuts() {
   const wrap = $("shortcut-float-wrap");
   const btn = $("btn-shortcut-toggle");
@@ -904,10 +906,30 @@ function renderShortcuts() {
   updateShortcutVisibility();
   const count = entries.length;
   btn.innerHTML = `<span style="font-size:17px;line-height:1;">⚡</span> よく買うもの${count ? ` <span style="background:rgba(255,255,255,0.25);border-radius:99px;padding:1px 7px;font-size:11px;font-weight:800;">${count}</span>` : ''}`;
+  const editBtn = $("btn-shortcut-edit");
+  if (editBtn) {
+    editBtn.style.display = count ? "" : "none";
+    editBtn.textContent = shortcutsEditMode ? "✔ 完了" : "✏️ 編集";
+    editBtn.classList.toggle("open", shortcutsEditMode);
+  }
   if (!count) {
-    chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。「＋ よく買うものを登録」から追加してください。</p>`;
+    shortcutsEditMode = false;
+    chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。「＋ よく買うものを登録」か、リストの項目の ☆ から追加できます。</p>`;
   } else {
-    chips.innerHTML = entries.map(([id, s]) => {
+    // カテゴリ順（食品→日用品→その他→未分類）→ 名前順で並べ、カテゴリ見出しを付けて見やすく。
+    // 全件が未分類なら見出しは出さない。
+    const sorted = entries.sort(([, a], [, b]) =>
+      categoryOrder(a) - categoryOrder(b) || (a.name || "").localeCompare(b.name || "", "ja"));
+    const anyCategorized = sorted.some(([, s]) => s.category && CATEGORY[s.category]);
+    let html = "";
+    let curCat;
+    sorted.forEach(([id, s]) => {
+      const catKey = s.category && CATEGORY[s.category] ? s.category : "none";
+      if (anyCategorized && catKey !== curCat) {
+        curCat = catKey;
+        const hdr = catKey === "none" ? "📎 未分類" : `${CATEGORY[catKey].emoji} ${CATEGORY[catKey].label}`;
+        html += `<div class="shortcut-cat-hdr">${hdr}</div>`;
+      }
       const hints = [];
       if (s.budget > 0) hints.push(`💰${Number(s.budget).toLocaleString()}円`);
       if (s.brand) hints.push(`🏷️${escapeHtml(s.brand)}`);
@@ -915,25 +937,33 @@ function renderShortcuts() {
         const m = (state.family && state.family.members && state.family.members[s.assignedTo]);
         if (m) hints.push(`👤${escapeHtml(m.name || '')}`);
       }
-      const hintHtml = hints.length ? `<span class="shortcut-chip-hints">${hints.join(' ')}</span>` : '';
-      return `
-      <button class="shortcut-chip" data-sid="${id}">
-        <span class="shortcut-chip-label">${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}</span>
-        ${hintHtml}
-        <span class="chip-delete" data-del="${id}" role="button" aria-label="削除">×</span>
+      const hintHtml = hints.length ? `<span class="shortcut-row-hints">${hints.join(' ')}</span>` : '';
+      html += `
+      <button class="shortcut-row${shortcutsEditMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
+        <span class="shortcut-row-main">
+          <span class="shortcut-row-name">${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}</span>
+          ${hintHtml}
+        </span>
+        ${shortcutsEditMode
+          ? `<span class="shortcut-row-del" data-del="${id}" role="button" aria-label="削除">×</span>`
+          : `<span class="shortcut-row-add" aria-hidden="true">＋</span>`}
       </button>`;
-    }).join("");
+    });
+    chips.innerHTML = html;
   }
-  chips.querySelectorAll(".shortcut-chip").forEach(chip => {
-    chip.addEventListener("click", (e) => {
-      if (e.target.closest(".chip-delete")) return;
-      const s = state.shortcuts[chip.dataset.sid];
+  chips.querySelectorAll(".shortcut-row").forEach(row => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".shortcut-row-del")) return;
+      if (shortcutsEditMode) return; // 編集中の誤タップで追加しない
+      const s = state.shortcuts[row.dataset.sid];
       if (s) { addFromShortcut(s); closeShortcutPanel(); }
     });
   });
-  chips.querySelectorAll(".chip-delete").forEach(del => {
+  chips.querySelectorAll(".shortcut-row-del").forEach(del => {
     del.addEventListener("click", (e) => {
       e.stopPropagation();
+      const s = state.shortcuts[del.dataset.del];
+      if (s && !confirm(`「${s.name}」をよく買うものから削除しますか？`)) return;
       deleteShortcut(del.dataset.del);
     });
   });
@@ -2470,6 +2500,10 @@ function wireGlobalEvents() {
   $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); });
   $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
   $("btn-shortcut-register").addEventListener("click", openShortcutRegisterSheet);
+  $("btn-shortcut-edit").addEventListener("click", () => {
+    shortcutsEditMode = !shortcutsEditMode;
+    renderShortcuts();
+  });
   $("btn-history-float").addEventListener("click", openHistorySheet);
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
