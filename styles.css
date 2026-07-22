@@ -1058,3 +1058,10 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   color: var(--pri-dark);
 }
 .toggle-chevron { font-size: 11px; }
+
+/* ⭐ よく買うもの登録ボタン（カード上） */
+.rc-star-btn.starred {
+  color: #f59e0b;
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
