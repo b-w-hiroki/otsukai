@@ -956,9 +956,11 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .req-row.has-unread-comment::before { background: #f97316; }
 .req-row-main {
   display: flex; align-items: center; gap: 8px;
+  /* 品名の幅が足りないときはボタン群を下の行へ折り返し、品名を圧迫しない */
+  flex-wrap: wrap;
   padding: 10px 12px 10px 14px; min-height: 54px;
 }
-.req-row-name-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.req-row-name-col { flex: 1 1 130px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .req-row-name-col.editable { cursor: pointer; }
 .req-row-name-col.editable:active { opacity: 0.7; }
 .req-row-name {
@@ -985,6 +987,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .req-row-actions {
   display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+  /* 折り返した行では右寄せに */
+  margin-left: auto;
 }
 .rc-btn {
   padding: 6px 13px; font-size: 14px; border-radius: var(--r-full);
@@ -1075,10 +1079,11 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .reward-balance b { color: var(--pri-dark); font-size: 18px; }
 .reward-row {
   display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; /* ごほうび名が長いときはボタンを下へ折り返す */
   padding: 9px 0;
   border-bottom: 1px solid var(--border);
 }
-.reward-name { flex: 1; font-weight: 700; font-size: 14px; min-width: 0; }
+.reward-name { flex: 1 1 140px; font-weight: 700; font-size: 14px; min-width: 0; }
 .reward-cost { font-size: 12px; font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
 .reward-row button[disabled] { opacity: 0.45; cursor: not-allowed; }
 
