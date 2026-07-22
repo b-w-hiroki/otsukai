@@ -497,6 +497,9 @@ function attachFamilyListeners() {
   attach(familyRef().child("shortcuts"), "value", (s) => {
     state.shortcuts = s.val() || {};
     renderShortcuts();
+    // カードの⭐（登録済み表示）も最新にする
+    renderRequests();
+    renderHistory();
   });
   // Stocks
   attach(familyRef().child("stocks"), "value", (s) => {
@@ -793,6 +796,33 @@ async function updateRequest() {
   closeSheet();
   showToast("更新しました ✏️");
 }
+// 同名のショートカットが既にあるか（⭐ボタンの表示と重複登録防止に使う）
+function isShortcutRegistered(name) {
+  if (!name) return false;
+  return Object.values(state.shortcuts || {}).some((s) => s && s.name === name);
+}
+
+// リスト上の項目を、その内容ごと「よく買うもの」に登録する
+async function addShortcutFromRequest(id) {
+  const r = state.requests[id];
+  if (!r) return;
+  if (isShortcutRegistered(r.name)) {
+    showToast(`⭐ 「${r.name}」はもう登録されています`, { sound: false });
+    return;
+  }
+  const entry = { name: r.name, diff: r.diff || "normal", urgent: !!r.urgent, createdAt: now(), createdBy: state.uid };
+  if (r.memo) entry.memo = r.memo;
+  if (r.budget > 0) entry.budget = r.budget;
+  if (r.brand) entry.brand = r.brand;
+  if (r.assignedTo) entry.assignedTo = r.assignedTo;
+  if (r.category) entry.category = r.category;
+  const ref = familyRef().child("shortcuts").push();
+  if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
+  showToast(`⭐ 「${r.name}」をよく買うものに登録しました`, { sound: false });
+  renderRequests();
+  renderHistory();
+}
+
 async function addShortcut() {
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
@@ -1621,6 +1651,9 @@ function compactCard(r, i = 0) {
     ? `<span class="comment-dot unread"></span>`
     : commentCount > 0 ? `<span class="comment-dot seen"></span>` : '';
   actHtml += `<button class="rc-comment-btn${expanded ? ' open' : ''}" data-toggle="${r.id}" aria-label="コメントを開く">💬${dot}</button>`;
+  // リストの項目をそのまま「⭐よく買うもの」に登録できるボタン（登録済みは金色表示）
+  const starred = isShortcutRegistered(r.name);
+  actHtml += `<button class="rc-comment-btn rc-star-btn${starred ? " starred" : ""}" data-star="${r.id}" aria-label="${starred ? "よく買うものに登録済み" : "よく買うものに登録"}">${starred ? "⭐" : "☆"}</button>`;
 
   // Extra info hints: budget / brand / memo / assignee
   const hintParts = [];
@@ -1826,6 +1859,9 @@ function wireRequestButtons(root = document) {
   });
   root.querySelectorAll("[data-react]").forEach((b) => {
     b.addEventListener("click", () => toggleReaction(b.dataset.id, b.dataset.react));
+  });
+  root.querySelectorAll("[data-star]").forEach((b) => {
+    b.addEventListener("click", () => addShortcutFromRequest(b.dataset.star));
   });
   root.querySelectorAll("[data-toggle]").forEach((b) => {
     b.addEventListener("click", () => toggleComments(b.dataset.toggle));
