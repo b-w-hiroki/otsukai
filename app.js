@@ -1629,6 +1629,44 @@ function groupHtml(groupId, title, count, bodyHtml) {
   </div>`;
 }
 
+// コメントスレッドのHTML（履歴カードとチェックリスト詳細で共用）
+function commentThreadHtml(r, commentList) {
+  const roots = commentList.filter(c => !c.parentId).sort((a, b) => a.createdAt - b.createdAt);
+  const replies = commentList.filter(c => !!c.parentId);
+  let threadHtml = `<div class="comment-thread">`;
+  if (roots.length === 0) {
+    threadHtml += `<p class="muted" style="font-size:12px;text-align:center;">まだコメントはありません</p>`;
+  }
+  roots.forEach(root => {
+    const rootReplies = replies.filter(rp => rp.parentId === root.id).sort((a, b) => a.createdAt - b.createdAt);
+    threadHtml += `<div class="comment-root">
+      <div class="comment-item">
+        <span class="avatar sm">${escapeHtml(root.authorEmoji)}</span>
+        <div class="comment-body">
+          <div class="comment-author">${escapeHtml(root.authorName)} <span class="tiny">${timeAgo(root.createdAt)}</span></div>
+          <div class="comment-text">${escapeHtml(root.text)}</div>
+          <button class="reply-btn" data-reply="${root.id}" data-name="${escapeHtml(root.authorName)}" data-req="${r.id}">↩️ 返信</button>
+        </div>
+      </div>`;
+    rootReplies.forEach(rep => {
+      threadHtml += `<div class="comment-item reply">
+        <span class="avatar sm">${escapeHtml(rep.authorEmoji)}</span>
+        <div class="comment-body">
+          <div class="comment-author">${escapeHtml(rep.authorName)} <span class="tiny">${timeAgo(rep.createdAt)}</span></div>
+          <div class="comment-text">${escapeHtml(rep.text)}</div>
+        </div>
+      </div>`;
+    });
+    threadHtml += `</div>`;
+  });
+  threadHtml += `<div class="comment-input-row" data-req="${r.id}" data-parent="">
+    <span class="avatar sm">${state.profile ? escapeHtml(state.profile.emoji) : '🙂'}</span>
+    <input class="comment-input" placeholder="コメントを追加..." />
+    <button class="comment-send">送信</button>
+  </div></div>`;
+  return threadHtml;
+}
+
 // ===== Compact card =====
 function compactCard(r, i = 0) {
   const isDone = r.status === "done";
@@ -1700,40 +1738,7 @@ function compactCard(r, i = 0) {
 
   let commentBodyHtml = "";
   if (expanded) {
-    const roots = commentList.filter(c => !c.parentId).sort((a, b) => a.createdAt - b.createdAt);
-    const replies = commentList.filter(c => !!c.parentId);
-    let threadHtml = `<div class="comment-thread">`;
-    if (roots.length === 0) {
-      threadHtml += `<p class="muted" style="font-size:12px;text-align:center;">まだコメントはありません</p>`;
-    }
-    roots.forEach(root => {
-      const rootReplies = replies.filter(rp => rp.parentId === root.id).sort((a, b) => a.createdAt - b.createdAt);
-      threadHtml += `<div class="comment-root">
-        <div class="comment-item">
-          <span class="avatar sm">${escapeHtml(root.authorEmoji)}</span>
-          <div class="comment-body">
-            <div class="comment-author">${escapeHtml(root.authorName)} <span class="tiny">${timeAgo(root.createdAt)}</span></div>
-            <div class="comment-text">${escapeHtml(root.text)}</div>
-            <button class="reply-btn" data-reply="${root.id}" data-name="${escapeHtml(root.authorName)}" data-req="${r.id}">↩️ 返信</button>
-          </div>
-        </div>`;
-      rootReplies.forEach(rep => {
-        threadHtml += `<div class="comment-item reply">
-          <span class="avatar sm">${escapeHtml(rep.authorEmoji)}</span>
-          <div class="comment-body">
-            <div class="comment-author">${escapeHtml(rep.authorName)} <span class="tiny">${timeAgo(rep.createdAt)}</span></div>
-            <div class="comment-text">${escapeHtml(rep.text)}</div>
-          </div>
-        </div>`;
-      });
-      threadHtml += `</div>`;
-    });
-    threadHtml += `<div class="comment-input-row" data-req="${r.id}" data-parent="">
-      <span class="avatar sm">${state.profile ? escapeHtml(state.profile.emoji) : '🙂'}</span>
-      <input class="comment-input" placeholder="コメントを追加..." />
-      <button class="comment-send">送信</button>
-    </div></div>`;
-    commentBodyHtml = `<div class="req-row-comment-body">${threadHtml}</div>`;
+    commentBodyHtml = `<div class="req-row-comment-body">${commentThreadHtml(r, commentList)}</div>`;
   }
 
   // 完了アイテムには「ありがとう」リアクション行を付ける（1人1つ・再タップで取消）
@@ -1764,6 +1769,86 @@ function compactCard(r, i = 0) {
   </div>`;
 }
 
+// ===== チェックリスト表示（お買い物タブ） =====
+// 1行1品の高密度リスト。左の◯タップで 買うよ→完了。
+// メモ・コメント・⭐・編集・削除などの操作は行タップで展開する詳細に置き、
+// ボタンが品名を圧迫しないようにする。
+const expandedDetails = new Set();
+
+function checkRow(r) {
+  const isClaimed = r.status === "claimed";
+  const mine = r.claimedBy === state.uid;
+  const hasUnread = state.unreadComments.has(r.id);
+  const detailOpen = expandedDetails.has(r.id);
+  const commentCount = Object.keys(state.comments[r.id] || {}).length;
+
+  let circleClass = "check-circle";
+  let circleContent = "";
+  let circleLabel = "タップで買うよ";
+  if (isClaimed) {
+    if (mine) { circleClass += " mine"; circleContent = "🛒"; circleLabel = "タップで完了"; }
+    else { circleClass += " other"; circleContent = memberEmoji(r.claimedBy); circleLabel = `${memberName(r.claimedBy)}さんが買いに行きます`; }
+  } else if (r.assignedTo === state.uid) {
+    circleClass += " assigned";
+    circleLabel = "あなたに指名・タップで担当";
+  }
+
+  const badges = [];
+  if (r.urgent) badges.push(`<span class="check-badge urgent">🔥</span>`);
+  if (r.diff && r.diff !== "normal") badges.push(`<span class="check-badge">${r.diff === "hard" ? "💪" : "😅"}</span>`);
+  if (r.assignedTo && r.status === "open") badges.push(`<span class="check-badge">📌${memberEmoji(r.assignedTo)}</span>`);
+  if (commentCount > 0 || hasUnread) badges.push(`<span class="check-badge${hasUnread ? " unread" : ""}">💬${commentCount || ""}</span>`);
+  const hasExtra = r.memo || r.budget > 0 || r.brand;
+  if (hasExtra && !detailOpen) badges.push(`<span class="check-badge muted">📝</span>`);
+
+  const claimerHtml = isClaimed
+    ? `<span class="check-claimer">${mine ? "自分" : escapeHtml(memberName(r.claimedBy))}</span>`
+    : "";
+
+  let html = `<div class="check-row${r.urgent ? " urgent" : ""}${isClaimed ? " claimed" : ""}${detailOpen ? " open" : ""}" data-row="${r.id}">
+    <button class="${circleClass}" data-check="${r.id}" aria-label="${escapeHtml(circleLabel)}">${circleContent}</button>
+    <div class="check-main" data-detail-toggle="${r.id}" role="button" aria-expanded="${detailOpen}">
+      <span class="check-name">${escapeHtml(r.name)}</span>
+      <span class="check-badges">${badges.join("")}${claimerHtml}</span>
+    </div>
+  </div>`;
+  if (detailOpen) html += checkDetail(r);
+  return html;
+}
+
+function checkDetail(r) {
+  const mine = r.claimedBy === state.uid;
+  const own = r.requestedBy === state.uid;
+  const isClaimed = r.status === "claimed";
+  const expanded = state.expandedItems.has(r.id);
+  const commentList = Object.entries(state.comments[r.id] || {}).map(([cid, c]) => ({ id: cid, ...c }));
+  const starred = isShortcutRegistered(r.name);
+
+  const hintParts = [];
+  if (r.category && CATEGORY[r.category]) hintParts.push(`${CATEGORY[r.category].emoji} ${CATEGORY[r.category].label}`);
+  if (r.budget > 0) hintParts.push(`💰 ${Number(r.budget).toLocaleString()}円以下`);
+  if (r.brand) hintParts.push(`🏷️ ${escapeHtml(r.brand)}`);
+  if (r.memo) hintParts.push(`📝 ${escapeHtml(r.memo)}`);
+  if (r.assignedTo) hintParts.push(`📌 ${memberEmoji(r.assignedTo)} ${escapeHtml(memberName(r.assignedTo))}に指名`);
+  const meta = `${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ ${timeAgo(r.requestedAt)}`;
+
+  let actHtml = "";
+  if (isClaimed && mine) actHtml += `<button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">↩️ やめる</button>`;
+  actHtml += `<button class="rc-comment-btn${expanded ? " open" : ""}" data-toggle="${r.id}" aria-label="コメントを開く">💬</button>`;
+  actHtml += `<button class="rc-comment-btn rc-star-btn${starred ? " starred" : ""}" data-star="${r.id}" aria-label="${starred ? "よく買うものに登録済み" : "よく買うものに登録"}">${starred ? "⭐" : "☆"}</button>`;
+  if (own) {
+    actHtml += `<button class="ghost rc-btn" data-edit-btn="${r.id}" aria-label="編集">✏️</button>`;
+    actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
+  }
+
+  return `<div class="check-detail">
+    ${hintParts.length ? `<div class="req-row-hints">${hintParts.map(p => `<span class="req-row-hint">${p}</span>`).join("")}</div>` : ""}
+    <div class="check-detail-meta">${meta}</div>
+    <div class="check-detail-actions">${actHtml}</div>
+    ${expanded ? `<div class="req-row-comment-body">${commentThreadHtml(r, commentList)}</div>` : ""}
+  </div>`;
+}
+
 // リアクションの付け外し（同じ絵文字をもう一度タップで取消）
 async function toggleReaction(id, emoji) {
   const r = state.requests[id];
@@ -1785,15 +1870,27 @@ function wireGroupToggles() {
   });
 }
 
+// チェックリストのセクション分け: 🔥急ぎを最上段に、以降はカテゴリ順
+function sectionKeyOf(r) {
+  if (r.urgent) return "urgent";
+  return r.category && CATEGORY[r.category] ? r.category : "none";
+}
+const SECTION_DEFS = {
+  urgent: { order: 0, label: "🔥 急ぎ" },
+  food:   { order: 1, label: "🍎 食品" },
+  daily:  { order: 2, label: "🧻 日用品" },
+  other:  { order: 3, label: "📦 その他" },
+  none:   { order: 4, label: "📎 未分類" },
+};
+
 function renderRequests() {
   const items = Object.entries(state.requests).map(([id, r]) => ({ id, ...r }));
 
-  // Group 1: unclaimed open items
+  // Group 1: unclaimed open items（急ぎ → カテゴリ → 追加順）
   const openItems = items
     .filter(r => r.status === "open")
     .sort((a, b) =>
-      (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0) ||        // 急ぎが最優先
-      categoryOrder(a) - categoryOrder(b) ||             // 次にカテゴリ（食品→日用品→その他→未分類）
+      SECTION_DEFS[sectionKeyOf(a)].order - SECTION_DEFS[sectionKeyOf(b)].order ||
       a.requestedAt - b.requestedAt);
 
   // Group 2: items someone declared they'll buy (claimed, in-progress).
@@ -1815,19 +1912,62 @@ function renderRequests() {
   if (!hasAny) {
     html = howtoHtml();
   } else {
-    const openBody = openItems.length
-      ? openItems.map((r, i) => compactCard(r, i)).join("")
-      : `<div class="empty" style="padding:12px 4px 8px;font-size:12px;">新しい依頼はありません</div>`;
+    // 買い物リスト: セクション見出し付きチェックリスト
+    let openBody;
+    if (!openItems.length) {
+      openBody = `<div class="empty" style="padding:12px 4px 8px;font-size:12px;">新しい依頼はありません</div>`;
+    } else {
+      // セクション見出しは、カテゴリ付き or 急ぎが1つでもあるときだけ出す
+      const useSections = openItems.some(r => sectionKeyOf(r) !== "none");
+      let cur = null;
+      openBody = `<div class="check-list">` + openItems.map((r) => {
+        let hdr = "";
+        const key = sectionKeyOf(r);
+        if (useSections && key !== cur) {
+          cur = key;
+          hdr = `<div class="check-section-hdr">${SECTION_DEFS[key].label}</div>`;
+        }
+        return hdr + checkRow(r);
+      }).join("") + `</div>`;
+    }
     html += groupHtml("group-open", "🛒 買い物リスト", openItems.length, openBody);
     if (claimedItems.length) {
       html += groupHtml("group-claimed", "🙋 宣言済みリスト", claimedItems.length,
-        claimedItems.map((r, i) => compactCard(r, i)).join(""));
+        `<div class="check-list">` + claimedItems.map((r) => checkRow(r)).join("") + `</div>`);
     }
   }
 
   $("list-open").innerHTML = html;
   wireRequestButtons($("list-open"));
+  wireChecklist($("list-open"));
   wireGroupToggles();
+}
+
+// チェックリスト特有の結線（◯ボタン・行タップ展開・✏️編集）
+function wireChecklist(root) {
+  root.querySelectorAll("[data-check]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const r = state.requests[b.dataset.check];
+      if (!r) return;
+      if (r.status === "open") claimRequest(b.dataset.check);
+      else if (r.status === "claimed" && r.claimedBy === state.uid) completeRequest(b.dataset.check);
+      else showToast(`🛒 ${memberName(r.claimedBy)}さんが買いに行きます`, { sound: false });
+    });
+  });
+  root.querySelectorAll("[data-detail-toggle]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.detailToggle;
+      if (expandedDetails.has(id)) expandedDetails.delete(id);
+      else expandedDetails.add(id);
+      renderRequests();
+    });
+  });
+  root.querySelectorAll("[data-edit-btn]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const raw = state.requests[b.dataset.editBtn];
+      if (raw) openEditSheet({ id: b.dataset.editBtn, ...raw });
+    });
+  });
 }
 function sectionHtml(title, count, body) {
   return `<div class="section-header"><h2>${title}</h2><span class="section-count">${count}</span></div>${body}`;
@@ -1876,7 +2016,7 @@ function timeAgo(ts) {
   return day + "日前";
 }
 function wireRequestButtons(root = document) {
-  root.querySelectorAll(".req-row [data-act]").forEach((b) => {
+  root.querySelectorAll(".req-row [data-act], .check-detail [data-act]").forEach((b) => {
     b.addEventListener("click", () => {
       const id = b.dataset.id;
       const act = b.dataset.act;
