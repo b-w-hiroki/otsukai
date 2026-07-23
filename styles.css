@@ -1125,3 +1125,80 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   transform: none; box-shadow: none;
 }
 .react-btn.mine:hover:not(:disabled) { background: #eeecfb; }
+
+/* ======= チェックリスト（お買い物タブ・1行1品） ======= */
+.check-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.check-section-hdr {
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  letter-spacing: .05em;
+  padding: 8px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.check-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.check-list > *:last-child { border-bottom: none; }
+.check-row.urgent { box-shadow: inset 3px 0 0 var(--c-urgent); }
+.check-row.open { background: var(--pri-soft); }
+/* ◯ボタン: タップで 買うよ → 完了 */
+.check-circle {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 2.5px solid var(--pri-mid);
+  background: var(--surface);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 16px; line-height: 1; padding: 0;
+  color: var(--ink);
+  cursor: pointer; box-shadow: none;
+  transition: border-color .12s, background .12s, transform .1s;
+}
+.check-circle:hover:not(:disabled) {
+  background: var(--pri-soft); border-color: var(--pri);
+  transform: none; box-shadow: none; color: var(--ink);
+}
+.check-circle:active { transform: scale(1.12); }
+.check-circle.mine { border-color: var(--c-claimed); background: var(--c-claimed-soft); }
+.check-circle.mine:hover:not(:disabled) { background: var(--c-claimed-soft); border-color: var(--c-claimed); }
+.check-circle.other { border-color: var(--border); background: var(--surface-2); cursor: default; }
+.check-circle.other:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border); }
+.check-circle.assigned { border-color: var(--c-claimed); }
+/* 行本体: タップで詳細を展開 */
+.check-main {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer;
+}
+.check-name {
+  flex: 1; min-width: 0;
+  font-size: 16px; font-weight: 700; color: var(--ink);
+  overflow-wrap: anywhere; /* 省略せず折り返す */
+}
+.check-badges { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.check-badge {
+  font-size: 12px; font-weight: 700;
+  background: var(--surface-2);
+  border-radius: var(--r-full); padding: 2px 7px;
+}
+.check-badge.urgent { background: var(--c-urgent-soft); }
+.check-badge.unread { background: #ffedd5; }
+.check-badge.muted { opacity: .6; }
+.check-claimer { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+/* 展開した詳細 */
+.check-detail {
+  padding: 6px 14px 12px 62px; /* ◯の幅に左端を揃える */
+  border-bottom: 1px solid var(--border);
+  background: #fbfaff;
+}
+.check-detail .req-row-hints { margin: 2px 0 6px; }
+.check-detail-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
+.check-detail-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
