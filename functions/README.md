@@ -101,10 +101,10 @@ firebase functions:log --only shoppingReminder
 | `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
 | `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
 | `notifyReaction` | reactions onCreate | 「ありがとう」を完了した本人へプッシュ（依頼×人ごとに1回だけ） |
-| `awardPoints` | requests onUpdate | 完了でポイント付与・取り消しで返却（**サーバー側で付与＝偽造不可**） |
+| `awardPoints` | requests onUpdate | 完了でポイント付与・取り消しで返却（**サーバー側で付与＝偽造不可**）＋ウィークリーミッションの進捗記録・達成判定 |
 | `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外へプッシュ＋交換履歴を最新50件にローテーション |
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
-| `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動 |
+| `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動＋古い週次ミッションデータの掃除 |
 | `deleteMemberAccount` | callable（保護者のみ） | メンバーのアカウント完全削除。**最後の保護者は削除不可**（家族ロック防止） |
 
 `firebase deploy --only functions` でまとめてデプロイされます。

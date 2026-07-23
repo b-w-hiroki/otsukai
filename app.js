@@ -44,6 +44,7 @@ const state = {
   points: {},
   rewards: {},
   rewardLogs: {},
+  weekly: {},
   myRole: null
 };
 
@@ -539,6 +540,23 @@ function attachFamilyListeners() {
   attach(familyRef().child("rewardLogs"), "value", (s) => {
     state.rewardLogs = s.val() || {};
     renderRewards();
+  });
+  // ウィークリーミッション（進捗はサーバーが記録・クライアントは読むだけ）
+  _prevWeeklyAwards = null;
+  attach(familyRef().child("weekly"), "value", (s) => {
+    state.weekly = s.val() || {};
+    // 自分の達成が増えたらお祝いトースト（初回スナップショットは除外）
+    const mine = ((state.weekly[weekKeyJST()] || {})[state.uid] || {}).awards || {};
+    if (_prevWeeklyAwards !== null) {
+      Object.keys(mine).forEach((mid) => {
+        if (!_prevWeeklyAwards[mid]) {
+          const m = WEEKLY_MISSIONS.find((x) => x.id === mid);
+          if (m) showToast(`🎯 ウィークリーミッション「${m.title}」達成！`);
+        }
+      });
+    }
+    _prevWeeklyAwards = mine;
+    renderWeeklyMissions();
   });
   showScreen("main");
 }
@@ -1058,6 +1076,61 @@ async function adjustStat(uid, field, delta) {
   try {
     await familyRef().child(`stats/${uid}/${field}`).transaction((v) => Math.max(0, (v || 0) + delta));
   } catch (e) { console.error("adjustStat failed", e); }
+}
+
+// ===== ウィークリーミッション（定番ミッション） =====
+// 家族からもらうミッションとは別の、毎週自動リセットの定番ミッション。
+// 進捗カウント・達成判定・ポイント付与はすべてサーバー（functions の bumpWeekly）。
+// ここでは表示のみを行う。定義はサーバー側と一致させること。
+const WEEKLY_MISSIONS = [
+  { id: "complete3", metric: "completed",       target: 3, pts: 3, title: "🛒 おつかいを3回完了する" },
+  { id: "urgent1",   metric: "urgentCompleted", target: 1, pts: 2, title: "🔥 急ぎのおつかいを1回完了する" },
+  { id: "thanks3",   metric: "reactionsSent",   target: 3, pts: 1, title: "❤️ ありがとうを3回送る" },
+];
+let _prevWeeklyAwards = null;
+
+// Asia/Tokyo の ISO 週キー（サーバー側と同じアルゴリズム）
+function weekKeyJST() {
+  const ymd = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7) + 3);
+  const firstThu = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  firstThu.setUTCDate(firstThu.getUTCDate() - ((firstThu.getUTCDay() + 6) % 7) + 3);
+  const week = 1 + Math.round((date - firstThu) / (7 * 864e5));
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function renderWeeklyMissions() {
+  const el = $("weekly-missions-section");
+  if (!el) return;
+  const my = (state.weekly[weekKeyJST()] || {})[state.uid] || {};
+  const awards = my.awards || {};
+  const rows = WEEKLY_MISSIONS.map((m) => {
+    const count = Math.min(my[m.metric] || 0, m.target);
+    const doneMission = !!awards[m.id];
+    const pct = doneMission ? 100 : Math.round(count / m.target * 100);
+    return `
+      <div class="weekly-mission${doneMission ? " done" : ""}">
+        <div class="row between" style="margin-bottom:4px;">
+          <span class="weekly-mission-title">${m.title}</span>
+          <span class="weekly-mission-pts">${doneMission ? "✅ 達成" : `+${m.pts}pt`}</span>
+        </div>
+        <div class="row" style="gap:8px;">
+          <div class="mission-progress-bar" style="flex:1;">
+            <div class="mission-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <span class="tiny" style="flex-shrink:0;">${doneMission ? m.target : count} / ${m.target}</span>
+        </div>
+      </div>`;
+  }).join("");
+  el.innerHTML = `<div class="card">
+    <h2>⚡ ウィークリーミッション</h2>
+    <p class="muted" style="font-size:11px;margin:0 0 10px;">毎週月曜にリセット。ふだんの行動で自動的に進みます（達成すると自動でポイントゲット）</p>
+    ${rows}
+  </div>`;
 }
 
 // ===== ごほうび（ミッションタブ） =====
