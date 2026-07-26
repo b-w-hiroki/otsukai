@@ -2447,8 +2447,12 @@ function renderMonthlySummary() {
 async function addReminderTime() {
   if (!state.familyId) return;
   const input = $("reminder-time-input");
-  const val = (input.value || "").trim();
-  if (!/^\d{2}:\d{2}$/.test(val)) { showToast("時刻を選んでください"); return; }
+  const raw = (input.value || "").trim();
+  if (!/^\d{2}:\d{2}$/.test(raw)) { showToast("時刻を選んでください"); return; }
+  // サーバーのリマインド起動は5分ごと（コスト最適化）なので、5分きざみに丸める
+  const [h, m] = raw.split(":").map(Number);
+  const total = (Math.round((h * 60 + m) / 5) * 5) % 1440;
+  const val = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
   // reminderIndex はサーバー（Cloud Functions）が「この時刻に通知すべき家族」を
   // 全家族スキャンなしで引けるようにするための逆引き索引。
   const ok = await dbOp(Promise.all([
@@ -2457,7 +2461,7 @@ async function addReminderTime() {
   ]), "設定できませんでした");
   if (!ok) return;
   input.value = "";
-  showToast(`⏰ ${val} にリマインドを設定しました`, { sound: false });
+  showToast(`⏰ ${val} にリマインドを設定しました${val !== raw ? "（5分きざみに調整）" : ""}`, { sound: false });
 }
 
 async function removeReminderTime(t) {

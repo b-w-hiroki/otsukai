@@ -4,9 +4,9 @@
  * 家族ごとに設定された時刻（families/{id}/reminderTimes）に、未完了の買い物が
  * あれば、その家族の端末トークン（families/{id}/pushTokens）へ FCM を送る。
  *
- * Cloud Scheduler により毎分起動する。全家族をスキャンする代わりに、クライアントが
- * 保守する逆引き索引 reminderIndex/{HH:MM}/{familyId} を読むため、リマインド該当の
- * ない分は索引ノード1つの読み取りだけで済む（スケーラブル＆低コスト）。
+ * Cloud Scheduler により5分ごとに起動し、直近5分の窓に入る設定時刻をまとめて処理する。
+ * 全家族をスキャンする代わりに逆引き索引 reminderIndex/{HH:MM}/{familyId} を読むため、
+ * 該当のない回は索引ノード1つの読み取りだけで済む（スケーラブル＆低コスト）。
  *
  * デプロイには Firebase の Blaze（従量課金）プランが必要です。詳しくは README.md。
  */
@@ -15,8 +15,12 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-// Realtime Database は asia-southeast1 のインスタンスを明示する
-// （関数リージョン asia-northeast1 と異なるため）。
+// コスト最適化:
+// - REGION は RTDB インスタンス（asia-southeast1）と同居させ、リージョン間の
+//   データ転送費をゼロにする
+// - RUNTIME_OPTS はどの関数も軽処理のため最小メモリ 128MB（GB秒 ≒ 半減）
+const REGION = "asia-southeast1";
+const RUNTIME_OPTS = { memory: "128MB", timeoutSeconds: 60 };
 const DB_INSTANCE = "otsukai-app-4b62b-default-rtdb";
 
 /** 家族の pushTokens を読み、条件に合うトークンへ FCM を送って無効分を掃除する */
@@ -71,44 +75,58 @@ async function memberName(familyId, uid) {
   return snap.val() || "家族の誰か";
 }
 
-/** Asia/Tokyo の現在時刻を "HH:MM" で返す */
-function currentTimeJST() {
+/** Asia/Tokyo の現在時刻を「0時からの経過分」で返す */
+function currentMinutesJST() {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Tokyo",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   }).formatToParts(new Date());
-  const get = (type) => parts.find((p) => p.type === type).value;
+  const get = (type) => parseInt(parts.find((p) => p.type === type).value, 10);
   // en-GB の hour は "00"-"23"（"24" にならない）
-  return `${get("hour")}:${get("minute")}`;
+  return (get("hour") % 24) * 60 + get("minute");
 }
 
 exports.shoppingReminder = functions
-  .region("asia-northeast1")
-  .pubsub.schedule("* * * * *")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
+  // コスト最適化: 毎分ではなく5分ごとに起動（実行回数 ▲80%）。
+  // 取りこぼしがないよう「現在〜4分前」の5分窓に入る設定時刻をまとめて処理する。
+  // 窓同士は重ならないので同じ時刻が二重に発火することはない。
+  .pubsub.schedule("*/5 * * * *")
   .timeZone("Asia/Tokyo")
   .onRun(async () => {
-    const current = currentTimeJST();
     const db = admin.database();
+    const nowMin = currentMinutesJST();
+    const windowKeys = new Set();
+    for (let i = 0; i < 5; i++) {
+      const t = (nowMin - i + 1440) % 1440;
+      windowKeys.add(`${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`);
+    }
 
-    // 逆引き索引: この時刻に通知したい家族の一覧（該当なしなら即終了）
-    const idxSnap = await db.ref(`reminderIndex/${current}`).once("value");
-    const familyIds = Object.keys(idxSnap.val() || {});
-    if (!familyIds.length) return null;
+    // 索引全体（時刻キー×家族ID の小さなノード）を1回だけ読み、窓内のキーを拾う
+    const idxSnap = await db.ref("reminderIndex").once("value");
+    const idx = idxSnap.val() || {};
+    const hits = []; // { timeKey, familyId }
+    for (const [timeKey, fams] of Object.entries(idx)) {
+      if (!windowKeys.has(timeKey)) continue;
+      for (const familyId of Object.keys(fams || {})) hits.push({ timeKey, familyId });
+    }
+    if (!hits.length) return null;
 
-    const tasks = familyIds.map(async (familyId) => {
+    const tasks = hits.map(async ({ timeKey, familyId }) => {
       try {
         const famRef = db.ref(`families/${familyId}`);
         const [timeSnap, tokensSnap, requestsSnap] = await Promise.all([
-          famRef.child(`reminderTimes/${current}`).once("value"),
+          famRef.child(`reminderTimes/${timeKey}`).once("value"),
           famRef.child("pushTokens").once("value"),
           famRef.child("requests").once("value"),
         ]);
 
         // 索引が古い（家族側の設定が消えている）場合は自己修復して終了
         if (!timeSnap.val()) {
-          await db.ref(`reminderIndex/${current}/${familyId}`).remove();
+          await db.ref(`reminderIndex/${timeKey}/${familyId}`).remove();
           return;
         }
 
@@ -130,7 +148,7 @@ exports.shoppingReminder = functions
 
         const resp = await admin.messaging().sendEachForMulticast({
           notification: { title: "🧺 おうちのおつかい", body },
-          data: { tag: `reminder-${current}`, url: "./" },
+          data: { tag: `reminder-${timeKey}`, url: "./" },
           tokens,
         });
 
@@ -164,7 +182,8 @@ exports.shoppingReminder = functions
  * - 指名なし → 依頼者以外の家族全員に通知（急ぎは 🔥 を付ける）
  */
 exports.notifyNewRequest = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .database.instance(DB_INSTANCE)
   .ref("/families/{familyId}/requests/{requestId}")
   .onCreate(async (snap, context) => {
@@ -199,7 +218,8 @@ exports.notifyNewRequest = functions
  * 依頼者本人にだけ通知する（本人の操作なら送らない）。
  */
 exports.notifyStatusChange = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .database.instance(DB_INSTANCE)
   .ref("/families/{familyId}/requests/{requestId}")
   .onUpdate(async (change, context) => {
@@ -243,7 +263,8 @@ exports.notifyStatusChange = functions
 const ARCHIVE_AFTER_DAYS = 90;
 
 exports.archiveOldRequests = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .pubsub.schedule("15 3 * * *")
   .timeZone("Asia/Tokyo")
   .onRun(async () => {
@@ -293,7 +314,8 @@ exports.archiveOldRequests = functions
  * 完了した本人にだけ通知する（本人が自分に付けた場合は送らない）。
  */
 exports.notifyReaction = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .database.instance(DB_INSTANCE)
   .ref("/families/{familyId}/requests/{requestId}/reactions/{uid}")
   .onCreate(async (snap, context) => {
@@ -398,7 +420,8 @@ async function bumpWeekly(familyId, uid, metric, delta) {
 }
 
 exports.awardPoints = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .database.instance(DB_INSTANCE)
   .ref("/families/{familyId}/requests/{requestId}")
   .onUpdate(async (change, context) => {
@@ -436,7 +459,8 @@ exports.awardPoints = functions
  * 完了ゼロの家族には送らない。
  */
 exports.weeklySummary = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .pubsub.schedule("0 20 * * 0")
   .timeZone("Asia/Tokyo")
   .onRun(async () => {
@@ -484,7 +508,8 @@ exports.weeklySummary = functions
  * 依頼・コメントは家族の記録として残す（消さない）。
  */
 exports.deleteMemberAccount = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .https.onCall(async (data, context) => {
     if (!context.auth) {
       throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
@@ -558,7 +583,8 @@ exports.deleteMemberAccount = functions
  * 交換した本人以外の家族（主に保護者）へ知らせる。
  */
 exports.notifyRewardRedeem = functions
-  .region("asia-northeast1")
+  .region(REGION)
+  .runWith(RUNTIME_OPTS)
   .database.instance(DB_INSTANCE)
   .ref("/families/{familyId}/rewardLogs/{logId}")
   .onCreate(async (snap, context) => {

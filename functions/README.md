@@ -14,10 +14,10 @@
                         └→ reminderIndex/{"HH:MM"}/{familyId}    = true（逆引き索引）
 [通知をオンにする]      ──→ families/{id}/pushTokens/{token}      = {uid,name,updatedAt}
 
-         ┌──────────── Cloud Scheduler（毎分・Asia/Tokyo）────────────┐
-         │ shoppingReminder: reminderIndex/{現在時刻} を読み、該当家族の   │
-         │ 未完了(open/claimed)の買い物があれば pushTokens へ FCM 送信      │
-         │（該当なしの分は索引ノード1つの読み取りだけで終了）              │
+         ┌─────────── Cloud Scheduler（5分ごと・Asia/Tokyo）───────────┐
+         │ shoppingReminder: reminderIndex を読み、直近5分窓の設定時刻の    │
+         │ 家族で未完了(open/claimed)の買い物があれば pushTokens へ FCM 送信 │
+         │（該当なしの回は索引ノード1つの読み取りだけで終了）              │
          └────────────────────────────────────────────────────────────┘
 ```
 
@@ -97,7 +97,7 @@ firebase functions:log --only shoppingReminder
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
-| `shoppingReminder` | 毎分（Scheduler） | 設定時刻に未完了の買い物があれば家族へリマインド |
+| `shoppingReminder` | 5分ごと（Scheduler） | 設定時刻（5分きざみ）に未完了の買い物があれば家族へリマインド |
 | `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
 | `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
 | `notifyReaction` | reactions onCreate | 「ありがとう」を完了した本人へプッシュ（依頼×人ごとに1回だけ） |
@@ -119,6 +119,29 @@ firebase functions:log --only shoppingReminder
 
 - 通知時刻は **家族で共有**（`families/{id}/reminderTimes`）。各メンバーが「通知をオン」にすると、その端末トークンが家族の `pushTokens` に登録され、設定時刻に届きます。
 - 通知を受け取りたくないメンバーは、アプリの設定 → 通知 → 「通知をオフにする」で**端末単位**で止められます（家族の設定時刻には影響しません）。
-- 毎分起動が気になる場合は、`index.js` の `schedule("* * * * *")` を `"*/5 * * * *"` 等に変え、アプリ側の時刻入力も5分刻みに丸めると呼び出し回数を減らせます。
+- リマインドは5分ごとの起動（直近5分窓をまとめて判定）で、アプリ側の時刻入力も5分きざみに丸めています。
 - 無効になった端末トークンは送信失敗時に自動削除されます。
 - アーカイブの保持期間は `index.js` の `ARCHIVE_AFTER_DAYS`（既定90日）で調整できます。アーカイブされたデータは削除ではなく `families/{id}/archive/` に残ります。
+
+
+---
+
+## コスト最適化（限りなく0円運用のために）
+
+コード側で実施済み:
+- **リマインドは5分ごと起動**（毎分比で実行回数 ▲80%: 月43,200回→8,640回。無料枠200万回の0.5%）
+- **全関数のメモリを最小128MB**に（GB秒消費 ≒ 半減）
+- **関数リージョンを RTDB と同じ asia-southeast1** に（リージョン間のデータ転送費をゼロに）
+- Cloud Scheduler ジョブは3つ（リマインド・週次サマリー・日次アーカイブ）= **無料枠3ジョブ以内**
+- FCM は完全無料・データ肥大は90日アーカイブ＋各種ローテーションで抑制済み
+
+デプロイ後にやっておくと安心:
+1. **古いコンテナイメージの自動掃除**（デプロイのたびに Artifact Registry にイメージが溜まり、
+   無料枠0.5GBを超えると数円/月かかるため）:
+   ```bash
+   firebase functions:artifacts:setpolicy --location asia-southeast1
+   ```
+   （プロンプトで保持期間を確認。コマンドが無い場合は firebase-tools を最新に更新するか、
+   Google Cloud Console → Artifact Registry → gcf-artifacts でクリーンアップポリシーを設定）
+2. **予算アラート**: Google Cloud Console → お支払い → 予算とアラート → 月100円などで設定。
+   万一の想定外課金にすぐ気づけます。
