@@ -15,4 +15,4 @@ self.FIREBASE_CONFIG = {
 // FCM Web Push 用の VAPID 公開鍵。
 // Firebase Console → プロジェクト設定 → Cloud Messaging → ウェブプッシュ証明書 で生成して貼り付けると
 // 「閉じてても届くプッシュ通知」が有効化できる（未設定の間は通知オンにできない）。
-self.FIREBASE_VAPID_KEY = "YOUR_VAPID_KEY";
+self.FIREBASE_VAPID_KEY = "BMPi0yfIXZbrOc2BCoyQfEYAlRXqeyKqs3TQ5hHWQxVg68lk3OIqPFJDuX_5ZcXBVYlB8uQDrEzwuj57aXyl4Ak";
