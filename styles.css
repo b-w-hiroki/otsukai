@@ -1202,3 +1202,12 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .check-detail .req-row-hints { margin: 2px 0 6px; }
 .check-detail-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
 .check-detail-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+/* ======= ウィークリーミッション ======= */
+.weekly-mission { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.weekly-mission:last-child { border-bottom: none; padding-bottom: 2px; }
+.weekly-mission-title { font-size: 13px; font-weight: 700; }
+.weekly-mission-pts { font-size: 12px; font-weight: 800; color: var(--pri-dark); flex-shrink: 0; }
+.weekly-mission.done .weekly-mission-title { color: var(--muted); }
+.weekly-mission.done .weekly-mission-pts { color: var(--c-done); }
+.weekly-mission.done .mission-progress-fill { background: var(--c-done); }

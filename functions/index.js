@@ -275,6 +275,14 @@ exports.archiveOldRequests = functions
           console.error("archive failed for", familyId, e);
         }
       }
+      // 古いウィークリーミッションの週データを掃除（今週を含め直近5週だけ残す）
+      if (fam.weekly) {
+        const keys = Object.keys(fam.weekly).sort().reverse();
+        for (const oldKey of keys.slice(5)) {
+          try { await db.ref(`families/${familyId}/weekly/${oldKey}`).remove(); }
+          catch (e) { console.error("weekly cleanup failed", familyId, oldKey, e); }
+        }
+      }
     }
     console.log(`archived ${moved} requests (older than ${ARCHIVE_AFTER_DAYS} days)`);
     return null;
@@ -307,6 +315,8 @@ exports.notifyReaction = functions
         .once("value");
       const r = reqSnap.val();
       if (!r || !r.completedBy || r.completedBy === uid) return null;
+      // ウィークリーミッション「ありがとうを送る」（初回リアクションのみ＝dedupe通過時のみ）
+      await bumpWeekly(familyId, uid, "reactionsSent", 1);
       const reactor = await memberName(familyId, uid);
       await sendToFamily(familyId, {
         title: `${emoji} ありがとうが届きました`,
@@ -333,6 +343,60 @@ function requestPoints(r) {
   return base + (r.urgent ? 1 : 0);
 }
 
+// ===== ウィークリーミッション（定番ミッション） =====
+// 家族からもらうミッションとは別の、毎週自動リセットされる定番ミッション。
+// 進捗カウンタは families/{id}/weekly/{weekKey}/{uid} にサーバーが記録し、
+// しきい値に達したらポイント付与＋本人へプッシュ。付与済みは awards に記録して
+// 二重付与を防ぐ。クライアントは読み取りのみ（ルール上も書けない）。
+const WEEKLY_MISSIONS = [
+  { id: "complete3", metric: "completed",       target: 3, pts: 3, title: "🛒 おつかいを3回完了する" },
+  { id: "urgent1",   metric: "urgentCompleted", target: 1, pts: 2, title: "🔥 急ぎのおつかいを1回完了する" },
+  { id: "thanks3",   metric: "reactionsSent",   target: 3, pts: 1, title: "❤️ ありがとうを3回送る" },
+];
+
+/** Asia/Tokyo の ISO 週キー（例: "2026-W30"）。年をまたいでも文字列比較で新旧が判定できる */
+function weekKeyJST() {
+  const ymd = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  const [y, m, d] = ymd.split("-").map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7) + 3); // その週の木曜
+  const firstThu = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+  firstThu.setUTCDate(firstThu.getUTCDate() - ((firstThu.getUTCDay() + 6) % 7) + 3);
+  const week = 1 + Math.round((date - firstThu) / (7 * 864e5));
+  return `${date.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+/**
+ * 週次カウンタを増減し、しきい値に達した定番ミッションがあればポイント付与＋通知。
+ * delta が負のとき（完了取り消し）はカウンタだけ戻し、付与済みポイントは取り消さない。
+ */
+async function bumpWeekly(familyId, uid, metric, delta) {
+  if (!uid || !delta) return;
+  const db = admin.database();
+  const base = `families/${familyId}/weekly/${weekKeyJST()}/${uid}`;
+  const res = await db.ref(`${base}/${metric}`).transaction((v) => Math.max(0, (v || 0) + delta));
+  if (delta < 0) return;
+  const count = res.snapshot ? res.snapshot.val() || 0 : 0;
+
+  for (const mission of WEEKLY_MISSIONS) {
+    if (mission.metric !== metric || count < mission.target) continue;
+    // 付与済みマーカーをトランザクションで置き、初回だけ通過させる
+    const marker = await db.ref(`${base}/awards/${mission.id}`).transaction((v) => (v ? undefined : Date.now()));
+    if (!marker.committed) continue;
+    await db.ref(`families/${familyId}/points/${uid}`).transaction((v) => Math.max(0, (v || 0) + mission.pts));
+    try {
+      await sendToFamily(familyId, {
+        title: "🎯 ウィークリーミッション達成！",
+        body: `「${mission.title}」クリア！ +${mission.pts}pt ゲット`,
+        tag: `weekly-${mission.id}`,
+        filterUid: { only: uid },
+      });
+    } catch (e) { console.error("weekly mission notify failed", e); }
+  }
+}
+
 exports.awardPoints = functions
   .region("asia-northeast1")
   .database.instance(DB_INSTANCE)
@@ -349,11 +413,16 @@ exports.awardPoints = functions
         await db
           .ref(`families/${familyId}/points/${after.completedBy}`)
           .transaction((v) => Math.max(0, (v || 0) + pts));
+        // ウィークリーミッションの進捗
+        await bumpWeekly(familyId, after.completedBy, "completed", 1);
+        if (after.urgent) await bumpWeekly(familyId, after.completedBy, "urgentCompleted", 1);
       } else if (before.status === "done" && after.status !== "done" && before.completedBy) {
         const pts = requestPoints(before);
         await db
           .ref(`families/${familyId}/points/${before.completedBy}`)
           .transaction((v) => Math.max(0, (v || 0) - pts));
+        await bumpWeekly(familyId, before.completedBy, "completed", -1);
+        if (before.urgent) await bumpWeekly(familyId, before.completedBy, "urgentCompleted", -1);
       }
     } catch (e) {
       console.error("awardPoints failed", familyId, e);
