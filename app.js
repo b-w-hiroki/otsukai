@@ -1895,8 +1895,8 @@ function checkRow(r) {
   let circleContent = "";
   let circleLabel = "タップで買うよ";
   if (isClaimed) {
-    if (mine) { circleClass += " mine"; circleContent = "🛒"; circleLabel = "タップで買ったよ"; }
-    else { circleClass += " other"; circleContent = memberEmoji(r.claimedBy); circleLabel = `${memberName(r.claimedBy)}さんが買いに行きます・タップで買ったよ`; }
+    if (mine) { circleClass += " mine"; circleContent = "🛒"; circleLabel = "タップで「買うよ」を取り消す"; }
+    else { circleClass += " other"; circleContent = memberEmoji(r.claimedBy); circleLabel = `${memberName(r.claimedBy)}さんが買いに行きます`; }
   } else if (r.assignedTo === state.uid) {
     circleClass += " assigned";
     circleLabel = "あなたに指名・タップで担当";
@@ -2095,8 +2095,15 @@ function wireChecklist(root) {
     b.addEventListener("click", () => {
       const r = state.requests[b.dataset.check];
       if (!r) return;
-      if (r.status === "open") claimRequest(b.dataset.check);
-      else if (r.status === "claimed") completeFromUi(b.dataset.check);
+      // ◯は「買うよ」のオン/オフ。完了は「✅買ったよ」ボタンで行う。
+      if (r.status === "open") {
+        claimRequest(b.dataset.check);
+      } else if (r.status === "claimed" && r.claimedBy === state.uid) {
+        unclaimRequest(b.dataset.check);
+        showToast("↩️ 「買うよ」を取り消しました", { sound: false });
+      } else if (r.status === "claimed") {
+        showToast(`🛒 ${memberName(r.claimedBy)}さんが買いに行きます`, { sound: false });
+      }
     });
   });
   root.querySelectorAll("[data-complete]").forEach((b) => {
