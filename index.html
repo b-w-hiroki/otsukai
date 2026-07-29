@@ -25,7 +25,6 @@
   <div id="store-mode" class="store-mode">
     <div class="store-mode-hdr">
       <span class="store-mode-title">🏪 店内モード</span>
-      <button id="btn-store-mode-close" class="ghost tiny-btn" style="white-space:nowrap;">✕ 終了</button>
     </div>
     <div class="store-progress">
       <span class="store-progress-txt" id="store-progress-txt">0 / 0</span>
@@ -33,6 +32,10 @@
       <span class="store-budget" id="store-budget"></span>
     </div>
     <div class="store-mode-body" id="store-mode-body"></div>
+    <!-- 終了ボタンは開始した「🏪 店内」ボタンと同じく画面下部（親指が届く位置）に置く -->
+    <div class="store-mode-footer">
+      <button id="btn-store-mode-close" class="store-mode-close-btn">✕ 店内モードを終了</button>
+    </div>
   </div>
 
   <!-- Screen: Loading -->
