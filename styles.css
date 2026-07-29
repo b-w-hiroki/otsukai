@@ -1424,3 +1424,26 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .check-done-btn.other { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); }
 @media (max-width: 380px) { .check-done-btn { padding: 8px 11px; font-size: 12px; } }
+
+/* 店内モードの終了ボタン: 開始ボタンと同じく画面下部（親指の届く位置）に配置 */
+.store-mode-hdr { justify-content: center; }
+.store-mode-title { flex: 0 1 auto; text-align: center; }
+.store-mode-footer {
+  flex-shrink: 0;
+  padding: 10px 14px calc(12px + var(--safe-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+}
+.store-mode-close-btn {
+  width: 100%;
+  background: var(--surface-2); color: var(--ink);
+  border: 1.5px solid var(--border); border-radius: var(--r-full);
+  padding: 14px 18px; font-size: 15px; font-weight: 800;
+  box-shadow: none; cursor: pointer;
+}
+.store-mode-close-btn:hover:not(:disabled) {
+  background: var(--surface-2); color: var(--ink);
+  border-color: var(--pri); transform: none; box-shadow: none;
+}
+.store-mode-close-btn:active { transform: scale(0.985); }
