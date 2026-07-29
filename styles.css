@@ -606,13 +606,31 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   transform: translateY(106%);
   transition: transform .4s cubic-bezier(0.32, 0.72, 0, 1);
   padding-bottom: calc(16px + var(--safe-bottom));
+  /* 中身が長くても画面を超えないようにする。これが無いとシートが画面より高くなり、
+     ✕ボタンが画面外に出て背景も覆われ「閉じられない」状態になる。 */
+  max-height: 88vh;
+  max-height: 88dvh;
+  display: flex; flex-direction: column;
 }
 .sheet.open { transform: translateY(0); }
 .sheet-handle {
   width: 44px; height: 4px; background: var(--border);
   border-radius: 2px; margin: 12px auto 0;
+  flex-shrink: 0;
 }
-.sheet-content { padding: 14px 20px 8px; }
+/* 中身はシート内でスクロールさせる */
+.sheet-content {
+  padding: 14px 20px 8px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  flex: 1; min-height: 0;
+  overscroll-behavior: contain;
+}
+/* ヘッダー（タイトルと✕）はスクロールしても常に見える位置に固定 */
+.sheet-header {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface);
+  padding-top: 2px;
+}
 .sheet-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px;
