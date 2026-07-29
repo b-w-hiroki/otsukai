@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>プライバシーポリシー — おうちのおつかい</title>
+  <meta name="description" content="おうちのおつかい（家族向けおつかい共有アプリ）のプライバシーポリシー" />
+  <meta name="theme-color" content="#6366f1" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <style>
+    :root { --ink:#1c1917; --muted:#78716c; --border:#e7e5e1; --pri:#6366f1; --bg:#faf9f7; --surface:#fff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink:#f5f4f2; --muted:#a8a29e; --border:#35323f; --pri:#a5b4fc; --bg:#14131a; --surface:#1e1d26; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0 20px 60px;
+      font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif;
+      color: var(--ink); background: var(--bg); line-height: 1.9;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    header { padding: 40px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    h1 { font-size: 24px; margin: 0 0 8px; letter-spacing: -0.4px; }
+    h2 { font-size: 17px; margin: 32px 0 8px; letter-spacing: -0.2px; }
+    p, li { font-size: 15px; }
+    ul { padding-left: 22px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    a { color: var(--pri); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--surface); font-weight: 700; }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 20px 0; }
+    footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🧺 おうちのおつかい — プライバシーポリシー</h1>
+      <p class="muted">最終更新日: 2026年7月26日</p>
+    </header>
+
+    <p>
+      「おうちのおつかい」（以下「本アプリ」）は、家族間でお買い物の依頼・分担を共有するための個人開発アプリです。
+      本アプリは、利用者のプライバシーを尊重し、以下の方針で個人情報を取り扱います。
+    </p>
+
+    <h2>1. 取得する情報</h2>
+    <table>
+      <tr><th>情報</th><th>目的</th></tr>
+      <tr><td>メールアドレス（または Google アカウント情報）</td><td>ログイン・本人確認のため</td></tr>
+      <tr><td>表示名・アイコン絵文字</td><td>家族内で誰の依頼・担当かを表示するため</td></tr>
+      <tr><td>買い物リスト、コメント、ストック、ミッション、ポイント等の入力内容</td><td>アプリの機能提供のため</td></tr>
+      <tr><td>ストック登録時の写真（任意）</td><td>家庭内の在庫を分かりやすく表示するため</td></tr>
+      <tr><td>プッシュ通知トークン（通知をオンにした場合のみ）</td><td>買い物リマインド等の通知を届けるため</td></tr>
+      <tr><td>エラー情報（発生時のメッセージ・ブラウザ情報）</td><td>不具合の調査・改善のため</td></tr>
+    </table>
+    <p>
+      本アプリは、広告表示のために第三者配信事業者（i-mobile）のタグを利用する場合があります。
+      配信は非パーソナライズを基本とし、子どもの利用を前提としてアダルト・出会い系・ギャンブル等のカテゴリを除外する設定を行っています。
+    </p>
+
+    <h2>2. 情報の保存先</h2>
+    <p>
+      取得した情報は、Google LLC が提供する Firebase（Authentication / Realtime Database / Cloud Storage /
+      Cloud Messaging）に保存されます。保存されたデータは、同じ家族グループに参加しているメンバーのみが閲覧できます。
+      データベースのセキュリティルールにより、家族グループ外からの読み書きは禁止されています。
+    </p>
+
+    <h2>3. 第三者への提供</h2>
+    <p>
+      本アプリは、利用者の個人情報を第三者に販売・貸与しません。法令に基づく開示請求があった場合を除き、
+      上記の運用基盤（Google Firebase）以外へ個人情報を提供することはありません。
+    </p>
+
+    <h2>4. データの削除</h2>
+    <div class="box">
+      <p style="margin:0 0 8px;"><b>アカウントの削除方法</b></p>
+      <p style="margin:0;">
+        アプリ内の「設定」タブ →「🛡️ メンバー管理」→ 対象メンバーの「アカウント削除」から、
+        アカウント（プロフィール・統計・ログイン情報・通知トークン）を削除できます。
+        誤操作防止のため、この操作は家族の保護者のみが実行できます。
+      </p>
+      <p style="margin:8px 0 0;" class="muted">
+        ※ 家族の記録として、削除した方が追加した買い物依頼やコメントはグループ内に残ります。
+        家族グループの最後の1人が削除した場合は、家族データも併せて削除されます。
+      </p>
+    </div>
+    <p>
+      完了した買い物の記録は、完了から90日を経過するとアーカイブ領域へ自動的に移動します。
+      その他のデータ削除をご希望の場合は、下記の連絡先までご連絡ください。
+    </p>
+
+    <h2>5. 子どもの利用について</h2>
+    <p>
+      本アプリは家族での利用を想定しており、お子さまが利用する場合があります。
+      お子さまのアカウント作成・利用にあたっては、保護者の方の同意と管理のもとでご利用ください。
+      本アプリは、行動ターゲティング広告を目的とした子どもの情報収集を行いません。
+    </p>
+
+    <h2>6. セキュリティ</h2>
+    <p>
+      通信は HTTPS により暗号化されています。データベースへのアクセスは認証済みの家族メンバーに限定され、
+      ポイント等の重要な値はサーバー側（Cloud Functions）でのみ更新される設計としています。
+    </p>
+
+    <h2>7. ポリシーの変更</h2>
+    <p>
+      本ポリシーは、必要に応じて変更することがあります。重要な変更がある場合は、アプリ内またはこのページでお知らせします。
+    </p>
+
+    <h2>8. お問い合わせ</h2>
+    <p>
+      本ポリシーおよび個人情報の取り扱いに関するお問い合わせは、
+      <a href="https://github.com/b-w-hiroki/otsukai/issues">GitHub リポジトリの Issues</a> よりご連絡ください。
+    </p>
+
+    <footer>
+      <p class="muted">
+        <a href="./">← おうちのおつかいに戻る</a> ・
+        <a href="./hub.html">プロジェクトページ</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

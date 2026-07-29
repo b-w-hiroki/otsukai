@@ -21,6 +21,20 @@
   <!-- Toasts (global) -->
   <div id="toasts" class="toast-wrap"></div>
 
+  <!-- 店内モード（買い物中の全画面チェックリスト） -->
+  <div id="store-mode" class="store-mode">
+    <div class="store-mode-hdr">
+      <span class="store-mode-title">🏪 店内モード</span>
+      <button id="btn-store-mode-close" class="ghost tiny-btn" style="white-space:nowrap;">✕ 終了</button>
+    </div>
+    <div class="store-progress">
+      <span class="store-progress-txt" id="store-progress-txt">0 / 0</span>
+      <div class="store-progress-bar"><div class="store-progress-fill" id="store-progress-fill" style="width:0%"></div></div>
+      <span class="store-budget" id="store-budget"></span>
+    </div>
+    <div class="store-mode-body" id="store-mode-body"></div>
+  </div>
+
   <!-- Screen: Loading -->
   <div id="screen-loading" class="screen active">
     <div class="loading-screen">
@@ -173,6 +187,7 @@
     <div class="app">
       <!-- Tab: Requests -->
       <section id="tab-requests" class="tab active">
+        <div id="suggest-section"></div>
         <div id="list-open"></div>
         <!-- 広告枠 (i-mobile「トップページ バナー」スポット)
              initAdSlots() / injectImobileBanner() で SP/PC 別タグを端末判定して注入。
@@ -197,6 +212,7 @@
 
       <!-- Tab: Missions -->
       <section id="tab-missions" class="tab">
+        <div id="streak-section"></div>
         <div id="weekly-missions-section"></div>
         <div id="rewards-section"></div>
         <div id="missions-content"></div>
@@ -231,6 +247,14 @@
             <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
             <span>サウンドを鳴らす</span>
           </label>
+          <div class="row" style="margin-top:12px;gap:8px;">
+            <span style="font-weight:700;font-size:13px;">🎨 テーマ</span>
+            <select id="opt-theme" style="flex:1;">
+              <option value="auto">端末の設定に合わせる</option>
+              <option value="light">ライト</option>
+              <option value="dark">ダーク</option>
+            </select>
+          </div>
 
           <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
             <div class="row" style="justify-content:space-between;align-items:center;">
@@ -264,6 +288,9 @@
         </div>
         <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
+          <p class="muted" style="font-size:11px;margin-top:12px;text-align:center;">
+            <a href="./privacy.html" target="_blank" rel="noopener" style="color:var(--muted);">プライバシーポリシー</a>
+          </p>
         </div>
       </section>
     </div>
@@ -329,6 +356,7 @@
     <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
       <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買うもの</button>
       <button id="btn-history-float" class="shortcut-float-btn history"><span style="font-size:17px;line-height:1;">🧾</span> 履歴</button>
+      <button id="btn-store-mode" class="shortcut-float-btn store" aria-label="店内モードを開く"><span style="font-size:17px;line-height:1;">🏪</span> 店内</button>
       <div id="shortcut-panel" class="shortcut-panel">
         <div id="shortcut-chips" class="shortcut-chips"></div>
         <div class="shortcut-add-row">
@@ -385,7 +413,10 @@
           <button id="btn-sheet-close" class="sheet-close">✕</button>
         </div>
         <div class="setup-form">
-          <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" />
+          <div class="row" style="gap:6px;">
+            <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" style="flex:1;min-width:0;" />
+            <button id="btn-voice-input" class="mic-btn" aria-label="音声で入力" title="音声で入力">🎤</button>
+          </div>
           <div>
             <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">カテゴリ（任意・もう一度タップで解除）</label>
             <div id="new-category" class="cat-chips">

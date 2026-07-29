@@ -1,5 +1,11 @@
 // おうちのおつかい — アプリ本体のロジック（index.html から分離）
 // 読み込み順: Firebase SDK → firebase-config.js → app.js（index.html の <script> 順で保証）
+// テーマは描画前に当てて、初回表示のちらつきを防ぐ（定義は下部の applyTheme）
+(() => {
+  const m = localStorage.getItem("theme") || "auto";
+  if (m !== "auto") document.documentElement.setAttribute("data-theme", m);
+})();
+
 // ===== Firebase config =====
 // 実体は firebase-config.js（firebase-messaging-sw.js と共有）。
 const firebaseConfig = self.FIREBASE_CONFIG;
@@ -445,6 +451,7 @@ function attachFamilyListeners() {
   registerPushToken();
   // Requests
   let _lastRequestsJson = "";
+  let prevForDiff = {};
   attach(familyRef().child("requests"), "value", (s) => {
     const next = s.val() || {};
     const nextJson = JSON.stringify(next);
@@ -458,15 +465,25 @@ function attachFamilyListeners() {
     }
     requestsInit = true;
     if (changed) {
-      renderRequests();
+      // リアクションだけの変更なら、重い再描画（買い物リスト・提案・集計）は省き、
+      // リアクションが表示される履歴だけ更新する
+      const reactionOnly = onlyReactionsChanged(prevForDiff, next);
+      prevForDiff = next;
       renderHistory();
-      renderBadge();
-      renderMonthlySummary();
+      if (!reactionOnly) {
+        renderRequests();
+        renderBadge();
+        renderMonthlySummary();
+        renderSuggestions();
+        renderStreak();
+        renderStoreMode();
+      }
     }
   }, handleFamilyAccessLost);
   // Stats
   attach(familyRef().child("stats"), "value", (s) => {
     state.stats = s.val() || {};
+    renderStreak();
   });
   // Comments
   attach(db.ref(`families/${state.familyId}/comments`), "value", (s) => {
@@ -600,6 +617,22 @@ async function postComment(reqId, text, parentId) {
     parentId: parentId || null
   }), "コメントを送信できませんでした");
 }
+// 2つの requests スナップショットの差が「reactions だけ」かを判定する。
+// リアクション1タップでリスト全体を作り直すのを避けるために使う。
+function onlyReactionsChanged(prev, next) {
+  const keys = new Set([...Object.keys(prev || {}), ...Object.keys(next || {})]);
+  let sawReactionChange = false;
+  for (const k of keys) {
+    const a = (prev || {})[k], b = (next || {})[k];
+    if (!a || !b) return false; // 追加/削除は通常の再描画へ
+    const { reactions: ra, ...restA } = a;
+    const { reactions: rb, ...restB } = b;
+    if (JSON.stringify(restA) !== JSON.stringify(restB)) return false;
+    if (JSON.stringify(ra || {}) !== JSON.stringify(rb || {})) sawReactionChange = true;
+  }
+  return sawReactionChange;
+}
+
 // ===== Notification diff =====
 // 呼び出し側で初回スナップショットを除外しているため、ここでは差分のみ通知する。
 function detectAndNotify(prev, next) {
@@ -1039,6 +1072,7 @@ async function completeRequest(id) {
     if (!res.committed) return;
     bumpStat("completedCount");
     showToast("✅ 完了！", { sound: false });
+    celebrate();
   } catch (e) {
     console.error(e);
     showToast("⚠️ 完了にできませんでした。通信環境を確認してください");
@@ -1825,7 +1859,9 @@ function compactCard(r, i = 0) {
     const btns = QUICK_REACTIONS.map((e) =>
       `<button class="react-btn${myReaction === e ? " mine" : ""}" data-react="${e}" data-id="${r.id}" aria-label="ありがとうを送る ${e}">${e}${counts[e] ? `<span class="react-count">${counts[e]}</span>` : ""}</button>`
     ).join("");
-    reactionsHtml = `<div class="req-row-reactions"><span class="react-label">ありがとう</span>${btns}</div>`;
+    // 実際に支払った金額（レシート記録）。記録済みなら金額を表示する。
+    const costBtn = `<button class="react-btn cost-btn${r.actualCost > 0 ? " has-cost" : ""}" data-cost="${r.id}" aria-label="支払った金額を記録">💴 ${r.actualCost > 0 ? Number(r.actualCost).toLocaleString() + "円" : "金額"}</button>`;
+    reactionsHtml = `<div class="req-row-reactions"><span class="react-label">ありがとう</span>${btns}<span style="flex:1;"></span>${costBtn}</div>`;
   }
 
   return `<div class="${rowClass}" style="--i:${i}">
@@ -1920,6 +1956,24 @@ function checkDetail(r) {
     <div class="check-detail-actions">${actHtml}</div>
     ${expanded ? `<div class="req-row-comment-body">${commentThreadHtml(r, commentList)}</div>` : ""}
   </div>`;
+}
+
+// 実際に支払った金額を記録（履歴カードの 💴 ボタン）。空入力で記録を消す。
+async function recordActualCost(id) {
+  const r = state.requests[id];
+  if (!r) return;
+  const cur = r.actualCost > 0 ? String(r.actualCost) : "";
+  const input = prompt(`「${r.name}」は実際いくらでしたか？（円・空欄で記録を消す）`, cur);
+  if (input === null) return;
+  const trimmed = input.trim();
+  if (trimmed === "") {
+    await dbOp(familyRef().child(`requests/${id}/actualCost`).remove(), "記録できませんでした");
+    return;
+  }
+  const val = parseInt(trimmed.replace(/[^\d]/g, ""), 10);
+  if (!(val > 0)) { showToast("金額を数字で入力してください", { sound: false }); return; }
+  if (!(await dbOp(familyRef().child(`requests/${id}/actualCost`).set(val), "記録できませんでした"))) return;
+  showToast(`💴 ${val.toLocaleString()}円を記録しました`, { sound: false });
 }
 
 // リアクションの付け外し（同じ絵文字をもう一度タップで取消）
@@ -2105,6 +2159,9 @@ function wireRequestButtons(root = document) {
   });
   root.querySelectorAll("[data-star]").forEach((b) => {
     b.addEventListener("click", () => addShortcutFromRequest(b.dataset.star));
+  });
+  root.querySelectorAll("[data-cost]").forEach((b) => {
+    b.addEventListener("click", () => recordActualCost(b.dataset.cost));
   });
   root.querySelectorAll("[data-toggle]").forEach((b) => {
     b.addEventListener("click", () => toggleComments(b.dataset.toggle));
@@ -2423,6 +2480,269 @@ function renderReminderTimes() {
 }
 
 // ===== Monthly summary（設定タブ） =====
+// ===== テーマ（ライト / ダーク / 端末に合わせる） =====
+function applyTheme(mode) {
+  const m = mode || localStorage.getItem("theme") || "auto";
+  if (m === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", m);
+  localStorage.setItem("theme", m);
+  // アドレスバーの色も追従させる
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) {
+    const dark = m === "dark" || (m === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    meta.setAttribute("content", dark ? "#14131a" : "#6366f1");
+  }
+}
+
+// ===== 完了時の紙吹雪 =====
+function celebrate() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const wrap = document.createElement("div");
+  wrap.className = "confetti-wrap";
+  const colors = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#38bdf8"];
+  for (let i = 0; i < 26; i++) {
+    const p = document.createElement("div");
+    p.className = "confetti-piece";
+    p.style.left = Math.random() * 100 + "vw";
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty("--dx", (Math.random() * 160 - 80) + "px");
+    p.style.setProperty("--rot", (Math.random() * 720 + 180) + "deg");
+    p.style.setProperty("--dur", (1.2 + Math.random() * 0.9) + "s");
+    p.style.animationDelay = (Math.random() * 0.25) + "s";
+    if (i % 3 === 0) p.style.borderRadius = "50%";
+    wrap.appendChild(p);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 2600);
+}
+
+// ===== 音声で品名を入力（Web Speech API・非対応端末では案内のみ） =====
+let recognition = null;
+function startVoiceInput() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const btn = $("btn-voice-input");
+  if (!SR) { showToast("この端末では音声入力に対応していません", { sound: false }); return; }
+  if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; return; }
+  try {
+    recognition = new SR();
+    recognition.lang = "ja-JP";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    btn.classList.add("listening");
+    recognition.onresult = (e) => {
+      const text = (e.results[0][0].transcript || "").replace(/[。、.]$/, "").trim();
+      if (text) {
+        const input = $("new-name");
+        input.value = text;
+        input.focus();
+      }
+    };
+    recognition.onerror = (e) => {
+      if (e.error !== "aborted" && e.error !== "no-speech") showToast("音声を認識できませんでした", { sound: false });
+    };
+    recognition.onend = () => { btn.classList.remove("listening"); recognition = null; };
+    recognition.start();
+  } catch (e) {
+    btn.classList.remove("listening");
+    recognition = null;
+    showToast("音声入力を開始できませんでした", { sound: false });
+  }
+}
+
+// ===== 店内モード（買い物中の全画面チェックリスト） =====
+// 未完了の買い物だけを大きなチェックボックスで表示し、売り場順（カテゴリ順）に
+// 上から消していける。タップで「買うよ→完了」まで一気に進む。
+let storeModeOpen = false;
+function openStoreMode() {
+  storeModeOpen = true;
+  $("store-mode").classList.add("open");
+  renderStoreMode();
+}
+function closeStoreMode() {
+  storeModeOpen = false;
+  $("store-mode").classList.remove("open");
+}
+function renderStoreMode() {
+  if (!storeModeOpen) return;
+  const body = $("store-mode-body");
+  if (!body) return;
+  const items = Object.entries(state.requests).map(([id, r]) => ({ id, ...r }));
+  // 店内で扱うのは「未完了（open/claimed）」＋「このセッションで完了した分」
+  const target = items
+    .filter(r => r.status !== "done" || storeDoneIds.has(r.id))
+    .sort((a, b) =>
+      SECTION_DEFS[sectionKeyOf(a)].order - SECTION_DEFS[sectionKeyOf(b)].order ||
+      (a.requestedAt || 0) - (b.requestedAt || 0));
+
+  const doneCount = target.filter(r => r.status === "done").length;
+  const pct = target.length ? Math.round(doneCount / target.length * 100) : 0;
+  $("store-progress-txt").textContent = `${doneCount} / ${target.length}`;
+  $("store-progress-fill").style.width = pct + "%";
+  const budgetSum = target.reduce((s, r) => s + (r.budget > 0 ? r.budget : 0), 0);
+  $("store-budget").textContent = budgetSum > 0 ? `💰 ${budgetSum.toLocaleString()}円` : "";
+
+  if (!target.length) {
+    body.innerHTML = `<div class="empty"><div class="empty-icon">🎉</div><b>買うものはありません</b><br>おつかい完了です！</div>`;
+    return;
+  }
+  let html = "";
+  let cur = null;
+  const useSections = target.some(r => sectionKeyOf(r) !== "none");
+  target.forEach((r) => {
+    const key = sectionKeyOf(r);
+    if (useSections && key !== cur) {
+      cur = key;
+      html += `<div class="store-sec-hdr">${SECTION_DEFS[key].label}</div>`;
+    }
+    const isDone = r.status === "done";
+    const subs = [];
+    if (r.budget > 0) subs.push(`💰${Number(r.budget).toLocaleString()}円以下`);
+    if (r.brand) subs.push(`🏷️${escapeHtml(r.brand)}`);
+    if (r.memo) subs.push(`📝${escapeHtml(r.memo)}`);
+    html += `<button class="store-item${isDone ? " checked" : ""}${r.urgent && !isDone ? " urgent" : ""}" data-store="${r.id}">
+      <span class="store-item-box">${isDone ? "✓" : ""}</span>
+      <span style="flex:1;min-width:0;">
+        <span class="store-item-name">${r.urgent && !isDone ? "🔥 " : ""}${escapeHtml(r.name)}</span>
+        ${subs.length ? `<span class="store-item-sub">${subs.join(" ・ ")}</span>` : ""}
+      </span>
+    </button>`;
+  });
+  body.innerHTML = html;
+  body.querySelectorAll("[data-store]").forEach((b) => {
+    b.addEventListener("click", () => toggleStoreItem(b.dataset.store));
+  });
+}
+// 店内モードで完了した項目は、チェックを外せるようこのセッション中は表示し続ける
+const storeDoneIds = new Set();
+async function toggleStoreItem(id) {
+  const r = state.requests[id];
+  if (!r) return;
+  if (r.status === "done") {
+    storeDoneIds.delete(id);
+    await reopenRequest(id);
+  } else {
+    storeDoneIds.add(id);
+    await completeRequest(id);
+  }
+}
+
+// ===== 定期購入の自動提案 =====
+// 同じ品名の完了履歴から購入間隔を推定し、「そろそろでは？」と提案する。
+// 3回以上の完了があり、平均間隔の0.9倍を過ぎていて、いまリストに無いものが対象。
+function dismissedSuggestKey() { return `suggestDismissed_${state.familyId}`; }
+function getDismissedSuggests() {
+  try { return JSON.parse(localStorage.getItem(dismissedSuggestKey()) || "{}"); } catch (e) { return {}; }
+}
+function computeSuggestions() {
+  const byName = {};
+  Object.values(state.requests || {}).forEach((r) => {
+    if (!r || r.status !== "done" || !r.completedAt) return;
+    (byName[r.name] = byName[r.name] || []).push(r.completedAt);
+  });
+  // いまリストにある品は提案しない
+  const active = new Set(
+    Object.values(state.requests || {}).filter(r => r && r.status !== "done").map(r => r.name)
+  );
+  const dismissed = getDismissedSuggests();
+  const out = [];
+  Object.entries(byName).forEach(([name, times]) => {
+    if (active.has(name) || times.length < 3) return;
+    times.sort((a, b) => a - b);
+    const gaps = [];
+    for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
+    const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    if (avg < 12 * 36e5) return; // 半日未満の周期はノイズ扱い
+    const since = now() - times[times.length - 1];
+    if (since < avg * 0.9) return;
+    // 「この周期でもう案内した」ものは再表示しない
+    if (dismissed[name] && dismissed[name] >= times[times.length - 1]) return;
+    out.push({ name, days: Math.max(1, Math.round(since / 864e5)), avgDays: Math.max(1, Math.round(avg / 864e5)) });
+  });
+  return out.sort((a, b) => b.days - a.days).slice(0, 4);
+}
+function renderSuggestions() {
+  const el = $("suggest-section");
+  if (!el) return;
+  const list = computeSuggestions();
+  if (!list.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="suggest-label">🔄 そろそろ買う頃かも</div>
+    <div class="suggest-wrap">${list.map(s => `
+      <button class="suggest-chip" data-suggest="${escapeHtml(s.name)}">
+        ${escapeHtml(s.name)}
+        <span style="font-size:11px;font-weight:600;opacity:.75;">${s.days}日前・約${s.avgDays}日ごと</span>
+        <span class="suggest-dismiss" data-suggest-x="${escapeHtml(s.name)}" role="button" aria-label="この提案を消す">×</span>
+      </button>`).join("")}</div>`;
+  el.querySelectorAll("[data-suggest]").forEach((b) => {
+    b.addEventListener("click", (e) => {
+      if (e.target.closest("[data-suggest-x]")) return;
+      addFromShortcut({ name: b.dataset.suggest, diff: "normal" });
+    });
+  });
+  el.querySelectorAll("[data-suggest-x]").forEach((x) => {
+    x.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const d = getDismissedSuggests();
+      d[x.dataset.suggestX] = now();
+      localStorage.setItem(dismissedSuggestKey(), JSON.stringify(d));
+      renderSuggestions();
+    });
+  });
+}
+
+// ===== 連続記録（ストリーク）と称号 =====
+const RANKS = [
+  { min: 0,   label: "🌱 おつかい見習い" },
+  { min: 5,   label: "🚶 おつかい配達員" },
+  { min: 15,  label: "🛒 おつかい上手" },
+  { min: 30,  label: "⭐ おつかいマスター" },
+  { min: 60,  label: "👑 おつかい達人" },
+];
+function myCompletedTotal() {
+  const s = (state.stats && state.stats[state.uid]) || {};
+  return s.completedCount || 0;
+}
+// 自分が完了した日の連続日数（今日 or 昨日を起点に遡る）
+function computeStreak() {
+  const days = new Set();
+  Object.values(state.requests || {}).forEach((r) => {
+    if (!r || r.status !== "done" || r.completedBy !== state.uid || !r.completedAt) return;
+    const d = new Date(r.completedAt);
+    days.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+  });
+  if (!days.size) return 0;
+  const key = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const today = new Date();
+  const yest = new Date(today.getTime() - 864e5);
+  let cursor = days.has(key(today)) ? today : days.has(key(yest)) ? yest : null;
+  if (!cursor) return 0;
+  let n = 0;
+  while (days.has(key(cursor))) {
+    n++;
+    cursor = new Date(cursor.getTime() - 864e5);
+  }
+  return n;
+}
+function renderStreak() {
+  const el = $("streak-section");
+  if (!el) return;
+  const streak = computeStreak();
+  const total = myCompletedTotal();
+  const rank = [...RANKS].reverse().find(r => total >= r.min) || RANKS[0];
+  const next = RANKS.find(r => r.min > total);
+  el.innerHTML = `<div class="card">
+    <div class="streak-row">
+      <span class="streak-big">${streak > 0 ? "🔥" + streak : "—"}</span>
+      <span style="flex:1;min-width:0;">
+        <span class="streak-title">${streak > 0 ? `${streak}日連続でおつかい中！` : "連続記録はこれから"}</span>
+        <div style="margin-top:4px;"><span class="rank-badge">${rank.label}</span></div>
+      </span>
+    </div>
+    <p class="muted" style="font-size:11px;margin:8px 0 0;">
+      これまでに ${total} 回完了${next ? `・あと ${next.min - total} 回で ${next.label}` : "・最高ランク達成！"}
+    </p>
+  </div>`;
+}
+
 function renderMonthlySummary() {
   const el = $("monthly-summary");
   if (!el) return;
@@ -2436,12 +2756,20 @@ function renderMonthlySummary() {
   }
   const budgetSum = done.reduce((sum, r) => sum + (r.budget > 0 ? r.budget : 0), 0);
   const budgeted = done.filter((r) => r.budget > 0).length;
+  // 実支出（履歴の 💴 で記録した金額）が1件でもあれば、そちらを主役に表示する
+  const costItems = done.filter((r) => r.actualCost > 0);
+  const costSum = costItems.reduce((sum, r) => sum + r.actualCost, 0);
+  const mainStat = costItems.length
+    ? `<div class="stat"><b>${costSum.toLocaleString()}円</b><span>実際の支出（${costItems.length}件分）</span></div>`
+    : `<div class="stat"><b>${budgetSum > 0 ? budgetSum.toLocaleString() + "円" : "—"}</b><span>予算の合計${budgeted ? `（${budgeted}件分）` : ""}</span></div>`;
   el.innerHTML = `
     <div class="stat-grid" style="margin-top:0;">
       <div class="stat"><b>${done.length}</b><span>完了した買い物</span></div>
-      <div class="stat"><b>${budgetSum > 0 ? budgetSum.toLocaleString() + "円" : "—"}</b><span>予算の合計${budgeted ? `（${budgeted}件分）` : ""}</span></div>
+      ${mainStat}
     </div>
-    <p class="muted" style="font-size:11px;margin-top:8px;">※ 予算は依頼時に入力された「〜円以下」の合計です（実際の支払額ではありません）</p>`;
+    <p class="muted" style="font-size:11px;margin-top:8px;">${costItems.length
+      ? `※ 履歴の 💴 ボタンで記録した実際の支払額の合計です（未記録: ${done.length - costItems.length}件）`
+      : "※ 予算は依頼時の「〜円以下」の合計です。履歴の 💴 から実際の支払額を記録すると、実支出で集計されます"}</p>`;
 }
 
 async function addReminderTime() {
@@ -2740,6 +3068,20 @@ function wireGlobalEvents() {
     state.soundOn = e.target.checked;
     localStorage.setItem("soundOn", String(state.soundOn));
   });
+  // テーマ
+  $("opt-theme").value = localStorage.getItem("theme") || "auto";
+  $("opt-theme").addEventListener("change", (e) => applyTheme(e.target.value));
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if ((localStorage.getItem("theme") || "auto") === "auto") applyTheme("auto");
+  });
+  // 店内モード・音声入力
+  $("btn-store-mode").addEventListener("click", openStoreMode);
+  $("btn-store-mode-close").addEventListener("click", closeStoreMode);
+  $("btn-voice-input").addEventListener("click", startVoiceInput);
+  // ホーム画面ショートカット（?action=add）から起動されたら追加シートを開く
+  if (new URLSearchParams(location.search).get("action") === "add") {
+    setTimeout(() => { if ($("screen-main").classList.contains("active")) openSheet(); }, 900);
+  }
   $("btn-enable-push").addEventListener("click", togglePush);
   $("btn-add-reminder-time").addEventListener("click", addReminderTime);
   $("reminder-time-input").addEventListener("keydown", (e) => { if (e.key === "Enter") addReminderTime(); });
@@ -2755,6 +3097,8 @@ function wireGlobalEvents() {
     closeMissionSheet();
     closeStockDetail();
     closeHowto();
+    closeHistorySheet();
+    if (storeModeOpen) closeStoreMode();
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
   $("btn-add-stock").addEventListener("click", addStock);
