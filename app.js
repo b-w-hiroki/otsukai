@@ -1895,8 +1895,8 @@ function checkRow(r) {
   let circleContent = "";
   let circleLabel = "タップで買うよ";
   if (isClaimed) {
-    if (mine) { circleClass += " mine"; circleContent = "🛒"; circleLabel = "タップで完了"; }
-    else { circleClass += " other"; circleContent = memberEmoji(r.claimedBy); circleLabel = `${memberName(r.claimedBy)}さんが買いに行きます`; }
+    if (mine) { circleClass += " mine"; circleContent = "🛒"; circleLabel = "タップで買ったよ"; }
+    else { circleClass += " other"; circleContent = memberEmoji(r.claimedBy); circleLabel = `${memberName(r.claimedBy)}さんが買いに行きます・タップで買ったよ`; }
   } else if (r.assignedTo === state.uid) {
     circleClass += " assigned";
     circleLabel = "あなたに指名・タップで担当";
@@ -1914,12 +1914,19 @@ function checkRow(r) {
     ? `<span class="check-claimer">${mine ? "自分" : escapeHtml(memberName(r.claimedBy))}</span>`
     : "";
 
+  // 「買うよ」の次の一手が分かるよう、宣言済みの行には明示的な「買ったよ」ボタンを出す。
+  // ◯タップでも完了できるが、ボタンがある方が迷わない。
+  const doneBtn = isClaimed
+    ? `<button class="check-done-btn${mine ? "" : " other"}" data-complete="${r.id}">✅ 買ったよ</button>`
+    : "";
+
   let html = `<div class="check-row${r.urgent ? " urgent" : ""}${isClaimed ? " claimed" : ""}${detailOpen ? " open" : ""}" data-row="${r.id}">
     <button class="${circleClass}" data-check="${r.id}" aria-label="${escapeHtml(circleLabel)}">${circleContent}</button>
     <div class="check-main" data-detail-toggle="${r.id}" role="button" aria-expanded="${detailOpen}">
       <span class="check-name">${escapeHtml(r.name)}</span>
       <span class="check-badges">${badges.join("")}${claimerHtml}</span>
     </div>
+    ${doneBtn}
   </div>`;
   if (detailOpen) html += checkDetail(r);
   return html;
@@ -1942,6 +1949,7 @@ function checkDetail(r) {
   const meta = `${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ ${timeAgo(r.requestedAt)}`;
 
   let actHtml = "";
+  if (isClaimed) actHtml += `<button class="success rc-btn" data-complete="${r.id}">✅ 買ったよ</button>`;
   if (isClaimed && mine) actHtml += `<button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">↩️ やめる</button>`;
   actHtml += `<button class="rc-comment-btn${expanded ? " open" : ""}" data-toggle="${r.id}" aria-label="コメントを開く">💬</button>`;
   actHtml += `<button class="rc-comment-btn rc-star-btn${starred ? " starred" : ""}" data-star="${r.id}" aria-label="${starred ? "よく買うものに登録済み" : "よく買うものに登録"}">${starred ? "⭐" : "☆"}</button>`;
@@ -1956,6 +1964,17 @@ function checkDetail(r) {
     <div class="check-detail-actions">${actHtml}</div>
     ${expanded ? `<div class="req-row-comment-body">${commentThreadHtml(r, commentList)}</div>` : ""}
   </div>`;
+}
+
+// 「買ったよ」操作。他の人が「買うよ」と宣言した品も、確認のうえ完了にできる
+// （子どもが宣言して親が持ち帰った、というよくある流れに対応）。
+function completeFromUi(id) {
+  const r = state.requests[id];
+  if (!r || r.status !== "claimed") return;
+  if (r.claimedBy && r.claimedBy !== state.uid) {
+    if (!confirm(`「${r.name}」は ${memberName(r.claimedBy)}さんが買いに行く予定です。\n\n買ったことにしますか？`)) return;
+  }
+  completeRequest(id);
 }
 
 // 実際に支払った金額を記録（履歴カードの 💴 ボタン）。空入力で記録を消す。
@@ -2077,8 +2096,13 @@ function wireChecklist(root) {
       const r = state.requests[b.dataset.check];
       if (!r) return;
       if (r.status === "open") claimRequest(b.dataset.check);
-      else if (r.status === "claimed" && r.claimedBy === state.uid) completeRequest(b.dataset.check);
-      else showToast(`🛒 ${memberName(r.claimedBy)}さんが買いに行きます`, { sound: false });
+      else if (r.status === "claimed") completeFromUi(b.dataset.check);
+    });
+  });
+  root.querySelectorAll("[data-complete]").forEach((b) => {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      completeFromUi(b.dataset.complete);
     });
   });
   root.querySelectorAll("[data-detail-toggle]").forEach((el) => {

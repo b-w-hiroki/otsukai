@@ -1406,3 +1406,21 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   :root:not([data-theme="light"]) .bottom-nav { background: rgba(30,29,38,0.97); }
 }
 :root[data-theme="dark"] .bottom-nav { background: rgba(30,29,38,0.97); }
+
+/* 「買ったよ」ボタン（宣言済みの行） */
+.check-done-btn {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff; border: none;
+  border-radius: var(--r-full);
+  padding: 8px 14px; font-size: 13px; font-weight: 800;
+  white-space: nowrap; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(16,185,129,0.30);
+}
+.check-done-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff; transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16,185,129,0.38);
+}
+.check-done-btn.other { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); }
+@media (max-width: 380px) { .check-done-btn { padding: 8px 11px; font-size: 12px; } }
