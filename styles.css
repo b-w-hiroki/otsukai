@@ -625,15 +625,13 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   flex: 1; min-height: 0;
   overscroll-behavior: contain;
 }
-/* ヘッダー（タイトルと✕）はスクロールしても常に見える位置に固定 */
-.sheet-header {
-  position: sticky; top: 0; z-index: 2;
-  background: var(--surface);
-  padding-top: 2px;
-}
+/* ヘッダーはスクロールしても常に見える位置に固定（重複定義を統合） */
 .sheet-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 18px;
+  position: sticky; top: 0; z-index: 2;
+  background: var(--surface);
+  padding-top: 2px;
 }
 .sheet-title { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; color: var(--ink); }
 .sheet-close {
@@ -1447,3 +1445,13 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   border-color: var(--pri); transform: none; box-shadow: none;
 }
 .store-mode-close-btn:active { transform: scale(0.985); }
+
+/* シート下部の固定フッター（閉じるボタン用・店内モードと同じ位置感） */
+.sheet-footer {
+  flex-shrink: 0;
+  padding: 10px 20px 4px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+/* フッターに閉じるボタンを置くシートでは、ヘッダーの下余白を詰める */
+#history-sheet .sheet-header { margin-bottom: 10px; }
