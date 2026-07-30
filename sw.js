@@ -3,7 +3,7 @@
 // ・Firebase SDK（gstatic.com）や設定・アイコンなどの静的アセットはプリキャッシュし、
 //   キャッシュ優先で返す（圏外でもアプリが起動できるように）。
 // アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
-const CACHE = "otsukai-v28";
+const CACHE = "otsukai-v29";
 
 const PRECACHE = [
   "./index.html",
@@ -26,8 +26,28 @@ const PRECACHE = [
 ];
 
 self.addEventListener("install", (event) => {
-  self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
+  // skipWaiting は呼ばない。動作中のページから古いコードを突然差し替えると
+  // HTML と JS の版が食い違うため、アプリ側の「更新する」操作を待って切り替える
+  // （SKIP_WAITING メッセージで有効化）。
+  // 初回インストール時は、古い SW に制御されたページが無いので仕様上そのまま
+  // 有効化されるため、ここでの skipWaiting は不要。
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE);
+      // cache.addAll は1つでも取得に失敗すると全体が失敗し、Service Worker 自体が
+      // インストールされない（＝オフライン対応も更新検知も丸ごと効かなくなる）。
+      // 個別に入れて、失敗しても続行する（そのファイルがオフラインで使えないだけ）。
+      await Promise.all(
+        PRECACHE.map(async (u) => {
+          try {
+            await cache.add(new Request(u, { cache: "reload" }));
+          } catch (e) {
+            console.warn("[sw] precache skipped:", u);
+          }
+        })
+      );
+    })()
+  );
 });
 
 self.addEventListener("activate", (event) => {
@@ -39,6 +59,23 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim())
   );
+});
+
+// アプリ側からの指示を受け取る
+self.addEventListener("message", (event) => {
+  const type = event.data && event.data.type;
+  if (type === "SKIP_WAITING") {
+    // 「更新」ボタン: 待機中の新バージョンを即有効化する
+    self.skipWaiting();
+  } else if (type === "CLEAR_CACHES") {
+    // 「強制的に再取得」: 全キャッシュを捨てて次回取得をネットワークからにする
+    event.waitUntil(
+      caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+        .then(() => event.source && event.source.postMessage({ type: "CACHES_CLEARED" }))
+    );
+  } else if (type === "GET_VERSION") {
+    if (event.source) event.source.postMessage({ type: "VERSION", version: CACHE });
+  }
 });
 
 self.addEventListener("fetch", (event) => {

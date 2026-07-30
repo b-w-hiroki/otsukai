@@ -290,6 +290,18 @@
           <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
         </div>
         <div class="card">
+          <h2>🔧 メンテナンス</h2>
+          <p class="muted" style="font-size:12px;">表示が古い・データがおかしいと感じたときに使ってください。</p>
+          <div class="btn-stack">
+            <button id="btn-refresh-data" class="btn-block btn-neutral">🔄 データを再読み込み</button>
+            <button id="btn-force-update" class="btn-block btn-neutral">⬇️ アプリを最新版に更新</button>
+            <button id="btn-force-signout" class="btn-block btn-neutral">🚪 強制ログアウト（設定リセット）</button>
+          </div>
+          <p class="muted" style="font-size:11px;margin-top:8px;">
+            現在のバージョン: <span id="app-version">—</span>
+          </p>
+        </div>
+        <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
           <p class="muted" style="font-size:11px;margin-top:12px;text-align:center;">
             <a href="./privacy.html" target="_blank" rel="noopener" style="color:var(--muted);">プライバシーポリシー</a>

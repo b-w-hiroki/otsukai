@@ -1455,3 +1455,75 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 /* フッターに閉じるボタンを置くシートでは、ヘッダーの下余白を詰める */
 #history-sheet .sheet-header { margin-bottom: 10px; }
+
+/* ======= 更新バナー（新バージョン検知） ======= */
+.update-banner {
+  position: fixed; left: 10px; right: 10px;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  z-index: 70;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--pri-dark); color: #fff;
+  border-radius: var(--r-md);
+  padding: 11px 12px 11px 16px;
+  box-shadow: var(--shadow-deep);
+  transform: translateY(-140%);
+  transition: transform .35s cubic-bezier(0.32,0.72,0,1);
+}
+.update-banner.open { transform: translateY(0); }
+.update-banner-text { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; }
+.update-banner-btn {
+  flex-shrink: 0; background: #fff; color: var(--pri-dark);
+  border: none; border-radius: var(--r-full);
+  padding: 8px 14px; font-size: 13px; font-weight: 800;
+  box-shadow: none; cursor: pointer;
+}
+.update-banner-btn:hover:not(:disabled) { background: #fff; color: var(--pri-dark); transform: none; box-shadow: none; }
+.update-banner-close {
+  flex-shrink: 0; background: transparent; color: rgba(255,255,255,0.75);
+  border: none; box-shadow: none; padding: 4px 6px; font-size: 15px; cursor: pointer;
+}
+.update-banner-close:hover:not(:disabled) { background: transparent; color: #fff; transform: none; box-shadow: none; }
+
+/* ======= スライドで更新 ======= */
+.ptr-indicator {
+  position: fixed; top: 6px; left: 50%;
+  transform: translate(-50%, 0);
+  z-index: 65;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: var(--shadow-float);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; opacity: 0; pointer-events: none;
+  transition: opacity .18s;
+}
+.ptr-indicator.visible { opacity: 1; }
+.ptr-indicator.ready { border-color: var(--pri); background: var(--pri-soft); }
+.ptr-indicator.spinning { opacity: 1; transform: translate(-50%, 40px) !important; }
+.ptr-indicator.spinning .ptr-spinner { animation: ptrSpin .9s linear infinite; }
+@keyframes ptrSpin { to { transform: rotate(360deg); } }
+.ptr-spinner { display: inline-block; line-height: 1; }
+
+/* =========================================================================
+   ボタン共通クラス（UI統一のための基本セット）
+   配置の規則:
+     - 画面/シートの主操作は「下部・全幅」に置く（親指が届く位置）
+     - 破壊的操作（削除・リセット）はトグルの内側に隠し、必ず確認を挟む
+     - 行内の操作は右端に、アイコンのみのボタンは 38px 角以上を確保
+   種類:
+     .btn-block  … 全幅
+     .btn-neutral… 中立（設定・メンテナンス系）
+     .btn-stack  … 縦に並べるときの間隔
+   ========================================================================= */
+.btn-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.btn-block { width: 100%; }
+.btn-neutral {
+  background: var(--surface-2); color: var(--ink);
+  border: 1.5px solid var(--border); border-radius: var(--r-full);
+  padding: 13px 18px; font-size: 14px; font-weight: 700;
+  box-shadow: none; text-align: center;
+}
+.btn-neutral:hover:not(:disabled) {
+  background: var(--surface-2); color: var(--ink);
+  border-color: var(--pri); transform: none; box-shadow: none;
+}
+.btn-neutral:active:not(:disabled) { transform: scale(0.985); }
