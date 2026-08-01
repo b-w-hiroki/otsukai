@@ -95,14 +95,15 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 
 - [ ] `node --check app.js && node --check functions/index.js` が通る
 - [ ] `database.rules.json` を触ったなら JSON として妥当
-- [ ] 触った領域の**回帰スイート**が通る（UI を変えたなら全部 → [`workflow.md` §2](./docs/rules/workflow.md)）
+- [ ] `node tests/run-all.mjs` が通る（UI を変えたなら全部・約2分）
+- [ ] ドキュメントを触ったなら `node tests/docs-check.mjs` が通る
 - [ ] `sw.js` の `CACHE` を上げた
 - [ ] UI を変えたなら `docs/screenshots/` を撮り直した（480px・256色に最適化）
 - [ ] 機能を足したなら `docs/features.md` を更新した
 - [ ] 決め事を変えたなら `docs/rules/` を更新し、**正本レジストリと矛盾していない**
 - [ ] ブランチを切ってコミットし、**ドラフト PR** を作った
 - [ ] PR 本文に「**デプロイ後にやること**」を書いた（functions / DBルールを触ったなら必須）
-- [ ] CI（`syntax` + `smoke`）がグリーン
+- [ ] CI（`syntax` / `docs` / `smoke` / `regression`）がグリーン
 - [ ] 落ちたテスト・やらなかったことがあれば、**隠さず報告した**
 
 ---

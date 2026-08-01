@@ -77,7 +77,9 @@
 | ドキュメント | `docs/` | 小文字ハイフン区切り。`hub.html` から参照されているものはリネーム禁止 |
 | ルール | `docs/rules/` | 小文字1語（`ui` / `deploy` / `workflow`） |
 | 変更の提出先 | GitHub の**ドラフトPR** | 本文に「デプロイ後にやること」を必ず書く |
-| 一時ファイル・テスト | スクラッチパッド（リポジトリに入れない） | — |
+| 回帰テスト | `tests/regression/` | `NN-名前.mjs` ではなく `〜-test.mjs`。共通処理は `tests/harness.mjs` |
+| テストのスクショ出力 | `tests/shots/`（gitignore 済み） | — |
+| 使い捨ての調査スクリプト | スクラッチパッド（リポジトリに入れない） | — |
 
 ### 🔁 Skill — 繰り返す作業の手順
 
@@ -86,7 +88,8 @@
 | リリースする | [`rules/deploy.md` §1](./rules/deploy.md) |
 | DBルールを適用する | [`rules/deploy.md` §2](./rules/deploy.md) |
 | functions をデプロイする | [`rules/deploy.md` §3](./rules/deploy.md) |
-| 回帰テストを回す | [`rules/workflow.md` §2](./rules/workflow.md) |
+| 回帰テストを回す | `node tests/run-all.mjs` → [`rules/workflow.md` §2](./rules/workflow.md) |
+| ドキュメントの整合を確かめる | `node tests/docs-check.mjs` |
 | スクショを撮り直す | [`rules/workflow.md` §4](./rules/workflow.md) |
 | バナー画像を作る | [`banner-prompt.md`](./banner-prompt.md) |
 | Android/iOS に出す | [`release-plan.md`](./release-plan.md) |
@@ -102,7 +105,8 @@
 | `docs/rules/` | 決め事 | `ui.md` / `deploy.md` / `workflow.md` |
 | `docs/screenshots/` | 説明用スクショ17枚 | `features.md` から参照 |
 | `functions/` | Cloud Functions（通知・ポイント・アーカイブ） | `README.md` → `index.js` |
-| `tests/` | CI のスモークテスト | `smoke.mjs` |
+| `tests/` | スモーク＋回帰スイート＋ドキュメント検査 | `run-all.mjs` / `docs-check.mjs` |
+| `tests/regression/` | 回帰テスト11本 | `harness.mjs` から始まる |
 | `.github/workflows/` | CI 定義 | `check.yml` |
 
 **HTML の入口**

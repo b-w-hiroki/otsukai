@@ -29,28 +29,62 @@ CI（`.github/workflows/check.yml`）は2ジョブ:
 
 CI は**最低限**しか見ない。UI を触ったら**手元の回帰スイート**も通す。
 
-### 回帰スイート（スクラッチパッドの Playwright 群）
+### 回帰スイート（`tests/regression/` の11本）
 
-インメモリの Firebase スタブ（`fb-stub.js`）で家族データを再現して動かす。
+インメモリの Firebase スタブ（`tests/fb-stub.js`）で家族データを再現して動かす。
+本物の Firebase には一切つながないので、オフラインでも走る。
 
-| 種類 | 見ているもの |
+```bash
+node tests/run-all.mjs            # 全部（約2分）
+node tests/run-all.mjs lowstock   # 名前に含むものだけ
+node tests/regression/bughunt.mjs # 1本だけ
+```
+
+| ファイル | 見ているもの |
 |---|---|
-| `lowstock` / `lowlead` / `bughunt` | ⏳ そろそろ切れるかも（予測・期間指定・×・重複） |
-| `circle-toggle` / `bought` | ◯ タップの宣言・取り消し・完了 |
-| `history-close` / `hist-footer` | 履歴シートが閉じる・スクロールする |
-| `store-footer` | 店内モードの終了ボタン位置 |
-| `update` / `update-banner` | 更新バナー・強制更新・強制ログアウト |
-| `features` / `dogfood` | 主要導線の通し |
+| `lowstock-test` / `lowlead-test` / `bughunt` | ⏳ そろそろ切れるかも（予測・期間指定・×・重複・異常値） |
+| `circle-toggle-test` / `bought-test` | ◯ タップの宣言・取り消し・完了 |
+| `history-close-test` / `hist-footer-test` | 履歴シートが閉じる・実タッチでスクロールする |
+| `store-footer-test` | 店内モードの終了ボタン位置 |
+| `update-test` / `update-banner-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新 |
+| `features-test` | 主要導線の通し |
+
+**共通処理は `tests/harness.mjs` に集約**している。各テストは3行で始まる:
+
+```js
+import { startHarness } from "../harness.mjs";
+const t = await startHarness();          // label / noAnimation / dialogAction / transform
+const { page, sleep, OUT } = t;
+```
+
+ハーネスが用意するもの: テストサーバー / ブラウザ（390×844・タッチ有効）/ `check()` /
+`t.swipeUp()` `t.swipeDown()`（CDP の実タッチ）/ `t.dialogs` / `t.finish()`。
 
 **書くときの注意（過去にハマったもの）**
 
 - Playwright の `page.route` は **Service Worker 発のリクエストを横取りできない**
-  → テストサーバー側で gstatic の URL を同一オリジン `/__fb/` に書き換える
+  → ハーネスがテストサーバー側で gstatic の URL を同一オリジン `/__fb/` に書き換えている。
+    新しいテストで `page.route` を使い直さないこと
 - `window.state` は読めない（クラシックスクリプトの `const` は `window` に乗らない）
   → **DOM から検証**する
 - カードの出現アニメーション中は要素が "not stable" でクリックできない
-  → `addInitScript` で `animation:none` を流し込む
-- 「sticky だから見えているはず」で満足しない。**`scrollTop` を実測**する
+  → `startHarness({ noAnimation: true })`
+- 「sticky だから見えているはず」で満足しない。**`scrollTop` を実測**する。
+  マウスホイールでは慣性スクロールを再現できないので `t.swipeUp()` を使う
+
+---
+
+### ドキュメントの自動チェック
+
+```bash
+node tests/docs-check.mjs
+```
+
+リンク切れ・`@`インポート・HTML からの参照・**二重管理**・正本レジストリの実在・
+`CLAUDE.md` の必須節を見る。CI の `docs` ジョブでも走る。
+
+> 二重管理の検出は**地の文だけ**が対象。表の行は「| ボタン | 用途 |」のような
+> 共通ヘッダで誤検知するため除外している。表の重複は人の目で見る。
 
 ---
 
