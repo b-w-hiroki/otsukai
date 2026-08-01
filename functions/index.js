@@ -75,6 +75,72 @@ async function memberName(familyId, uid) {
   return snap.val() || "家族の誰か";
 }
 
+const LOW_LEAD_DEFAULT = 2;
+const LOW_LEAD_MAX = 60;
+const DAY = 24 * 60 * 60 * 1000;
+
+/** 何日前から「そろそろ切れる」と知らせるか（families/{id}/settings/lowLeadDays） */
+function lowLeadDaysOf(fam) {
+  const v = Number(((fam || {}).settings || {}).lowLeadDays);
+  return Number.isFinite(v) && v >= 0 && v <= LOW_LEAD_MAX ? Math.round(v) : LOW_LEAD_DEFAULT;
+}
+
+/**
+ * 「そろそろ切れそうな品」を洗い出す（クライアントの computeRunningLow と同じ考え方）。
+ * ① ストックで out/low になっているもの
+ * ② 買う間隔から、次の購入予定日が予告日数の範囲に入っているもの
+ *    間隔は「ストックへの手入力（cycleDays）」を優先し、無ければ買い物履歴（3回以上）から学習する。
+ * すでに買い物リストに入っているものは除く。
+ */
+function runningLowNames(fam) {
+  const active = new Set(
+    Object.values(fam.requests || {})
+      .filter((r) => r && r.status !== "done")
+      .map((r) => r.name)
+  );
+  const lead = lowLeadDaysOf(fam);
+  const names = [];
+  Object.values(fam.stocks || {}).forEach((s) => {
+    if (!s || (s.level !== "out" && s.level !== "low")) return;
+    if (active.has(s.name)) return;
+    names.push(s.name);
+  });
+
+  // 履歴から周期を学習
+  const byName = {};
+  Object.values(fam.requests || {}).forEach((r) => {
+    if (!r || r.status !== "done" || !r.completedAt) return;
+    (byName[r.name] = byName[r.name] || []).push(r.completedAt);
+  });
+  const cycles = {};
+  Object.entries(byName).forEach(([name, times]) => {
+    if (times.length < 3) return;
+    times.sort((a, b) => a - b);
+    const gaps = [];
+    for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
+    const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    if (avg < 12 * 60 * 60 * 1000) return;
+    cycles[name] = { avgMs: avg, last: times[times.length - 1] };
+  });
+
+  // ストックに手入力された間隔があれば、学習値より優先する
+  Object.values(fam.stocks || {}).forEach((s) => {
+    if (!s || !s.name) return;
+    const days = Number(s.cycleDays);
+    if (!Number.isFinite(days) || days < 1) return;
+    const last = Math.max(cycles[s.name] ? cycles[s.name].last : 0, s.lastFilledAt || 0);
+    if (!last) return;
+    cycles[s.name] = { avgMs: days * DAY, last };
+  });
+
+  Object.entries(cycles).forEach(([name, c]) => {
+    if (active.has(name) || names.includes(name)) return;
+    const daysLeft = Math.round((c.last + c.avgMs - Date.now()) / DAY);
+    if (daysLeft <= lead) names.push(name);
+  });
+  return names;
+}
+
 /** Asia/Tokyo の現在時刻を「0時からの経過分」で返す */
 function currentMinutesJST() {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -474,7 +540,20 @@ exports.weeklySummary = functions
       const doneList = Object.values(fam.requests).filter(
         (r) => r && r.status === "done" && (r.completedAt || 0) >= since
       );
-      if (!doneList.length) continue;
+      // 完了ゼロでも、切れそうな品があるなら知らせる価値がある
+      if (!doneList.length) {
+        const lowOnly = runningLowNames(fam);
+        if (lowOnly.length) {
+          try {
+            await sendToFamily(familyId, {
+              title: "⏳ そろそろ切れそうです",
+              body: `${lowOnly.slice(0, 4).join("・")}${lowOnly.length > 4 ? ` ほか${lowOnly.length - 4}件` : ""} を買い足しませんか？`,
+              tag: `weekly-low-${familyId}`,
+            });
+          } catch (e) { console.error("weekly low notice failed", familyId, e); }
+        }
+        continue;
+      }
 
       const byUser = {};
       doneList.forEach((r) => {
@@ -483,9 +562,14 @@ exports.weeklySummary = functions
       const top = Object.entries(byUser).sort((a, b) => b[1] - a[1])[0];
       const mvpName =
         top && fam.members && fam.members[top[0]] && fam.members[top[0]].name;
-      const body = mvpName
+      let body = mvpName
         ? `今週は家族で${doneList.length}件のおつかいが完了！MVPは ${mvpName} さん（${top[1]}件）🏆`
         : `今週は家族で${doneList.length}件のおつかいが完了！`;
+      // 買い忘れ防止がこのアプリの主目的なので、週次のまとめにも添える
+      const low = runningLowNames(fam);
+      if (low.length) {
+        body += `\n⏳ そろそろ切れそう: ${low.slice(0, 4).join("・")}${low.length > 4 ? ` ほか${low.length - 4}件` : ""}`;
+      }
 
       try {
         await sendToFamily(familyId, {
