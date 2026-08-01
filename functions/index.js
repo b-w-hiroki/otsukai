@@ -75,10 +75,21 @@ async function memberName(familyId, uid) {
   return snap.val() || "家族の誰か";
 }
 
+const LOW_LEAD_DEFAULT = 2;
+const LOW_LEAD_MAX = 60;
+const DAY = 24 * 60 * 60 * 1000;
+
+/** 何日前から「そろそろ切れる」と知らせるか（families/{id}/settings/lowLeadDays） */
+function lowLeadDaysOf(fam) {
+  const v = Number(((fam || {}).settings || {}).lowLeadDays);
+  return Number.isFinite(v) && v >= 0 && v <= LOW_LEAD_MAX ? Math.round(v) : LOW_LEAD_DEFAULT;
+}
+
 /**
  * 「そろそろ切れそうな品」を洗い出す（クライアントの computeRunningLow と同じ考え方）。
  * ① ストックで out/low になっているもの
- * ② 買い物履歴の周期（3回以上）から、次の購入予定日を過ぎている/迫っているもの
+ * ② 買う間隔から、次の購入予定日が予告日数の範囲に入っているもの
+ *    間隔は「ストックへの手入力（cycleDays）」を優先し、無ければ買い物履歴（3回以上）から学習する。
  * すでに買い物リストに入っているものは除く。
  */
 function runningLowNames(fam) {
@@ -87,26 +98,45 @@ function runningLowNames(fam) {
       .filter((r) => r && r.status !== "done")
       .map((r) => r.name)
   );
+  const lead = lowLeadDaysOf(fam);
   const names = [];
   Object.values(fam.stocks || {}).forEach((s) => {
     if (!s || (s.level !== "out" && s.level !== "low")) return;
     if (active.has(s.name)) return;
     names.push(s.name);
   });
+
+  // 履歴から周期を学習
   const byName = {};
   Object.values(fam.requests || {}).forEach((r) => {
     if (!r || r.status !== "done" || !r.completedAt) return;
     (byName[r.name] = byName[r.name] || []).push(r.completedAt);
   });
+  const cycles = {};
   Object.entries(byName).forEach(([name, times]) => {
-    if (active.has(name) || names.includes(name) || times.length < 3) return;
+    if (times.length < 3) return;
     times.sort((a, b) => a - b);
     const gaps = [];
     for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
     const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
     if (avg < 12 * 60 * 60 * 1000) return;
-    const daysLeft = Math.round((times[times.length - 1] + avg - Date.now()) / 86400000);
-    if (daysLeft <= 2) names.push(name);
+    cycles[name] = { avgMs: avg, last: times[times.length - 1] };
+  });
+
+  // ストックに手入力された間隔があれば、学習値より優先する
+  Object.values(fam.stocks || {}).forEach((s) => {
+    if (!s || !s.name) return;
+    const days = Number(s.cycleDays);
+    if (!Number.isFinite(days) || days < 1) return;
+    const last = Math.max(cycles[s.name] ? cycles[s.name].last : 0, s.lastFilledAt || 0);
+    if (!last) return;
+    cycles[s.name] = { avgMs: days * DAY, last };
+  });
+
+  Object.entries(cycles).forEach(([name, c]) => {
+    if (active.has(name) || names.includes(name)) return;
+    const daysLeft = Math.round((c.last + c.avgMs - Date.now()) / DAY);
+    if (daysLeft <= lead) names.push(name);
   });
   return names;
 }

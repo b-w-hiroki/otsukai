@@ -43,6 +43,7 @@ const state = {
   expandedItems: new Set(),
   unreadComments: new Set(),
   reminderTimes: {},
+  familySettings: {},
   shortcuts: {},
   stocks: {},
   missions: {},
@@ -410,6 +411,7 @@ async function handleFamilyAccessLost(err) {
   try { await db.ref("users/" + state.uid + "/familyId").remove(); } catch (e) {}
   state.familyId = null; state.family = null; state.myRole = null;
   state.requests = {}; state.stats = {}; state.shortcuts = {}; state.stocks = {}; state.missions = {}; state.missionLogs = {};
+  state.familySettings = {};
   state.points = {}; state.rewards = {}; state.rewardLogs = {};
   showScreen("family");
   showToast("家族から外れました");
@@ -446,6 +448,13 @@ function attachFamilyListeners() {
   attach(familyRef().child("reminderTimes"), "value", (s) => {
     state.reminderTimes = s.val() || {};
     renderReminderTimes();
+  });
+  // 家族共通の設定（「そろそろ切れるかも」の予告日数など）
+  attach(familyRef().child("settings"), "value", (s) => {
+    state.familySettings = s.val() || {};
+    renderLowLeadSetting();
+    renderSuggestions();
+    renderStocks();
   });
   // 通知許可済みならトークンをこの家族に登録し直す（ローテーション追従）
   registerPushToken();
@@ -1301,6 +1310,7 @@ function openStockSheet() {
   $("stock-name").value = "";
   $("stock-memo").value = "";
   $("stock-budget").value = "";
+  $("stock-cycle").value = "";
   $("stock-photo-input").value = "";
   $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
   $("stock-sheet").classList.add("open");
@@ -1336,6 +1346,7 @@ async function addStock() {
   if (!name) return showToast("商品名を入力してください");
   const memo = $("stock-memo").value.trim();
   const budget = parseInt($("stock-budget").value, 10);
+  const cycleDays = parseInt($("stock-cycle").value, 10);
   const photoFile = $("stock-photo-input").files[0];
   const addBtn = $("btn-add-stock");
   if (addBtn && addBtn.disabled) return; // アップロード中の二度押し防止
@@ -1345,6 +1356,11 @@ async function addStock() {
     const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
     if (memo) item.memo = memo;
     if (budget > 0) item.budget = budget;
+    if (cycleDays >= 1 && cycleDays <= 365) {
+      item.cycleDays = cycleDays;
+      // 「たっぷり」で登録＝いま補充した、とみなして周期の起点にする
+      if (stockAddLevel === "ok") item.lastFilledAt = now();
+    }
     if (photoFile) {
       showToast("写真をアップロード中...", { sound: false });
       try {
@@ -1361,7 +1377,21 @@ async function addStock() {
   }
 }
 async function updateStockLevel(id, level) {
-  await dbOp(familyRef().child(`stocks/${id}`).update({ level, updatedBy: state.uid, updatedAt: now() }), "変更できませんでした");
+  const patch = { level, updatedBy: state.uid, updatedAt: now() };
+  // 🟢 に戻した＝補充した日。手入力した「買う間隔」の起点になる。
+  if (level === "ok") patch.lastFilledAt = now();
+  await dbOp(familyRef().child(`stocks/${id}`).update(patch), "変更できませんでした");
+}
+
+// ストック詳細から「買う間隔（日）」を設定・解除する
+async function updateStockCycle(id, days) {
+  const s = state.stocks[id];
+  if (!s) return;
+  const patch = { cycleDays: days || null, updatedBy: state.uid, updatedAt: now() };
+  // 起点が無いまま間隔だけ入れても予測できないので、今を起点にしておく
+  if (days && !s.lastFilledAt) patch.lastFilledAt = now();
+  if (!(await dbOp(familyRef().child(`stocks/${id}`).update(patch), "変更できませんでした"))) return;
+  showToast(days ? `🔄 「${s.name}」を${days}日ごとに設定しました` : "🔄 買う間隔の設定を外しました", { sound: false });
 }
 async function deleteStock(id) {
   const s = state.stocks[id];
@@ -1384,12 +1414,11 @@ function stockCard(s, i) {
   const metaChips = [];
   if (s.budget > 0) metaChips.push(`💰 ${Number(s.budget).toLocaleString()}円以下`);
   if (s.memo) metaChips.push(`📝 ${escapeHtml(s.memo)}`);
-  // 買い物履歴から周期が読めるものは「あと何日で切れそうか」を添える
-  const cyc = predictCycles()[s.name];
+  // 周期が分かるものは「あと何日で切れそうか」を添える（手入力＞履歴からの学習）
+  const cyc = cycleInfo()[s.name];
   if (cyc) {
-    metaChips.push(cyc.daysLeft > 0
-      ? `🔄 約${cyc.avgDays}日ごと・あと${cyc.daysLeft}日`
-      : `🔄 約${cyc.avgDays}日ごと・買い時`);
+    const every = cyc.source === "manual" ? `${cyc.avgDays}日ごと` : `約${cyc.avgDays}日ごと`;
+    metaChips.push(cyc.daysLeft > 0 ? `🔄 ${every}・あと${cyc.daysLeft}日` : `🔄 ${every}・買い時`);
   }
   const metaHtml = metaChips.length
     ? `<div class="stock-meta">${metaChips.map(c => `<span class="stock-meta-chip">${c}</span>`).join("")}</div>`
@@ -1477,6 +1506,16 @@ function openStockDetail(id) {
         <button class="slp-btn${s.level === 'out' ? ' active' : ''}" data-detail-lvl="out" data-sid="${id}">🔴 切れた</button>
       </div>
     </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">買う間隔</div>
+      <div class="row" style="gap:6px;">
+        <input id="stock-detail-cycle" type="number" min="1" max="365" inputmode="numeric"
+               placeholder="例: 7" value="${s.cycleDays > 0 ? Number(s.cycleDays) : ""}" style="flex:1;" />
+        <span style="font-size:13px;font-weight:700;white-space:nowrap;">日ごと</span>
+        <button id="btn-stock-detail-cycle" class="ghost tiny-btn" style="white-space:nowrap;">保存</button>
+      </div>
+      <p class="muted" style="font-size:11px;margin-top:6px;">${cycleHintHtml(s)}</p>
+    </div>
     <button id="btn-stock-detail-add" class="success" style="width:100%;margin-bottom:8px;">🛒 買い物リストに追加</button>
     <button id="btn-stock-detail-delete" class="danger" style="width:100%;">🗑️ ストックから削除</button>
   `;
@@ -1485,6 +1524,14 @@ function openStockDetail(id) {
       updateStockLevel(btn.dataset.sid, btn.dataset.detailLvl);
       $("stock-detail-body").querySelectorAll("[data-detail-lvl]").forEach(b => b.classList.toggle("active", b === btn));
     });
+  });
+  $("btn-stock-detail-cycle").addEventListener("click", async () => {
+    const raw = $("stock-detail-cycle").value.trim();
+    if (raw === "") { await updateStockCycle(id, 0); closeStockDetail(); return; }
+    const d = parseInt(raw, 10);
+    if (!(d >= 1 && d <= 365)) { showToast("1〜365日で入力してください"); return; }
+    await updateStockCycle(id, d);
+    closeStockDetail();
   });
   $("btn-stock-detail-add").addEventListener("click", () => {
     addStockToRequest({ ...s, id });
@@ -2499,6 +2546,29 @@ function initPushOnLoad() {
   renderPushToggle();
 }
 
+// 設定タブ「⏳ そろそろ切れるかも」の予告日数
+function renderLowLeadSetting() {
+  const sel = $("opt-low-lead");
+  if (!sel) return;
+  const v = String(lowLeadDays());
+  // 選択肢に無い値（他端末で将来増やした場合など）でも表示が飛ばないようにする
+  if (!Array.from(sel.options).some((o) => o.value === v)) {
+    sel.add(new Option(`${v}日前から`, v));
+  }
+  sel.value = v;
+}
+
+async function saveLowLeadDays(v) {
+  if (!state.familyId) return;
+  const d = parseInt(v, 10);
+  if (!(d >= 0 && d <= LOW_LEAD_MAX)) return;
+  if (!(await dbOp(familyRef().child("settings/lowLeadDays").set(d), "設定できませんでした"))) {
+    renderLowLeadSetting(); // 失敗したら表示を元に戻す
+    return;
+  }
+  showToast(d === 0 ? "⏳ 切れる当日に知らせます" : `⏳ ${d}日前から知らせます`, { sound: false });
+}
+
 function renderReminderTimes() {
   const wrap = $("reminder-times-list");
   if (!wrap) return;
@@ -2707,6 +2777,58 @@ function predictCycles() {
   return out;
 }
 
+// 何日前から「そろそろ切れる」と知らせるか（家族共通・設定タブで変更）。
+const LOW_LEAD_DEFAULT = 2;
+const LOW_LEAD_MAX = 60;
+function lowLeadDays() {
+  const v = Number((state.familySettings || {}).lowLeadDays);
+  return Number.isFinite(v) && v >= 0 && v <= LOW_LEAD_MAX ? Math.round(v) : LOW_LEAD_DEFAULT;
+}
+
+// 品目ごとの「次に切れそうな日」。
+// ストックに買う間隔（cycleDays）が手入力されていれば、履歴からの学習値より優先する。
+// 3回買うまで待たずに済み、学習値がずれているときも直せる。
+function cycleInfo() {
+  const learned = predictCycles();
+  const out = {};
+  Object.entries(learned).forEach(([name, c]) => { out[name] = { ...c, source: "learned" }; });
+  Object.values(state.stocks || {}).forEach((s) => {
+    if (!s || !s.name) return;
+    const days = Number(s.cycleDays);
+    if (!Number.isFinite(days) || days < 1) return;
+    // 起点は「最後に買った日」。履歴が無ければ「🟢 たっぷりに戻した日」を使う。
+    const last = Math.max(learned[s.name] ? learned[s.name].last : 0, s.lastFilledAt || 0);
+    if (!last) return; // 起点が分からないと残り日数を出せない
+    const avgMs = days * 864e5;
+    out[s.name] = {
+      avgMs, last,
+      avgDays: Math.round(days),
+      daysLeft: Math.round((last + avgMs - now()) / 864e5),
+      count: learned[s.name] ? learned[s.name].count : 0,
+      source: "manual",
+    };
+  });
+  return out;
+}
+
+// ストック詳細の「買う間隔」欄の説明文。いま何を根拠に予測しているかを見せる。
+function cycleHintHtml(s) {
+  const learned = predictCycles()[s.name];
+  if (s.cycleDays > 0) {
+    const c = cycleInfo()[s.name];
+    const when = c
+      ? (c.daysLeft < 0 ? `<b>${-c.daysLeft}日超過</b>しています`
+        : c.daysLeft === 0 ? "<b>今日が買い時</b>です"
+        : `次は<b>あと${c.daysLeft}日</b>ごろ`)
+      : "起点が決まると残り日数が出ます";
+    return `🔄 ${Number(s.cycleDays)}日ごとに設定中 — ${when}。空にして保存すると解除できます。`;
+  }
+  if (learned) {
+    return `買い物履歴から<b>約${learned.avgDays}日ごと</b>と学習しています。ここで指定すると、そちらを優先します。`;
+  }
+  return "同じ品を3回買うと自動で学習します。待たずにここで指定もできます。";
+}
+
 // 「そろそろ切れるかも」= ストックの残量警告 ＋ 購入周期からの予測 をまとめたもの。
 // 買い忘れを防ぐのがこのアプリの主目的なので、両方を1か所に集めて目立たせる。
 function computeRunningLow() {
@@ -2714,7 +2836,8 @@ function computeRunningLow() {
     Object.values(state.requests || {}).filter(r => r && r.status !== "done").map(r => r.name)
   );
   const dismissed = getDismissedSuggests();
-  const cycles = predictCycles();
+  const cycles = cycleInfo();
+  const lead = lowLeadDays();
   const items = [];
 
   // ① ストックで「切れた/少ない」と記録されているもの
@@ -2735,15 +2858,17 @@ function computeRunningLow() {
   const already = new Set(items.map((i) => i.name));
   Object.entries(cycles).forEach(([name, c]) => {
     if (active.has(name) || already.has(name)) return;
-    if (c.daysLeft > 2) return;                       // まだ先なら出さない
+    if (c.daysLeft > lead) return;                    // 設定した予告日数より先なら出さない
     if (dismissed[name] && dismissed[name] >= c.last) return; // この周期で案内済み
+    // 手入力の間隔は「約」ではなく言い切る（家族が決めた値なので）
+    const every = c.source === "manual" ? `${c.avgDays}日ごと` : `約${c.avgDays}日ごと`;
     items.push({
       name,
       kind: "cycle",
       urgent: c.daysLeft <= 0,
-      note: c.daysLeft <= 0
-        ? `約${c.avgDays}日ごと・${Math.abs(c.daysLeft)}日超過`
-        : `約${c.avgDays}日ごと・あと${c.daysLeft}日`,
+      note: c.daysLeft < 0 ? `${every}・${-c.daysLeft}日超過`
+        : c.daysLeft === 0 ? `${every}・今日が買い時`
+        : `${every}・あと${c.daysLeft}日`,
       order: c.daysLeft <= 0 ? 0.5 : 2,
     });
   });
@@ -3183,6 +3308,8 @@ function wireGlobalEvents() {
     state.soundOn = e.target.checked;
     localStorage.setItem("soundOn", String(state.soundOn));
   });
+  // そろそろ切れるかも: 何日前から知らせるか（家族共通）
+  $("opt-low-lead").addEventListener("change", (e) => saveLowLeadDays(e.target.value));
   // テーマ
   $("opt-theme").value = localStorage.getItem("theme") || "auto";
   $("opt-theme").addEventListener("change", (e) => applyTheme(e.target.value));

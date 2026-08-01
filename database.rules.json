@@ -50,6 +50,10 @@
         "missions":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "missionLogs":   { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "reminderTimes": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "settings": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()",
+          "lowLeadDays": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60" }
+        },
         "pushTokens":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "points": {
           "$uid": {

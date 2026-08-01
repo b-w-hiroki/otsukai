@@ -245,6 +245,30 @@
           <div id="member-list" class="row wrap"></div>
         </div>
         <div class="card">
+          <h2>⏳ そろそろ切れるかも</h2>
+          <p class="muted" style="font-size:12px;margin:0 0 10px;">
+            買い忘れそうなものを、お買い物タブのいちばん上に先回りで出します。
+          </p>
+          <div class="row" style="gap:8px;">
+            <span style="font-weight:700;font-size:13px;white-space:nowrap;">知らせる時期</span>
+            <select id="opt-low-lead" style="flex:1;">
+              <option value="0">切れる当日に</option>
+              <option value="1">1日前から</option>
+              <option value="2">2日前から（おすすめ）</option>
+              <option value="3">3日前から</option>
+              <option value="5">5日前から</option>
+              <option value="7">1週間前から</option>
+              <option value="10">10日前から</option>
+              <option value="14">2週間前から</option>
+              <option value="30">1か月前から</option>
+            </select>
+          </div>
+          <p class="muted" style="font-size:11px;margin-top:6px;">
+            買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
+            品ごとの間隔は、ストックタブで品名をタップすると指定できます。
+          </p>
+        </div>
+        <div class="card">
           <h2>🔔 通知</h2>
           <label class="row">
             <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
@@ -491,6 +515,10 @@
           <div style="position:relative;">
             <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
             <input id="stock-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
+          </div>
+          <div>
+            <input id="stock-cycle" type="number" min="1" max="365" inputmode="numeric" placeholder="何日ごとに買う？（任意）例: 7" />
+            <p class="muted" style="font-size:11px;margin-top:4px;">指定すると、切れる前に「⏳ そろそろ切れるかも」でお知らせします。空欄なら買い物履歴から自動で学習します。</p>
           </div>
           <!-- 写真アップロード -->
           <div>
