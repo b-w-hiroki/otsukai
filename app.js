@@ -524,6 +524,7 @@ function attachFamilyListeners() {
     state.stocks = s.val() || {};
     renderStocks();
     renderStockBadge();
+    renderSuggestions(); // 「そろそろ切れるかも」にストックの残量が効くため
   });
   // Missions
   attach(familyRef().child("missions"), "value", (s) => {
@@ -1383,6 +1384,13 @@ function stockCard(s, i) {
   const metaChips = [];
   if (s.budget > 0) metaChips.push(`💰 ${Number(s.budget).toLocaleString()}円以下`);
   if (s.memo) metaChips.push(`📝 ${escapeHtml(s.memo)}`);
+  // 買い物履歴から周期が読めるものは「あと何日で切れそうか」を添える
+  const cyc = predictCycles()[s.name];
+  if (cyc) {
+    metaChips.push(cyc.daysLeft > 0
+      ? `🔄 約${cyc.avgDays}日ごと・あと${cyc.daysLeft}日`
+      : `🔄 約${cyc.avgDays}日ごと・買い時`);
+  }
   const metaHtml = metaChips.length
     ? `<div class="stock-meta">${metaChips.map(c => `<span class="stock-meta-chip">${c}</span>`).join("")}</div>`
     : "";
@@ -2664,49 +2672,125 @@ function dismissedSuggestKey() { return `suggestDismissed_${state.familyId}`; }
 function getDismissedSuggests() {
   try { return JSON.parse(localStorage.getItem(dismissedSuggestKey()) || "{}"); } catch (e) { return {}; }
 }
-function computeSuggestions() {
+// 買い物履歴から、同じ品の「購入周期」と「次に切れそうな日」を推定する。
+// 3回以上買っている品が対象（2回だと周期が1つしか取れず精度が出ないため）。
+// ストックカードの描画ごとに呼ばれるので、requests が差し替わるまでは結果を使い回す。
+// （残り日数は時間で変わるので、1時間で作り直す）
+let cycleCache = { src: null, hour: -1, val: null };
+function predictCycles() {
+  const hour = Math.floor(now() / 36e5);
+  if (cycleCache.src === state.requests && cycleCache.hour === hour) return cycleCache.val;
   const byName = {};
   Object.values(state.requests || {}).forEach((r) => {
     if (!r || r.status !== "done" || !r.completedAt) return;
     (byName[r.name] = byName[r.name] || []).push(r.completedAt);
   });
-  // いまリストにある品は提案しない
-  const active = new Set(
-    Object.values(state.requests || {}).filter(r => r && r.status !== "done").map(r => r.name)
-  );
-  const dismissed = getDismissedSuggests();
-  const out = [];
+  const out = {};
   Object.entries(byName).forEach(([name, times]) => {
-    if (active.has(name) || times.length < 3) return;
+    if (times.length < 3) return;
     times.sort((a, b) => a - b);
     const gaps = [];
     for (let i = 1; i < times.length; i++) gaps.push(times[i] - times[i - 1]);
     const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
     if (avg < 12 * 36e5) return; // 半日未満の周期はノイズ扱い
-    const since = now() - times[times.length - 1];
-    if (since < avg * 0.9) return;
-    // 「この周期でもう案内した」ものは再表示しない
-    if (dismissed[name] && dismissed[name] >= times[times.length - 1]) return;
-    out.push({ name, days: Math.max(1, Math.round(since / 864e5)), avgDays: Math.max(1, Math.round(avg / 864e5)) });
+    const last = times[times.length - 1];
+    out[name] = {
+      avgMs: avg,
+      last,
+      avgDays: Math.max(1, Math.round(avg / 864e5)),
+      // 残り日数（マイナスなら予測日を過ぎている）
+      daysLeft: Math.round((last + avg - now()) / 864e5),
+      count: times.length,
+    };
   });
-  return out.sort((a, b) => b.days - a.days).slice(0, 4);
+  cycleCache = { src: state.requests, hour, val: out };
+  return out;
 }
+
+// 「そろそろ切れるかも」= ストックの残量警告 ＋ 購入周期からの予測 をまとめたもの。
+// 買い忘れを防ぐのがこのアプリの主目的なので、両方を1か所に集めて目立たせる。
+function computeRunningLow() {
+  const active = new Set(
+    Object.values(state.requests || {}).filter(r => r && r.status !== "done").map(r => r.name)
+  );
+  const dismissed = getDismissedSuggests();
+  const cycles = predictCycles();
+  const items = [];
+
+  // ① ストックで「切れた/少ない」と記録されているもの
+  Object.values(state.stocks || {}).forEach((s) => {
+    if (!s || (s.level !== "out" && s.level !== "low")) return;
+    if (active.has(s.name)) return;
+    items.push({
+      name: s.name,
+      kind: "stock",
+      urgent: s.level === "out",
+      note: s.level === "out" ? "切れてる" : "残り少ない",
+      order: s.level === "out" ? 0 : 1,
+      budget: s.budget, memo: s.memo,
+    });
+  });
+
+  // ② 購入周期から「そろそろ」と推定されるもの（ストックで既に出ているものは除く）
+  const already = new Set(items.map((i) => i.name));
+  Object.entries(cycles).forEach(([name, c]) => {
+    if (active.has(name) || already.has(name)) return;
+    if (c.daysLeft > 2) return;                       // まだ先なら出さない
+    if (dismissed[name] && dismissed[name] >= c.last) return; // この周期で案内済み
+    items.push({
+      name,
+      kind: "cycle",
+      urgent: c.daysLeft <= 0,
+      note: c.daysLeft <= 0
+        ? `約${c.avgDays}日ごと・${Math.abs(c.daysLeft)}日超過`
+        : `約${c.avgDays}日ごと・あと${c.daysLeft}日`,
+      order: c.daysLeft <= 0 ? 0.5 : 2,
+    });
+  });
+
+  return items.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, "ja")).slice(0, 6);
+}
+
 function renderSuggestions() {
   const el = $("suggest-section");
   if (!el) return;
-  const list = computeSuggestions();
+  const list = computeRunningLow();
   if (!list.length) { el.innerHTML = ""; return; }
-  el.innerHTML = `<div class="suggest-label">🔄 そろそろ買う頃かも</div>
-    <div class="suggest-wrap">${list.map(s => `
-      <button class="suggest-chip" data-suggest="${escapeHtml(s.name)}">
-        ${escapeHtml(s.name)}
-        <span style="font-size:11px;font-weight:600;opacity:.75;">${s.days}日前・約${s.avgDays}日ごと</span>
-        <span class="suggest-dismiss" data-suggest-x="${escapeHtml(s.name)}" role="button" aria-label="この提案を消す">×</span>
-      </button>`).join("")}</div>`;
+  const urgentCount = list.filter((i) => i.urgent).length;
+  el.innerHTML = `
+    <div class="lowstock-card">
+      <div class="lowstock-hdr">
+        <span class="lowstock-title">⏳ そろそろ切れるかも</span>
+        <span class="lowstock-count">${list.length}</span>
+      </div>
+      <p class="lowstock-lead">${urgentCount
+        ? `<b>${urgentCount}件</b>はもう切れています。タップで買い物リストに追加できます。`
+        : "タップすると買い物リストに追加できます。"}</p>
+      <div class="lowstock-items">
+        ${list.map((i) => `
+          <button class="lowstock-item${i.urgent ? " urgent" : ""}" data-suggest="${escapeHtml(i.name)}">
+            <span class="lowstock-icon">${i.kind === "stock" ? (i.urgent ? "🔴" : "🟡") : "🔄"}</span>
+            <span class="lowstock-body">
+              <span class="lowstock-name">${escapeHtml(i.name)}</span>
+              <span class="lowstock-note">${escapeHtml(i.note)}</span>
+            </span>
+            <span class="lowstock-add">＋</span>
+            <span class="lowstock-x" data-suggest-x="${escapeHtml(i.name)}" role="button" aria-label="このお知らせを消す">×</span>
+          </button>`).join("")}
+      </div>
+    </div>`;
   el.querySelectorAll("[data-suggest]").forEach((b) => {
     b.addEventListener("click", (e) => {
       if (e.target.closest("[data-suggest-x]")) return;
-      addFromShortcut({ name: b.dataset.suggest, diff: "normal" });
+      const name = b.dataset.suggest;
+      const st = Object.values(state.stocks || {}).find((s) => s && s.name === name);
+      addFromShortcut({
+        name,
+        diff: "normal",
+        urgent: st && st.level === "out",
+        budget: st && st.budget,
+        brand: st && st.memo,
+      });
     });
   });
   el.querySelectorAll("[data-suggest-x]").forEach((x) => {
