@@ -43,14 +43,13 @@ Cloud Functions / Cloud Scheduler は **Blaze（従量課金）プラン**が必
 
 ## 3. Realtime Database のルール（必須）
 
-リポジトリ直下に **`database.rules.json`（ドラフト）** を用意しています。
+リポジトリ直下に **`database.rules.json`** を用意しています。
 家族メンバーだけが家族データを読み書きでき、`reminderTimes` / `pushTokens` /
-`reminderIndex` も動作するよう構成しています。
+`reminderIndex` / `settings` も動作するよう構成しています。
 
-> ⚠️ 適用前に、**現在 Firebase Console に設定されているルールと必ず突き合わせてください**。
-> 意図的に `firebase.json` には含めていないため `firebase deploy` では上書きされません。
-> 内容を確認のうえ、Firebase Console → Realtime Database → ルール に手動で貼り付けて
-> 「シミュレーター」でログイン/参加/追加の各操作を試してから公開するのが安全です。
+**適用手順の正本は [`docs/rules/deploy.md` §2](../docs/rules/deploy.md#2-realtime-database-のルール適用手動正本)**。
+`firebase deploy` では反映されない（意図的に `firebase.json` に含めていない）ので、
+Firebase Console から手で貼る必要があります。
 
 ---
 
@@ -128,20 +127,8 @@ firebase functions:log --only shoppingReminder
 
 ## コスト最適化（限りなく0円運用のために）
 
-コード側で実施済み:
-- **リマインドは5分ごと起動**（毎分比で実行回数 ▲80%: 月43,200回→8,640回。無料枠200万回の0.5%）
-- **全関数のメモリを最小128MB**に（GB秒消費 ≒ 半減）
-- **関数リージョンを RTDB と同じ asia-southeast1** に（リージョン間のデータ転送費をゼロに）
-- Cloud Scheduler ジョブは3つ（リマインド・週次サマリー・日次アーカイブ）= **無料枠3ジョブ以内**
-- FCM は完全無料・データ肥大は90日アーカイブ＋各種ローテーションで抑制済み
+→ **正本は [`docs/rules/deploy.md` §5](../docs/rules/deploy.md#5-コストを増やさないための決め事)**。
 
-デプロイ後にやっておくと安心:
-1. **古いコンテナイメージの自動掃除**（デプロイのたびに Artifact Registry にイメージが溜まり、
-   無料枠0.5GBを超えると数円/月かかるため）:
-   ```bash
-   firebase functions:artifacts:setpolicy --location asia-southeast1
-   ```
-   （プロンプトで保持期間を確認。コマンドが無い場合は firebase-tools を最新に更新するか、
-   Google Cloud Console → Artifact Registry → gcf-artifacts でクリーンアップポリシーを設定）
-2. **予算アラート**: Google Cloud Console → お支払い → 予算とアラート → 月100円などで設定。
-   万一の想定外課金にすぐ気づけます。
+このディレクトリのコードで守っている前提（5分ごと起動 / 128MB / `asia-southeast1` /
+Scheduler 3ジョブ以内 / 90日アーカイブ）は、**変更すると課金に直結する**ので
+上のルールを読んでから触ること。
