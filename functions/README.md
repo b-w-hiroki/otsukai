@@ -55,25 +55,13 @@ Firebase Console から手で貼る必要があります。
 
 ## デプロイ手順
 
-`firebase.json` と `.firebaserc`（プロジェクト `otsukai-app-4b62b` 指定）はリポジトリに同梱済みなので、`firebase init` は不要です。
+→ **正本は [`docs/rules/deploy.md` §3](../docs/rules/deploy.md#3-cloud-functions-のデプロイ)**。
 
-```bash
-# 初回のみ
-npm install -g firebase-tools
-firebase login
+このディレクトリ固有の注意だけ書いておく:
 
-# 依存をインストール
-cd functions
-npm install
-cd ..
-
-# デプロイ（Cloud Scheduler ジョブも自動作成されます）
-firebase deploy --only functions
-```
-
-> `firebase.json` は **functions のみ**を対象にしています（Realtime Database のルールや
-> Hosting は含めていません）。これは既存の DB ルールや GitHub Pages 配信を
-> デプロイで上書きしないための配慮です。DB ルールは Firebase Console から手動で調整してください。
+- `firebase.json` は **functions のみ**を対象にしている（Realtime Database のルールや
+  Hosting は含めない）。既存の DB ルールと GitHub Pages 配信をデプロイで上書きしないため
+- 依存は `functions/package.json`。デプロイ前に `cd functions && npm install`
 
 ---
 

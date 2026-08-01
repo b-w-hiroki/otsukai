@@ -14,10 +14,12 @@
 |---|---|---|
 | **色・トークン** | `styles.css` の CSS 変数 | `docs/banner-prompt.md` ブランド設定 |
 | **ボタン配置・クラス・シート構造** | `docs/rules/ui.md` | — |
-| **PWA更新の仕組み・SWの落とし穴** | `docs/rules/deploy.md` §4 | `docs/rules/ui.md` §6 / `docs/features.md` §9 |
+| **PWA更新の仕組み・SWの落とし穴** | `docs/rules/deploy.md` §4 | `docs/rules/ui.md` §6 |
+| **更新のやり方（利用者の操作）** | `docs/features.md` §9 メンテナンス | — |
 | **DBルールの適用手順** | `docs/rules/deploy.md` §2 | `functions/README.md` §3 |
+| **functions のデプロイ手順** | `docs/rules/deploy.md` §3 | `functions/README.md` デプロイ手順 |
 | **Firebase の運用コスト** | `docs/rules/deploy.md` §5 | `functions/README.md` 末尾 |
-| **サーバー関数の責務** | `functions/README.md` | `docs/rules/deploy.md` §3 |
+| **サーバー関数の責務** | `functions/README.md` 含まれる関数 | — |
 | **通知の内容（利用者視点）** | `docs/features.md` §10 | — |
 | **通知の実装（どの関数が送るか）** | `functions/README.md` | `docs/features.md` §10 の注記 |
 | **i-mobile の PID/asid・残タスク** | `docs/monetization-ideas.md` | `docs/release-plan.md` i-mobile 節 |
@@ -25,8 +27,14 @@
 | **ブランチ・テスト・PR の進め方** | `docs/rules/workflow.md` | — |
 | **機能の仕様（利用者向け）** | `docs/features.md` | — |
 
-> 通知だけ正本が2つあるのは意図的。**利用者から見た一覧**と**どの関数が送るか**は別の情報で、
-> 粒度が違うため片方に寄せると使えなくなる。ただし**足すときは両方直す**。
+**粒度が違うものは、無理に片方へ寄せない。** 通知と更新は正本が2つある:
+
+| 話題 | 利用者から見た情報 | 開発者から見た情報 |
+|---|---|---|
+| 通知 | `features.md` §10（いつ・何が・誰に届くか） | `functions/README.md`（どの関数が送るか） |
+| 更新 | `features.md` §9（どのボタンをいつ押すか） | `rules/deploy.md` §4（なぜ3段構えか・SWの落とし穴） |
+
+寄せると片方が使えなくなるため、あえて分けている。ただし**足すときは両方直す**。
 
 ---
 
