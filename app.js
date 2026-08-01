@@ -2736,8 +2736,8 @@ async function toggleStoreItem(id) {
 }
 
 // ===== 定期購入の自動提案 =====
-// 同じ品名の完了履歴から購入間隔を推定し、「そろそろでは？」と提案する。
-// 3回以上の完了があり、平均間隔の0.9倍を過ぎていて、いまリストに無いものが対象。
+// 「そろそろ切れるかも」で × を押した品の記録（端末ローカル）。
+// 値は消した時刻。ストックが動いた／次の周期に入ったら、また出す。
 function dismissedSuggestKey() { return `suggestDismissed_${state.familyId}`; }
 function getDismissedSuggests() {
   try { return JSON.parse(localStorage.getItem(dismissedSuggestKey()) || "{}"); } catch (e) { return {}; }
@@ -2841,12 +2841,17 @@ function computeRunningLow() {
   const items = [];
 
   // ① ストックで「切れた/少ない」と記録されているもの
+  const already = new Set();
   Object.values(state.stocks || {}).forEach((s) => {
     if (!s || (s.level !== "out" && s.level !== "low")) return;
-    if (active.has(s.name)) return;
+    if (active.has(s.name) || already.has(s.name)) return; // 同名のストックが複数あっても1行
+    // × で消したものは、その品のストックが next に動くまで再表示しない
+    if (dismissed[s.name] && dismissed[s.name] >= (s.updatedAt || 0)) return;
+    already.add(s.name);
     items.push({
       name: s.name,
       kind: "stock",
+      out: s.level === "out",
       urgent: s.level === "out",
       note: s.level === "out" ? "切れてる" : "残り少ない",
       order: s.level === "out" ? 0 : 1,
@@ -2855,7 +2860,6 @@ function computeRunningLow() {
   });
 
   // ② 購入周期から「そろそろ」と推定されるもの（ストックで既に出ているものは除く）
-  const already = new Set(items.map((i) => i.name));
   Object.entries(cycles).forEach(([name, c]) => {
     if (active.has(name) || already.has(name)) return;
     if (c.daysLeft > lead) return;                    // 設定した予告日数より先なら出さない
@@ -2865,6 +2869,7 @@ function computeRunningLow() {
     items.push({
       name,
       kind: "cycle",
+      overdue: c.daysLeft <= 0,
       urgent: c.daysLeft <= 0,
       note: c.daysLeft < 0 ? `${every}・${-c.daysLeft}日超過`
         : c.daysLeft === 0 ? `${every}・今日が買い時`
@@ -2881,16 +2886,22 @@ function renderSuggestions() {
   if (!el) return;
   const list = computeRunningLow();
   if (!list.length) { el.innerHTML = ""; return; }
-  const urgentCount = list.filter((i) => i.urgent).length;
+  // 「切れている」と「買い時を過ぎている」は別のことなので、まとめて数えない
+  const outCount = list.filter((i) => i.out).length;
+  const overdueCount = list.filter((i) => i.overdue).length;
+  const leadParts = [];
+  if (outCount) leadParts.push(`<b>${outCount}件</b>はもう切れています`);
+  if (overdueCount) leadParts.push(`<b>${overdueCount}件</b>は買い時を過ぎています`);
+  const leadText = leadParts.length
+    ? `${leadParts.join("・")}。タップで買い物リストに追加できます。`
+    : "タップすると買い物リストに追加できます。";
   el.innerHTML = `
     <div class="lowstock-card">
       <div class="lowstock-hdr">
         <span class="lowstock-title">⏳ そろそろ切れるかも</span>
         <span class="lowstock-count">${list.length}</span>
       </div>
-      <p class="lowstock-lead">${urgentCount
-        ? `<b>${urgentCount}件</b>はもう切れています。タップで買い物リストに追加できます。`
-        : "タップすると買い物リストに追加できます。"}</p>
+      <p class="lowstock-lead">${leadText}</p>
       <div class="lowstock-items">
         ${list.map((i) => `
           <button class="lowstock-item${i.urgent ? " urgent" : ""}" data-suggest="${escapeHtml(i.name)}">

@@ -102,7 +102,7 @@ function runningLowNames(fam) {
   const names = [];
   Object.values(fam.stocks || {}).forEach((s) => {
     if (!s || (s.level !== "out" && s.level !== "low")) return;
-    if (active.has(s.name)) return;
+    if (active.has(s.name) || names.includes(s.name)) return; // 同名のストックが複数あっても1件
     names.push(s.name);
   });
 
