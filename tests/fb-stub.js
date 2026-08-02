@@ -2,6 +2,8 @@
 // gstatic の firebase-app-compat.js の代わりに配信され、本物の SDK と同じ表面APIで
 // メモリ上の DB を提供する。リスナー・トランザクション・push キー対応。
 (() => {
+  // 説明用スクショで「写真つきの依頼」を見せるためのサンプル画像（青いボトル）
+  const SAMPLE_PHOTO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAIAAAD2HxkiAAAFnElEQVR4nO3dIbJcVRSG0Q4VDAbNDDBMCARYGBBYEDAhDDYKGwwiGERXNSCSVEje/c7ZZy2dvNpV//3e7Y7Js1cvX9yAzkf1AXA6EUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBB7Xh9Q+vPjz+oT+Mcnf/1en9A4MULtremxy2k1nhWh/LZwn+mcFA/6TqjAvZyz1ykRnrPoJIesdkSEh2w50gnbzY/whBVnG7/g8AjH73eI2TtOjnD2cqcZvObYCAdvdqypm46NEHYxM8KpvzIZuezMCGEjIoTYwAhHfmLhYd6+AyOEvYgQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiAyP87qff6hN4QvP2HRgh7EWEEJsZ4bxPLNyNXHZmhLCRsRGO/JV5uKmbjo3wNnezMw1ec3KEt9HLHWX2jsMjvE3f7wTjF5wf4e2AFQc7YbsjIrydseU8h6x2SoS3YxYd45y9ntcHXOq+6/dff14fwpuck9/dWRHePTZW41JOa+/hxAgfjl2dpRz0nRDWJEKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIPa8P4J39/O0Xb/4DX/3w6zWX8EGIcA9vDe91f1iQ6xPh6t4pv9f9dSmuTISLes/2XvfT1Lgg/zCzog9b4DU/mf/Nm3AtF0TiA+pqvAkXcuVryitxHSJcxfVV6HARIlxC1YMOVyDCXluCDnMijK3QwAo3nEyEpXWe/nUuOZAIM6s996vdcw4RNtZ84te8ajwRQkyEgZVfOCvfNpUIr7b+U77+hcOIEGIihJgIL7XLJ71d7pxBhBAT4XX2er3sde3WRAgxEUJMhBAT4UV2/Iq14807EiHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFeZMf/imzHm3ckQoiJEGIihJgIr7PXV6y9rt2aCCEmwkvt8nrZ5c4ZRAgxEUJMhFdb/5Pe+hcOI8LAyk/5yrdNJUKIibCx5gtnzavGE2FmtSd+tXvOIcLSOs/9OpccSISxFZ7+FW44mQh7bQMKzIlwCVUJClyBCFdxfQ8KXIQIF3JlFQpcx/P6AP7j3saT/p9k8luNN+GKnq4TBS7Im3BRj1o+yFtReysT4ere8wOq/NYnwj38u6W3Bim8vYhwPxobxj/MQEyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcRECDERQkyEEBMhxEQIMRFCTIQQEyHERAgxEUJMhBATIcQGRvjjl5/WJ/CE5u07MELYiwghNjPCeZ9YuBu57MwIYSNjIxz5K/NwUzcdG+Ft7mZnGrzm5Ahvo5c7yuwdh0d4m77fCcYvOD/C2wErDnbCdkdEeDtjy3kOWe2UCG/HLDrGOXs9e/XyRX3D1b755Y/6BN7knPzuTozwQY1LOa29h6MjhBUc9J0Q1iRCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiIkQYiKEmAghJkKIiRBiIoSYCCEmQoiJEGIihJgIISZCiP0NvAPvN3Farw4AAAAASUVORK5CYII=";
   const store = {};
   const listeners = [];
 
@@ -96,7 +98,7 @@
       requests: {
         r1: { name: "牛乳", diff: "normal", urgent: false, status: "open", requestedBy: "uid-mom", requestedAt: now - 2 * H, category: "food", budget: 300 },
         r2: { name: "卵", diff: "normal", urgent: true, status: "open", requestedBy: "uid-mom", requestedAt: now - 1 * H, category: "food" },
-        r3: { name: "トイレットペーパー", diff: "hard", urgent: false, status: "open", requestedBy: "uid-parent", requestedAt: now - 3 * H, category: "daily", memo: "12ロール・ダブル" },
+        r3: { name: "トイレットペーパー", diff: "hard", urgent: false, status: "open", requestedBy: "uid-parent", requestedAt: now - 3 * H, category: "daily", memo: "12ロール・ダブル" , photoUrl: SAMPLE_PHOTO },
         r4: { name: "単3電池", diff: "normal", urgent: false, status: "open", requestedBy: "uid-mom", requestedAt: now - 5 * H, category: "other", brand: "パナソニック" },
         r5: { name: "食パン", diff: "normal", urgent: false, status: "claimed", claimedBy: "uid-child", claimedAt: now - 30 * 6e4, requestedBy: "uid-parent", requestedAt: now - 2 * H, category: "food" },
         r6: { name: "オレンジジュース", diff: "normal", status: "done", requestedBy: "uid-mom", completedBy: "uid-child", requestedAt: now - 1 * D, completedAt: now - 2 * H, category: "food", reactions: { "uid-mom": "❤️" } },
