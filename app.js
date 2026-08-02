@@ -2724,39 +2724,6 @@ function celebrate() {
   setTimeout(() => wrap.remove(), 2600);
 }
 
-// ===== 音声で品名を入力（Web Speech API・非対応端末では案内のみ） =====
-let recognition = null;
-function startVoiceInput() {
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const btn = $("btn-voice-input");
-  if (!SR) { showToast("この端末では音声入力に対応していません", { sound: false }); return; }
-  if (recognition) { try { recognition.stop(); } catch (e) {} recognition = null; return; }
-  try {
-    recognition = new SR();
-    recognition.lang = "ja-JP";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    btn.classList.add("listening");
-    recognition.onresult = (e) => {
-      const text = (e.results[0][0].transcript || "").replace(/[。、.]$/, "").trim();
-      if (text) {
-        const input = $("new-name");
-        input.value = text;
-        input.focus();
-      }
-    };
-    recognition.onerror = (e) => {
-      if (e.error !== "aborted" && e.error !== "no-speech") showToast("音声を認識できませんでした", { sound: false });
-    };
-    recognition.onend = () => { btn.classList.remove("listening"); recognition = null; };
-    recognition.start();
-  } catch (e) {
-    btn.classList.remove("listening");
-    recognition = null;
-    showToast("音声入力を開始できませんでした", { sound: false });
-  }
-}
-
 // ===== 店内モード（買い物中の全画面チェックリスト） =====
 // 未完了の買い物だけを大きなチェックボックスで表示し、売り場順（カテゴリ順）に
 // 上から消していける。タップで「買うよ→完了」まで一気に進む。
@@ -3431,10 +3398,9 @@ function wireGlobalEvents() {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if ((localStorage.getItem("theme") || "auto") === "auto") applyTheme("auto");
   });
-  // 店内モード・音声入力
+  // 店内モード
   $("btn-store-mode").addEventListener("click", openStoreMode);
   $("btn-store-mode-close").addEventListener("click", closeStoreMode);
-  $("btn-voice-input").addEventListener("click", startVoiceInput);
   // 写真: 選ぶ / 外す / 拡大して見る
   $("req-photo-input").addEventListener("change", (e) => {
     const file = e.target.files[0];

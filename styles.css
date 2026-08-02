@@ -1424,16 +1424,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   background: var(--pri-soft); color: var(--pri-dark);
   border-radius: var(--r-full); padding: 3px 10px;
 }
-/* 音声入力ボタン */
-.mic-btn {
-  flex-shrink: 0; width: 44px; padding: 11px 0;
-  background: var(--surface); color: var(--ink);
-  border: 1.5px solid var(--border); border-radius: var(--r-sm);
-  font-size: 17px; box-shadow: none;
-}
-.mic-btn:hover:not(:disabled) { background: var(--surface); border-color: var(--pri); color: var(--ink); transform: none; box-shadow: none; }
-.mic-btn.listening { background: var(--c-urgent-soft); border-color: var(--c-urgent); animation: micPulse 1.1s ease-in-out infinite; }
-@keyframes micPulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
 .shortcut-float-btn.store {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   box-shadow: 0 4px 18px rgba(14,165,233,0.40), 0 2px 6px rgba(0,0,0,0.12);
