@@ -91,7 +91,7 @@ node tests/docs-check.mjs
 
 ## 3. 作業を終える前
 
-1. `node --check app.js && node --check functions/index.js`
+1. `for f in app-*.js; do node --check "$f"; done && node --check functions/index.js`
 2. 触った領域の回帰スイートを通す（UI を変えたなら全部）
 3. `sw.js` の `CACHE` を上げたか
 4. デプロイが要る変更なら PR 本文に「デプロイ後にやること」を書いたか（→ `deploy.md`）

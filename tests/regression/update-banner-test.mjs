@@ -1,11 +1,13 @@
 // 新バージョンをデプロイした状況を再現し、更新バナー→更新→反映まで検証
 import { startHarness } from "../harness.mjs";
 let SW_VERSION = "v29";   // サーバーが返す sw.js の版。テスト中に上げてデプロイを再現する
-let APP_MARKER = "OLD";   // app.js に埋める識別子。更新後に NEW へ変わったかを見る
+let APP_MARKER = "OLD";   // app-init.js に埋める識別子。更新後に NEW へ変わったかを見る
 const t = await startHarness({
   transform: (rel, text) => {
     if (rel === "sw.js") return text.replace(/const CACHE = "otsukai-[^"]+"/, `const CACHE = "otsukai-${SW_VERSION}"`);
-    if (rel === "app.js") return text + `\n// build-marker: ${APP_MARKER}\nself.__BUILD='${APP_MARKER}';\n`;
+    // app-init.js は分割後も最後に読み込まれるファイル（index.html の <script> 順）。
+    // ここにマーカーを埋めれば「全 app-*.js の読み込みが完了したか」の確認になる。
+    if (rel === "app-init.js") return text + `\n// build-marker: ${APP_MARKER}\nself.__BUILD='${APP_MARKER}';\n`;
     return null;
   },
 });

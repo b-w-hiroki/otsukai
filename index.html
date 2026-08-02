@@ -194,7 +194,7 @@
         <div id="list-open"></div>
         <!-- 広告枠 (i-mobile「トップページ バナー」スポット)
              initAdSlots() / injectImobileBanner() で SP/PC 別タグを端末判定して注入。
-             スポットIDの差し替えは app.js 末尾の initAdSlots() の引数で行う。 -->
+             スポットIDの差し替えは app-init.js の initAdSlots() の引数で行う。 -->
         <div id="ad-slot-requests" class="ad-slot">
           <div class="ad-label">広告</div>
           <div class="ad-content"></div>
@@ -654,6 +654,18 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <script src="./firebase-config.js"></script>
-  <script src="./app.js"></script>
+  <!-- app.js を機能単位で分割（旧: 単一の app.js 3,758行）。
+       クラシックスクリプトのままなのでグローバルスコープを共有し、挙動は分割前と同一。
+       読み込み順はこの並び順で保証される（後続ファイルは先行ファイルの関数・状態を参照できる）。 -->
+  <script src="./app-core.js"></script>
+  <script src="./app-requests.js"></script>
+  <script src="./app-rewards.js"></script>
+  <script src="./app-stock.js"></script>
+  <script src="./app-mission-admin.js"></script>
+  <script src="./app-render.js"></script>
+  <script src="./app-notify.js"></script>
+  <script src="./app-store-lowstock.js"></script>
+  <script src="./app-history.js"></script>
+  <script src="./app-init.js"></script>
 </body>
 </html>

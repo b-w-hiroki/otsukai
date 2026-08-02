@@ -28,12 +28,12 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 
 | 依頼が来たら | 先に読む | 主な対象ファイル |
 |---|---|---|
-| **画面の見た目・ボタン・レイアウト** | [`docs/rules/ui.md`](./docs/rules/ui.md) | `styles.css`, `index.html`, `app.js` |
-| **機能を足す・変える** | [`docs/features.md`](./docs/features.md) → `docs/rules/ui.md` | `app.js`, `index.html` |
+| **画面の見た目・ボタン・レイアウト** | [`docs/rules/ui.md`](./docs/rules/ui.md) | `styles.css`, `index.html`, `app-*.js` |
+| **機能を足す・変える** | [`docs/features.md`](./docs/features.md) → `docs/rules/ui.md` | `app-*.js`, `index.html` |
 | **通知・ポイント・サーバー処理** | [`functions/README.md`](./functions/README.md) → [`docs/rules/deploy.md`](./docs/rules/deploy.md) | `functions/index.js` |
 | **DBの構造・権限** | [`docs/rules/deploy.md` §2](./docs/rules/deploy.md) | `database.rules.json` |
 | **リリース・更新が届かない** | [`docs/rules/deploy.md`](./docs/rules/deploy.md) | `sw.js`, `manifest.json` |
-| **広告・収益化** | [`docs/monetization-ideas.md`](./docs/monetization-ideas.md) | `app.js` の `initAdSlots()` |
+| **広告・収益化** | [`docs/monetization-ideas.md`](./docs/monetization-ideas.md) | `app-init.js` の `initAdSlots()` |
 | **ストア配信（Android/iOS）** | [`docs/release-plan.md`](./docs/release-plan.md) | — |
 | **バナー・宣伝素材** | [`docs/banner-prompt.md`](./docs/banner-prompt.md) | — |
 | **使い方の説明・スクショ** | [`docs/features.md`](./docs/features.md) → [`workflow.md` §4](./docs/rules/workflow.md) | `docs/screenshots/` |
@@ -93,7 +93,7 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 
 上から順に。1つでも落ちたら完了と言わない。
 
-- [ ] `node --check app.js && node --check functions/index.js` が通る
+- [ ] `for f in app-*.js; do node --check "$f"; done && node --check functions/index.js` が通る
 - [ ] `database.rules.json` を触ったなら JSON として妥当
 - [ ] `node tests/run-all.mjs` が通る（UI を変えたなら全部・約2分）
 - [ ] ドキュメントを触ったなら `node tests/docs-check.mjs` が通る
@@ -110,8 +110,12 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 
 ## 6. このリポジトリの前提（覚えておくこと）
 
-- **アプリ本体はルート直下にフラット配置**（`index.html` / `app.js` / `styles.css` / `sw.js`）。
+- **アプリ本体はルート直下にフラット配置**（`index.html` / `app-*.js` / `styles.css` / `sw.js`）。
   移動するとキャッシュ・PWA・GitHub Pages の配信パスが全部ずれるので動かさない
+- **`app.js` は機能ごとに10ファイルへ分割済み**（`app-core.js` から `app-init.js` まで）。
+  すべてクラシックスクリプトでグローバルスコープを共有しており、`index.html` の
+  `<script>` の並び順で読み込み順が保証される（**順序を変えない**。特に `app-init.js`
+  が持つ `init()` 呼び出しは最後に読み込まれる前提）
 - `hub.html` は**プロジェクトハブ**（メインアプリ / 旧版 v1 / ドキュメント / ロードマップへの入口）
 - `app.v1.html` は**旧バージョンの保存**。触らない
 - サーバーは **`asia-southeast1`**、RTDB と同じリージョンに揃えてある

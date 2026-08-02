@@ -16,11 +16,9 @@ jobs:
 
       - name: JS 構文チェック（単体ファイル）
         run: |
-          node --check app.js
-          node --check sw.js
-          node --check firebase-messaging-sw.js
-          node --check firebase-config.js
-          node --check functions/index.js
+          for f in app-*.js sw.js firebase-messaging-sw.js firebase-config.js functions/index.js; do
+            node --check "$f"
+          done
 
       - name: index.html インラインスクリプトの構文チェック
         run: |
