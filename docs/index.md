@@ -90,7 +90,7 @@
 | functions をデプロイする | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 回帰テストを回す | `node tests/run-all.mjs` → [`rules/workflow.md` §2](./rules/workflow.md) |
 | ドキュメントの整合を確かめる | `node tests/docs-check.mjs` |
-| スクショを撮り直す | [`rules/workflow.md` §4](./rules/workflow.md) |
+| スクショを撮り直す | `node tests/capture-docs.mjs` → [`rules/workflow.md` §4](./rules/workflow.md) |
 | バナー画像を作る | [`banner-prompt.md`](./banner-prompt.md) |
 | Android/iOS に出す | [`release-plan.md`](./release-plan.md) |
 
@@ -106,7 +106,7 @@
 | `docs/screenshots/` | 説明用スクショ17枚 | `features.md` から参照 |
 | `functions/` | Cloud Functions（通知・ポイント・アーカイブ） | `README.md` → `index.js` |
 | `tests/` | スモーク＋回帰スイート＋ドキュメント検査 | `run-all.mjs` / `docs-check.mjs` |
-| `tests/regression/` | 回帰テスト11本 | `harness.mjs` から始まる |
+| `tests/regression/` | 回帰テスト12本 | `harness.mjs` から始まる |
 | `.github/workflows/` | CI 定義 | `check.yml` |
 
 **HTML の入口**
@@ -125,6 +125,7 @@
 | # | やること | 書いてある場所 |
 |---|---|---|
 | 1 | Firebase Console に `database.rules.json` を適用（`settings` の追加分） | [`rules/deploy.md` §2](./rules/deploy.md) |
+| 1b | **Storage のルールで `families/{familyId}/requests/` を許可**（おつかいの写真） | [`rules/deploy.md` §2](./rules/deploy.md) |
 | 2 | `firebase deploy --only functions` | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 3 | `firebase functions:artifacts:setpolicy --location asia-southeast1` | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |

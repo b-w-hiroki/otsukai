@@ -65,7 +65,18 @@
     initializeApp() {},
     auth,
     database: () => ({ ref: (p = "") => makeRef(String(p || "")) }),
-    storage: () => ({ ref: () => ({}) }),
+    // Storage は put/getDownloadURL だけ動く最小の偽物。
+    // 実際にはアップロードせず、1x1 の透明PNG(data URL)を返す。
+    // 「写真が付いた依頼がどう表示されるか」を検証できれば十分なため。
+    storage: () => ({
+      ref: (path = "") => ({
+        _path: String(path),
+        async put() { self.__uploadedPhotos = (self.__uploadedPhotos || []).concat(String(path)); return {}; },
+        async getDownloadURL() {
+          return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        },
+      }),
+    }),
     messaging: Object.assign(() => ({ onMessage() {}, getToken: async () => null }), { isSupported: () => false }),
     app: () => ({ functions: () => ({ httpsCallable: () => async () => { throw new Error("functions未デプロイ（スタブ）"); } }) }),
   };

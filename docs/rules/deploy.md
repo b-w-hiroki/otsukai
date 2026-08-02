@@ -34,6 +34,31 @@
 > ⚠️ ルールを足したのに適用を忘れると、その機能だけ静かに失敗する。
 > 例: `families/{id}/settings` の追加を忘れると「知らせる時期」が保存できない。
 
+### Storage のルール
+
+写真は Firebase Storage に置く。パスは2つ:
+
+| 用途 | パス |
+|---|---|
+| ストックの写真 | `families/{familyId}/stocks/{stockId}` |
+| **おつかいの写真** | `families/{familyId}/requests/{requestId}` |
+
+Storage のルールも Console 管理（リポジトリに `storage.rules` は置いていない）。
+**`families/{familyId}/{allPaths=**}` の形で家族メンバーに許可**しておくと、
+以後パスを増やしても追加作業が要らない。
+
+```
+match /families/{familyId}/{allPaths=**} {
+  allow read, write: if request.auth != null
+    && exists(/databases/(default)/documents/...) == false   // RTDB 参照は不可
+    && request.auth.uid != null;
+}
+```
+
+> ⚠️ Storage のルールから RTDB のメンバー表は参照できない。
+> 最低限「ログイン済みユーザーのみ」＋パスに familyId を含める運用にしている。
+> 権限が無いと**写真だけ**保存されない（依頼の内容は保存される）。
+
 ---
 
 ## 3. Cloud Functions のデプロイ
