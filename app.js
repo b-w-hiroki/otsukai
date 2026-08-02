@@ -58,6 +58,9 @@ const state = {
 const expandedGroups = new Set(["group-open", "group-claimed"]);
 let editingRequestId = null;
 let shortcutMode = false;
+// 追加/編集シートで選んだ写真。null = 変更なし、"" = 外す
+let pendingReqPhoto = null;
+let existingReqPhotoUrl = "";
 
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
@@ -738,6 +741,36 @@ function resetSheetToAddMode() {
   $("new-diff").value = "normal";
   $("new-assignee").value = "";
   setSelectedCategory(null);
+  setReqPhotoPreview("");
+  pendingReqPhoto = null;
+  existingReqPhotoUrl = "";
+}
+
+// 追加/編集シートの写真プレビュー。url が空なら「タップして選ぶ」に戻す。
+function setReqPhotoPreview(url) {
+  const wrap = $("req-photo-preview-wrap");
+  const clear = $("btn-req-photo-clear");
+  if (!wrap) return;
+  if (url) {
+    wrap.innerHTML = `<img class="photo-preview" src="${escapeHtml(url)}" alt="プレビュー" />`;
+    if (clear) clear.style.display = "";
+  } else {
+    wrap.innerHTML = `<span class="photo-placeholder">📷 タップして写真を選ぶ</span>`;
+    if (clear) clear.style.display = "none";
+  }
+  const input = $("req-photo-input");
+  if (input && !url) input.value = "";
+}
+
+// 写真を拡大して見る（買い物中に細部を確かめたいことがあるため）
+function openPhotoViewer(url) {
+  if (!url) return;
+  $("photo-viewer-img").src = url;
+  $("photo-viewer").classList.add("open");
+}
+function closePhotoViewer() {
+  $("photo-viewer").classList.remove("open");
+  $("photo-viewer-img").src = "";
 }
 // 指名セレクト（#new-assignee）にメンバー一覧を注入する（自分は除外）
 function populateAssigneeSelect(suffix = "に頼む") {
@@ -782,6 +815,19 @@ async function dbOp(promise, errMsg = "保存できませんでした") {
   }
 }
 
+// 写真のアップロード。失敗しても依頼の作成自体は続ける（写真は任意なので、
+// Storage の権限やオフラインで転んだときに「追加できない」にしてしまわない）。
+async function uploadRequestPhoto(file, requestId) {
+  showToast("写真をアップロード中...", { sound: false });
+  try {
+    return await uploadPhoto(file, `families/${state.familyId}/requests/${requestId}`);
+  } catch (e) {
+    console.error("photo upload failed", e);
+    showToast("⚠️ 写真だけアップロードできませんでした（内容は保存されます）");
+    return null;
+  }
+}
+
 let addingRequest = false; // 二度押し防止
 async function addRequest() {
   const name = $("new-name").value.trim();
@@ -803,6 +849,10 @@ async function addRequest() {
     if (brand) req.brand = brand;
     if (assignedTo) req.assignedTo = assignedTo;
     if (selectedCategory) req.category = selectedCategory;
+    if (pendingReqPhoto) {
+      const url = await uploadRequestPhoto(pendingReqPhoto, id);
+      if (url) req.photoUrl = url;
+    }
     if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
     bumpStat("requestedCount");
     $("new-name").value = "";
@@ -829,6 +879,9 @@ function openEditSheet(r) {
   $("new-brand").value = r.brand || "";
   $("new-assignee").value = r.assignedTo || "";
   setSelectedCategory(r.category || null);
+  pendingReqPhoto = null;
+  existingReqPhotoUrl = r.photoUrl || "";
+  setReqPhotoPreview(existingReqPhotoUrl);
   // 編集モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "✏️ おつかいを編集";
   $("btn-add-request").textContent = "更新する";
@@ -853,6 +906,12 @@ async function updateRequest() {
   updates.brand = brand || null;
   updates.assignedTo = assignedTo || null;
   updates.category = selectedCategory || null;
+  if (pendingReqPhoto) {
+    const url = await uploadRequestPhoto(pendingReqPhoto, editingRequestId);
+    if (url) updates.photoUrl = url;
+  } else if (pendingReqPhoto === "" && existingReqPhotoUrl) {
+    updates.photoUrl = null; // 「写真を外す」を押した
+  }
   if (!(await dbOp(familyRef().child("requests/" + editingRequestId).update(updates), "更新できませんでした"))) return;
   closeSheet();
   showToast("更新しました ✏️");
@@ -1335,11 +1394,38 @@ document.addEventListener("DOMContentLoaded", () => {
     reader.readAsDataURL(file);
   });
 });
-async function uploadStockPhoto(file, stockId) {
-  const storage = firebase.storage();
-  const ref = storage.ref(`families/${state.familyId}/stocks/${stockId}`);
-  await ref.put(file);
+// ===== 写真（ストック・おつかい共通） =====
+// スマホの写真はそのままだと3〜5MBある。買い物中に見るだけなので長辺1000pxで十分。
+// 圧縮すると 150KB 前後になり、アップロードが速く、Storage の無料枠も食わない。
+function compressImage(file, maxSide = 1000, quality = 0.82) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      // 失敗したら元のファイルをそのまま使う（アップロード自体は成功させたい）
+      canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
+async function uploadPhoto(file, path) {
+  const blob = await compressImage(file);
+  const ref = firebase.storage().ref(path);
+  await ref.put(blob, { contentType: "image/jpeg" });
   return await ref.getDownloadURL();
+}
+
+async function uploadStockPhoto(file, stockId) {
+  return uploadPhoto(file, `families/${state.familyId}/stocks/${stockId}`);
 }
 async function addStock() {
   const name = $("stock-name").value.trim();
@@ -1962,6 +2048,7 @@ function checkRow(r) {
   if (r.diff && r.diff !== "normal") badges.push(`<span class="check-badge">${r.diff === "hard" ? "💪" : "😅"}</span>`);
   if (r.assignedTo && r.status === "open") badges.push(`<span class="check-badge">📌${memberEmoji(r.assignedTo)}</span>`);
   if (commentCount > 0 || hasUnread) badges.push(`<span class="check-badge${hasUnread ? " unread" : ""}">💬${commentCount || ""}</span>`);
+  if (r.photoUrl && !detailOpen) badges.push(`<span class="check-badge">📷</span>`);
   const hasExtra = r.memo || r.budget > 0 || r.brand;
   if (hasExtra && !detailOpen) badges.push(`<span class="check-badge muted">📝</span>`);
 
@@ -2014,6 +2101,7 @@ function checkDetail(r) {
   }
 
   return `<div class="check-detail">
+    ${r.photoUrl ? `<img class="req-photo" src="${escapeHtml(r.photoUrl)}" alt="${escapeHtml(r.name)}の写真" data-photo="${escapeHtml(r.photoUrl)}" />` : ""}
     ${hintParts.length ? `<div class="req-row-hints">${hintParts.map(p => `<span class="req-row-hint">${p}</span>`).join("")}</div>` : ""}
     <div class="check-detail-meta">${meta}</div>
     <div class="check-detail-actions">${actHtml}</div>
@@ -2710,6 +2798,7 @@ function renderStoreMode() {
     if (r.memo) subs.push(`📝${escapeHtml(r.memo)}`);
     html += `<button class="store-item${isDone ? " checked" : ""}${r.urgent && !isDone ? " urgent" : ""}" data-store="${r.id}">
       <span class="store-item-box">${isDone ? "✓" : ""}</span>
+      ${r.photoUrl ? `<img class="store-item-thumb" src="${escapeHtml(r.photoUrl)}" alt="" data-photo="${escapeHtml(r.photoUrl)}" />` : ""}
       <span style="flex:1;min-width:0;">
         <span class="store-item-name">${r.urgent && !isDone ? "🔥 " : ""}${escapeHtml(r.name)}</span>
         ${subs.length ? `<span class="store-item-sub">${subs.join(" ・ ")}</span>` : ""}
@@ -2718,7 +2807,11 @@ function renderStoreMode() {
   });
   body.innerHTML = html;
   body.querySelectorAll("[data-store]").forEach((b) => {
-    b.addEventListener("click", () => toggleStoreItem(b.dataset.store));
+    b.addEventListener("click", (e) => {
+      // サムネイルは「拡大して見る」。チェックのつもりで押していないため完了させない
+      if (e.target.closest("[data-photo]")) return;
+      toggleStoreItem(b.dataset.store);
+    });
   });
 }
 // 店内モードで完了した項目は、チェックを外せるようこのセッション中は表示し続ける
@@ -3331,6 +3424,32 @@ function wireGlobalEvents() {
   $("btn-store-mode").addEventListener("click", openStoreMode);
   $("btn-store-mode-close").addEventListener("click", closeStoreMode);
   $("btn-voice-input").addEventListener("click", startVoiceInput);
+  // 写真: 選ぶ / 外す / 拡大して見る
+  $("req-photo-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingReqPhoto = file;
+    const reader = new FileReader();
+    reader.onload = (ev) => setReqPhotoPreview(ev.target.result);
+    reader.readAsDataURL(file);
+  });
+  $("btn-req-photo-clear").addEventListener("click", (e) => {
+    e.preventDefault();
+    pendingReqPhoto = "";           // 「外す」の意思表示
+    setReqPhotoPreview("");
+  });
+  $("btn-photo-viewer-close").addEventListener("click", closePhotoViewer);
+  $("photo-viewer").addEventListener("click", (e) => {
+    if (e.target === $("photo-viewer")) closePhotoViewer();
+  });
+  // 写真はいろんな画面に出るので、まとめて受ける
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-photo]");
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openPhotoViewer(el.dataset.photo);
+  });
   // メンテナンス（更新・復旧）
   $("btn-refresh-data").addEventListener("click", doPullRefresh);
   $("btn-force-update").addEventListener("click", forceRefreshApp);

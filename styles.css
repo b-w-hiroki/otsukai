@@ -844,18 +844,46 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   border-radius: var(--r-full); transition: width .4s cubic-bezier(0.34,1.2,0.64,1);
 }
 
-/* ======= Stock photo upload ======= */
-.stock-photo-upload {
-  display: block; cursor: pointer;
+/* ======= 写真アップロード（ストック・おつかい共通） ======= */
+.stock-photo-upload, .photo-upload {
+  cursor: pointer;
   border: 2px dashed var(--border); border-radius: var(--r-md);
   overflow: hidden; min-height: 80px;
   display: flex; align-items: center; justify-content: center;
   transition: border-color .15s, background .15s;
 }
-.stock-photo-upload:hover { border-color: var(--pri); background: var(--pri-soft); }
-.stock-photo-placeholder { font-size: 13px; font-weight: 600; color: var(--muted); padding: 20px; }
-.stock-photo-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: calc(var(--r-md) - 2px); display: block; }
+.stock-photo-upload:hover, .photo-upload:hover { border-color: var(--pri); background: var(--pri-soft); }
+.stock-photo-placeholder, .photo-placeholder { font-size: 13px; font-weight: 600; color: var(--muted); padding: 20px; }
+.stock-photo-preview, .photo-preview { width: 100%; max-height: 160px; object-fit: cover; border-radius: calc(var(--r-md) - 2px); display: block; }
 .stock-img { width: 48px; height: 48px; object-fit: cover; border-radius: var(--r-sm); flex-shrink: 0; }
+
+/* おつかいの写真: 詳細では大きく、店内モードではサムネイル */
+.req-photo {
+  width: 100%; max-height: 140px; object-fit: cover;
+  border-radius: var(--r-md); display: block; margin-bottom: 10px; cursor: zoom-in;
+}
+.store-item-thumb {
+  width: 44px; height: 44px; object-fit: cover; border-radius: var(--r-sm);
+  flex-shrink: 0; cursor: zoom-in;
+}
+
+/* 写真の拡大表示 */
+.photo-viewer {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.82);
+  display: none; align-items: center; justify-content: center; padding: 16px;
+}
+.photo-viewer.open { display: flex; }
+.photo-viewer img { max-width: 100%; max-height: 86vh; border-radius: var(--r-md); }
+.photo-viewer-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,.92); color: #111;
+  font-size: 20px; font-weight: 800; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer;
+}
+.photo-viewer-close:hover { background: #fff; color: #111; transform: none; box-shadow: none; }
 
 /* ======= Assignee badge ======= */
 .assignee-badge {

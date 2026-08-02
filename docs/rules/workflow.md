@@ -29,7 +29,7 @@ CI（`.github/workflows/check.yml`）は2ジョブ:
 
 CI は**最低限**しか見ない。UI を触ったら**手元の回帰スイート**も通す。
 
-### 回帰スイート（`tests/regression/` の11本）
+### 回帰スイート（`tests/regression/` の12本）
 
 インメモリの Firebase スタブ（`tests/fb-stub.js`）で家族データを再現して動かす。
 本物の Firebase には一切つながないので、オフラインでも走る。
@@ -47,6 +47,7 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `history-close-test` / `hist-footer-test` | 履歴シートが閉じる・実タッチでスクロールする |
 | `store-footer-test` | 店内モードの終了ボタン位置 |
 | `update-test` / `update-banner-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新 |
+| `photo-test` | 📷 写真の添付・表示・拡大・外す・店内モードのサムネイル |
 | `features-test` | 主要導線の通し |
 
 **共通処理は `tests/harness.mjs` に集約**している。各テストは3行で始まる:
@@ -102,6 +103,10 @@ node tests/docs-check.mjs
 
 `docs/screenshots/` は `docs/features.md` から参照している。UI を変えたら撮り直す。
 
-- 幅 **480px・256色**に最適化してから置く（17枚で 3.3MB → 837KB の実績）
+```bash
+node tests/capture-docs.mjs   # 17枚をまとめて撮り直す
+```
+
+- 幅 **480px・256色**に最適化してから置く（17枚で 3.3MB → 874KB の実績）
 - 固定のボトムナビや FAB が被る場合は、その1枚だけ `visibility:hidden` にして撮る
 - **テスト用のサンプルデータで撮る**。実データを混ぜない

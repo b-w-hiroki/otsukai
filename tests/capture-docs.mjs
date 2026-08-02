@@ -1,0 +1,87 @@
+// docs/screenshots/ を撮り直す。手順は docs/rules/workflow.md §4 を参照。
+//   node tests/capture-docs.mjs
+// テスト用のサンプルデータ（tests/fb-stub.js）で撮る。実データは混ぜない。
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { startHarness } from "./harness.mjs";
+
+const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "docs", "screenshots");
+const t = await startHarness({ shots: OUT, noAnimation: false });
+const { page, sleep } = t;
+const url = t.url;
+const shot=async n=>{await page.screenshot({path:`${OUT}/${n}.png`});console.log("  ✓",n);};
+
+await page.goto(url,{waitUntil:"domcontentloaded"});
+await page.waitForSelector("#screen-main",{state:"visible",timeout:20000});
+await sleep(1200);
+await shot("01-home");                                    // ホーム（そろそろ切れるかも＋チェックリスト）
+
+// そろそろ切れるかも（拡大）
+await page.locator(".lowstock-card").scrollIntoViewIfNeeded(); await sleep(300);
+await page.locator(".lowstock-card").screenshot({path:`${OUT}/02-lowstock.png`}); console.log("  ✓ 02-lowstock");
+
+// 追加シート
+await page.click("#fab-add"); await sleep(700);
+await page.fill("#new-name","りんご");
+await page.click('#new-category .cat-chip[data-cat="food"]'); await sleep(300);
+await shot("03-add-sheet");
+await page.click("#btn-sheet-close"); await sleep(500);
+
+// 買うよ → 買ったよ
+await page.locator(".check-row",{hasText:"牛乳"}).first().locator(".check-circle").click();
+await sleep(800); await shot("04-claimed");
+
+// 詳細展開
+await page.locator(".check-row",{hasText:"トイレットペーパー"}).first().locator(".check-main").click();
+await sleep(600); await shot("05-detail");
+await page.locator(".check-row",{hasText:"トイレットペーパー"}).first().locator(".check-main").click(); await sleep(400);
+
+// 店内モード
+await page.click("#btn-store-mode"); await sleep(800); await shot("06-store-mode");
+await page.locator(".store-item").first().click(); await sleep(700); await shot("07-store-checked");
+await page.click("#btn-store-mode-close"); await sleep(500);
+
+// よく買うもの
+await page.click("#btn-shortcut-toggle"); await sleep(700); await shot("08-shortcuts");
+await page.click("#btn-shortcut-toggle"); await sleep(400);
+
+// 履歴
+await page.click("#btn-history-float"); await sleep(900); await shot("09-history");
+await page.click("#btn-history-close"); await sleep(500);
+
+// ミッション（ウィークリー・ストリーク・ごほうび）
+await page.click('[data-tab="missions"]'); await sleep(800); await shot("10-missions");
+
+// ストック
+await page.click('[data-tab="stock"]'); await sleep(800); await shot("11-stock");
+// 品目ごとの「買う間隔」
+await page.locator(".stock-item").filter({hasText:"しょうゆ"}).first().click(); await sleep(700);
+await shot("16-stock-cycle");
+await page.click("#stock-detail-sheet .sheet-close").catch(()=>{});
+await page.click("#sheet-backdrop").catch(()=>{}); await sleep(500);
+
+// 設定
+await page.click('[data-tab="settings"]'); await sleep(800); await shot("12-settings");
+await page.locator("#opt-low-lead").scrollIntoViewIfNeeded(); await sleep(300);
+// 固定のボトムナビ/FAB がカードに重なるので、この1枚だけ隠して撮る
+await page.addStyleTag({content:".bottom-nav,#fab-add,.float-btns,#btn-history-float{visibility:hidden !important;}"});
+await sleep(200);
+await page.locator("#opt-low-lead").locator("xpath=ancestor::div[contains(@class,'card')][1]")
+  .screenshot({path:`${OUT}/17-lowlead-setting.png`}); console.log("  ✓ 17-lowlead-setting");
+await page.reload({waitUntil:"domcontentloaded"});
+await page.waitForSelector("#screen-main",{state:"visible",timeout:20000}); await sleep(1200);
+await page.click('[data-tab="settings"]'); await sleep(800);
+await page.click("#btn-member-admin-toggle"); await sleep(400);
+await page.locator("#member-admin-card").scrollIntoViewIfNeeded(); await sleep(300);
+await shot("13-member-admin");
+await page.locator("#btn-refresh-data").scrollIntoViewIfNeeded(); await sleep(300);
+await shot("14-maintenance");
+
+// ダークモード
+await page.selectOption("#opt-theme","dark"); await sleep(700);
+await page.click('[data-tab="requests"]'); await sleep(700);
+await shot("15-dark");
+await page.selectOption("#opt-theme","auto").catch(()=>{});
+
+console.log("完了");
+await t.finish();

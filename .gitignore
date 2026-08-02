@@ -3,4 +3,5 @@ package.json
 package-lock.json
 
 # テストの出力（スクショ）
+tests/**/shots/
 tests/shots/

@@ -46,7 +46,7 @@ await page.locator("#history-sheet .sheet-content").evaluate(el => el.scrollTop 
 await sleep(400);
 const cb2 = await page.locator("#btn-history-close").boundingBox();
 check("スクロール後も✕が画面内(sticky)", cb2 && cb2.y >= 0 && cb2.y + cb2.height <= 844, cb2 ? "y=" + Math.round(cb2.y) : "not found");
-await page.screenshot({ path: new URL(".", import.meta.url).pathname + "shots/hist-scrolled.png" });
+await page.screenshot({ path: `${OUT}/hist-scrolled.png` });
 await page.click("#btn-history-close");
 await sleep(500);
 check("スクロール後も閉じられる", await page.locator("#history-sheet.open").count() === 0);
