@@ -3,7 +3,7 @@ import { startHarness } from "../harness.mjs";
 const t = await startHarness();
 const { url, browser, ctx, page, errs, sleep, OUT } = t;
 const check = t.check;
-// DOMから状態を読む（app.js の state は classic script のトップレベル const なので
+// DOMから状態を読む（app-core.js の state は classic script のトップレベル const なので
 // window 経由では参照できない）
 const statusOf = (name) => page.evaluate((n)=>{
   const row = [...document.querySelectorAll("#list-open .check-row")]

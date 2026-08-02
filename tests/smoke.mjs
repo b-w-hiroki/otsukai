@@ -1,7 +1,7 @@
 // おうちのおつかい — E2E スモークテスト
 // アプリをヘッドレス Chromium で開き、以下を確認する:
 //   1. ページが読み込まれ、認証画面（#screen-auth）が表示されること
-//      （= Firebase SDK・firebase-config.js・app.js の読み込みと初期化が成功）
+//      （= Firebase SDK・firebase-config.js・app-*.js の読み込みと初期化が成功）
 //   2. 未捕捉の JS 例外（pageerror）がゼロであること
 // 広告・フォント等のネットワーク由来の console エラーは失敗にしない（ログのみ）。
 //

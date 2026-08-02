@@ -194,7 +194,7 @@
         <div id="list-open"></div>
         <!-- 広告枠 (i-mobile「トップページ バナー」スポット)
              initAdSlots() / injectImobileBanner() で SP/PC 別タグを端末判定して注入。
-             スポットIDの差し替えは app.js 末尾の initAdSlots() の引数で行う。 -->
+             スポットIDの差し替えは app-init.js の initAdSlots() の引数で行う。 -->
         <div id="ad-slot-requests" class="ad-slot">
           <div class="ad-label">広告</div>
           <div class="ad-content"></div>
@@ -460,10 +460,7 @@
           <button id="btn-sheet-close" class="sheet-close">✕</button>
         </div>
         <div class="setup-form">
-          <div class="row" style="gap:6px;">
-            <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" style="flex:1;min-width:0;" />
-            <button id="btn-voice-input" class="mic-btn" aria-label="音声で入力" title="音声で入力">🎤</button>
-          </div>
+          <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" />
           <!-- 写真（任意）: どれを買ってきてほしいか一目で伝えるため -->
           <div>
             <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">写真（任意・どれを買うか伝わります）</label>
@@ -657,6 +654,18 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <script src="./firebase-config.js"></script>
-  <script src="./app.js"></script>
+  <!-- app.js を機能単位で分割（旧: 単一の app.js 3,758行）。
+       クラシックスクリプトのままなのでグローバルスコープを共有し、挙動は分割前と同一。
+       読み込み順はこの並び順で保証される（後続ファイルは先行ファイルの関数・状態を参照できる）。 -->
+  <script src="./app-core.js"></script>
+  <script src="./app-requests.js"></script>
+  <script src="./app-rewards.js"></script>
+  <script src="./app-stock.js"></script>
+  <script src="./app-mission-admin.js"></script>
+  <script src="./app-render.js"></script>
+  <script src="./app-notify.js"></script>
+  <script src="./app-store-lowstock.js"></script>
+  <script src="./app-history.js"></script>
+  <script src="./app-init.js"></script>
 </body>
 </html>

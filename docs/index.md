@@ -72,7 +72,7 @@
 
 | 成果物 | 置き場 | 名前の付け方 |
 |---|---|---|
-| アプリ本体 | **ルート直下**（`index.html` / `app.js` / `styles.css` / `sw.js`） | 動かさない。移動するとPWAの配信パスが壊れる |
+| アプリ本体 | **ルート直下**（`index.html` / `app-*.js`（機能ごとに10分割） / `styles.css` / `sw.js`） | 動かさない。移動するとPWAの配信パスが壊れる |
 | 説明用スクショ | `docs/screenshots/` | `NN-名前.png`（連番・480px幅・256色） |
 | ドキュメント | `docs/` | 小文字ハイフン区切り。`hub.html` から参照されているものはリネーム禁止 |
 | ルール | `docs/rules/` | 小文字1語（`ui` / `deploy` / `workflow`） |
@@ -100,7 +100,7 @@
 
 | 場所 | 役割 | 入口 |
 |---|---|---|
-| **ルート直下** | アプリ本体（PWA） | `index.html` → `app.js` |
+| **ルート直下** | アプリ本体（PWA） | `index.html` → `app-core.js`（読み込み順は `index.html` の `<script>` 参照） |
 | `docs/` | ドキュメント一式 | **このファイル** |
 | `docs/rules/` | 決め事 | `ui.md` / `deploy.md` / `workflow.md` |
 | `docs/screenshots/` | 説明用スクショ17枚 | `features.md` から参照 |

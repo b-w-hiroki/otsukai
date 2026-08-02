@@ -10,7 +10,7 @@
 | # | やること | 忘れるとどうなる |
 |---|---|---|
 | 1 | `sw.js` の `CACHE = "otsukai-vNN"` を**上げる** | 利用者に新しいコードが届かない。更新バナーも出ない |
-| 2 | `node --check app.js` / `node --check functions/index.js` | 構文エラーが本番に出る |
+| 2 | `node --check app-*.js` / `node --check functions/index.js` | 構文エラーが本番に出る |
 | 3 | 回帰スイートを通す（→ `workflow.md`） | 直したはずの不具合が戻る |
 | 4 | サーバーを変えたなら `firebase deploy --only functions` | 画面と通知の判定がズレる |
 | 5 | DBルールを変えたなら **Firebase Console に手で貼る** | 書き込みが権限エラーで落ちる |
@@ -100,7 +100,7 @@ firebase deploy --only functions
 
 ## 4. PWA の更新が届く仕組み（3段構え）
 
-PWA は `app.js` / `styles.css` をキャッシュ優先で配信するため、放置すると古い版で固定される。
+PWA は `app-*.js` / `styles.css` をキャッシュ優先で配信するため、放置すると古い版で固定される。
 そのため次の3段構えを入れている。
 
 1. **自動検知** — 新バージョンを検知したら上部にバナー → タップで即切り替え
