@@ -43,16 +43,25 @@ const row = page.locator(".check-row").filter({ hasText: "詰め替えシャン�
 check("追加された", (await row.count()) === 1);
 check("Storage にアップロードされた",
   (await page.evaluate(() => (self.__uploadedPhotos || []).some((p) => p.includes("/requests/")))), "");
-check("一覧の行に 📷 バッジが出る", (await row.locator(".check-badge", { hasText: "📷" }).count()) === 1);
+check("一覧の行にサムネイルが出る", (await row.locator(".photo-thumb img").count()) === 1);
+const thumbBox = await row.locator(".photo-thumb").boundingBox();
+check("サムネイルのタップ領域が44px以上", thumbBox.width >= 44 && thumbBox.height >= 44,
+  `${Math.round(thumbBox.width)}x${Math.round(thumbBox.height)}`);
 await t.shot("photo-2-row");
+
+// --- 行のサムネイルをタップすると、詳細ではなく写真が開く ---
+await row.locator(".photo-thumb").click();
+await sleep(500);
+check("行のサムネイルのタップで拡大が開く", await page.locator("#photo-viewer.open").isVisible());
+check("そのとき詳細は開かない", (await page.locator(".check-detail").count()) === 0);
+await page.click("#btn-photo-viewer-close");
+await sleep(400);
 
 // --- 行を開くと写真が出る ---
 await row.locator(".check-main").click();
 await sleep(600);
 const detailImg = page.locator(".check-detail .req-photo");
 check("詳細に写真が出る", (await detailImg.count()) === 1);
-check("バッジは詳細を開くと消える（重複表示しない）",
-  (await row.locator(".check-badge", { hasText: "📷" }).count()) === 0);
 await t.shot("photo-3-detail");
 
 // --- タップで拡大される ---
@@ -74,7 +83,29 @@ await page.click("#btn-req-photo-clear");
 await page.click("#btn-add-request");
 await sleep(1000);
 const row2 = page.locator(".check-row").filter({ hasText: "詰め替えシャンプー" }).first();
-check("外すと 📷 バッジが消える", (await row2.locator(".check-badge", { hasText: "📷" }).count()) === 0);
+check("外すとサムネイルが消える", (await row2.locator(".photo-thumb").count()) === 0);
+
+// --- 履歴にもサムネイルが出る ---
+await page.click("#fab-add");
+await sleep(600);
+await page.fill("#new-name", "ホットケーキミックス");
+await pick("#req-photo-input");
+await sleep(400);
+await page.click("#btn-add-request");
+await sleep(1200);
+const hRow = page.locator(".check-row").filter({ hasText: "ホットケーキミックス" }).first();
+await hRow.locator(".check-circle").click();  // 買うよ
+await sleep(700);
+await hRow.locator(".check-done-btn").click(); // 買ったよ → 履歴へ
+await sleep(1000);
+await page.click("#btn-history-float");
+await sleep(900);
+check("履歴のカードにもサムネイルが出る",
+  (await page.locator("#history-list .req-row").filter({ hasText: "ホットケーキミックス" })
+     .first().locator(".photo-thumb img").count()) === 1);
+await t.shot("photo-6-history");
+await page.click("#btn-history-close");
+await sleep(500);
 
 // --- 店内モードにサムネイルが出る ---
 await page.click("#fab-add");
