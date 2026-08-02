@@ -148,7 +148,8 @@ iOS は **Apple Developer Program が年 $99(約 15,000 円)継続コスト**な
 
 ### i-mobile 広告
 - **Apple**: SKAdNetwork 対応推奨。i-mobile が対応してれば問題なし(要確認)
-- **Google**: Families ポリシー対象なら**非パーソナライズ広告のみ**等の制限。i-mobile 管理画面でカテゴリ除外を必ず設定
+- **Google**: Families ポリシー対象なら**非パーソナライズ広告のみ**等の制限
+- カテゴリ除外設定の状況は [`monetization-ideas.md` の残タスク](./monetization-ideas.md#残タスク--追加候補)が正本（ここでは持たない）
 - 両ストアでサードパーティ広告 SDK は申告必須
 
 ### Firebase

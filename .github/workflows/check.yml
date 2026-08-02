@@ -63,6 +63,16 @@ jobs:
             console.log("precache files all exist");
           '
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: ドキュメント整合性（リンク・二重管理・正本レジストリ）
+        run: node tests/docs-check.mjs
+
   smoke:
     runs-on: ubuntu-latest
     steps:
@@ -77,3 +87,19 @@ jobs:
           npx playwright install --with-deps chromium
       - name: スモークテスト（起動＋認証画面表示＋未捕捉エラーゼロ）
         run: node tests/smoke.mjs
+
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Playwright をインストール
+        run: |
+          npm init -y > /dev/null
+          npm i playwright > /dev/null
+          npx playwright install --with-deps chromium
+      - name: 回帰スイート（インメモリ Firebase スタブで主要導線を通す）
+        run: node tests/run-all.mjs

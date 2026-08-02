@@ -579,6 +579,42 @@
       <div
         class="resource-item"
         role="button" tabindex="0"
+        aria-label="ドキュメント索引をページ内で開く"
+        onclick="openDoc('docs/index.md','ドキュメント索引','docs/index.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/index.md','ドキュメント索引','docs/index.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">🗂️ ドキュメント索引</div>
+          <div class="res-desc">どこに何があるか・正本レジストリ（まずここ）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
+
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
+        aria-label="機能ガイドをページ内で開く"
+        onclick="openDoc('docs/features.md','機能ガイド','docs/features.md')"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/features.md','機能ガイド','docs/features.md')}"
+      >
+        <div class="res-icon" aria-hidden="true">
+          <svg width="20" height="20"><use href="#i-doc"/></svg>
+        </div>
+        <div class="res-info">
+          <div class="res-title">機能ガイド</div>
+          <div class="res-desc">スクショ付きの機能仕様12章（利用者向け）</div>
+        </div>
+        <span class="res-tag">Markdown</span>
+        <svg class="res-chev" width="16" height="16" aria-hidden="true"><use href="#i-chev"/></svg>
+      </div>
+
+      <div
+        class="resource-item"
+        role="button" tabindex="0"
         aria-label="リリース計画をページ内で開く"
         onclick="openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md')"
         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDoc('docs/release-plan.md','Android / iOS リリース計画','docs/release-plan.md')}"
