@@ -762,6 +762,16 @@ function setReqPhotoPreview(url) {
   if (input && !url) input.value = "";
 }
 
+// 一覧の行に出す写真サムネイル。
+// バッジだけだと「写真がある」ことに気づけないので、中身を小さく見せる。
+// タップ領域は44px（ui.md）。押すと拡大表示が開く。
+function photoThumbHtml(r) {
+  if (!r.photoUrl) return "";
+  return `<button class="photo-thumb" data-photo="${escapeHtml(r.photoUrl)}" aria-label="${escapeHtml(r.name)}の写真を見る">
+    <img src="${escapeHtml(r.photoUrl)}" alt="" />
+  </button>`;
+}
+
 // 写真を拡大して見る（買い物中に細部を確かめたいことがあるため）
 function openPhotoViewer(url) {
   if (!url) return;
@@ -2007,6 +2017,7 @@ function compactCard(r, i = 0) {
 
   return `<div class="${rowClass}" style="--i:${i}">
     <div class="req-row-main">
+      ${photoThumbHtml(r)}
       <div class="req-row-name-col${canEdit ? ' editable' : ''}"${canEdit ? ` data-edit-id="${r.id}"` : ''}>
         <span class="req-row-name">${escapeHtml(r.name)}</span>
         ${hintsHtml}
@@ -2048,7 +2059,6 @@ function checkRow(r) {
   if (r.diff && r.diff !== "normal") badges.push(`<span class="check-badge">${r.diff === "hard" ? "💪" : "😅"}</span>`);
   if (r.assignedTo && r.status === "open") badges.push(`<span class="check-badge">📌${memberEmoji(r.assignedTo)}</span>`);
   if (commentCount > 0 || hasUnread) badges.push(`<span class="check-badge${hasUnread ? " unread" : ""}">💬${commentCount || ""}</span>`);
-  if (r.photoUrl && !detailOpen) badges.push(`<span class="check-badge">📷</span>`);
   const hasExtra = r.memo || r.budget > 0 || r.brand;
   if (hasExtra && !detailOpen) badges.push(`<span class="check-badge muted">📝</span>`);
 
@@ -2064,6 +2074,7 @@ function checkRow(r) {
 
   let html = `<div class="check-row${r.urgent ? " urgent" : ""}${isClaimed ? " claimed" : ""}${detailOpen ? " open" : ""}" data-row="${r.id}">
     <button class="${circleClass}" data-check="${r.id}" aria-label="${escapeHtml(circleLabel)}">${circleContent}</button>
+    ${photoThumbHtml(r)}
     <div class="check-main" data-detail-toggle="${r.id}" role="button" aria-expanded="${detailOpen}">
       <span class="check-name">${escapeHtml(r.name)}</span>
       <span class="check-badges">${badges.join("")}${claimerHtml}</span>
@@ -2798,7 +2809,7 @@ function renderStoreMode() {
     if (r.memo) subs.push(`📝${escapeHtml(r.memo)}`);
     html += `<button class="store-item${isDone ? " checked" : ""}${r.urgent && !isDone ? " urgent" : ""}" data-store="${r.id}">
       <span class="store-item-box">${isDone ? "✓" : ""}</span>
-      ${r.photoUrl ? `<img class="store-item-thumb" src="${escapeHtml(r.photoUrl)}" alt="" data-photo="${escapeHtml(r.photoUrl)}" />` : ""}
+      ${r.photoUrl ? `<span class="photo-thumb store-thumb" data-photo="${escapeHtml(r.photoUrl)}" role="button" aria-label="写真を見る"><img class="store-item-thumb" src="${escapeHtml(r.photoUrl)}" alt="" /></span>` : ""}
       <span style="flex:1;min-width:0;">
         <span class="store-item-name">${r.urgent && !isDone ? "🔥 " : ""}${escapeHtml(r.name)}</span>
         ${subs.length ? `<span class="store-item-sub">${subs.join(" ・ ")}</span>` : ""}
