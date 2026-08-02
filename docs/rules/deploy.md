@@ -44,20 +44,32 @@
 | **おつかいの写真** | `families/{familyId}/requests/{requestId}` |
 
 Storage のルールも Console 管理（リポジトリに `storage.rules` は置いていない）。
-**`families/{familyId}/{allPaths=**}` の形で家族メンバーに許可**しておくと、
-以後パスを増やしても追加作業が要らない。
+**`families/{familyId}/{allPaths=**}` でまとめて許可**しておくと、以後パスを増やしても追加作業が要らない。
+
+Firebase Console → Storage → ルール に、そのまま貼れる内容:
 
 ```
-match /families/{familyId}/{allPaths=**} {
-  allow read, write: if request.auth != null
-    && exists(/databases/(default)/documents/...) == false   // RTDB 参照は不可
-    && request.auth.uid != null;
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 家族の写真（ストック・おつかい）
+    match /families/{familyId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      // 画像だけ・5MBまで。アプリ側で長辺1000pxに圧縮しているので通常は150KB前後
+      allow create, update: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+  }
 }
 ```
 
-> ⚠️ Storage のルールから RTDB のメンバー表は参照できない。
-> 最低限「ログイン済みユーザーのみ」＋パスに familyId を含める運用にしている。
-> 権限が無いと**写真だけ**保存されない（依頼の内容は保存される）。
+> ⚠️ **Storage のルールから RTDB のメンバー表は参照できない**（別サービスのため）。
+> そのため「ログイン済みなら家族の写真を読み書きできる」までしか絞れない。
+> サイズと種類の制限を入れておくと、万一の悪用でも課金が膨らまない。
+>
+> 権限が無いと**写真だけ**保存されない（依頼やストックの内容は保存される）。
 
 ---
 
