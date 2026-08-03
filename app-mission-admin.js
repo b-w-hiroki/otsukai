@@ -2,6 +2,25 @@
 // 元 app.js の 1659〜1858行目。index.html の <script> 順で他の app-*.js と読み込み順が保証される
 // （クラシックスクリプトなのでグローバルスコープを共有。type="module" にはしていない）。
 
+// ===== ミッションタブ内のサブタブ（ウィークリー/ごほうび/ミッション） =====
+// ⚡ウィークリー・🎁ごほうび・🎯ミッションが縦積みで長くなっていたための切り替え。
+// 🔥ストリークだけは常に見えていてほしい情報なので、サブタブの外（上部）に置いたまま。
+function switchMissionSubtab(key) {
+  document.querySelectorAll(".mission-subtab").forEach((el) => {
+    el.classList.toggle("active", el.dataset.msub === key);
+  });
+  document.querySelectorAll("#tab-missions .seg-btn").forEach((btn) => {
+    const on = btn.dataset.msub === key;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", String(on));
+  });
+}
+function wireMissionSubtabs() {
+  document.querySelectorAll("#tab-missions .seg-btn[data-msub]").forEach((btn) => {
+    btn.addEventListener("click", () => switchMissionSubtab(btn.dataset.msub));
+  });
+}
+
 // ===== Mission Management =====
 function openMissionSheet() {
   $("mission-title-input").value = "";

@@ -47,6 +47,8 @@ function resetSheetToAddMode() {
   setReqPhotoPreview("");
   pendingReqPhoto = null;
   existingReqPhotoUrl = "";
+  $("new-cycle-wrap").style.display = "none";
+  $("new-cycle-days").value = "";
 }
 
 // 追加/編集シートの写真プレビュー。url が空なら「タップして選ぶ」に戻す。
@@ -235,6 +237,24 @@ function isShortcutRegistered(name) {
   return Object.values(state.shortcuts || {}).some((s) => s && s.name === name);
 }
 
+// よく買うものを登録したら、同名のストック項目を自動的に用意する。
+// 二重管理（よく買うもの一覧とストック一覧を別々に手入力）を避け、既存の
+// cycleDays ベースの「⏳ そろそろ切れるかも」予測（app-stock.js）がそのまま効くようにする。
+// 品によって持つ期間が違うので、cycleDays を指定すればここで反映される。
+// マッチングはストック本体と同じく品名の文字列一致（IDでの紐付けはしない）。
+async function ensureStockForShortcut(name, cycleDays) {
+  const existing = Object.entries(state.stocks || {}).find(([, s]) => s && s.name === name);
+  if (existing) {
+    // 既にストックにある品なら、買う間隔だけ反映する（在庫レベルは変えない）
+    if (cycleDays > 0) await updateStockCycle(existing[0], cycleDays);
+    return;
+  }
+  const item = { name, level: "ok", updatedBy: state.uid, updatedAt: now() };
+  if (cycleDays > 0) { item.cycleDays = cycleDays; item.lastFilledAt = now(); }
+  const id = familyRef().child("stocks").push().key;
+  await dbOp(familyRef().child("stocks/" + id).set(item), "ストックへの登録に失敗しました");
+}
+
 // リスト上の項目を、その内容ごと「よく買うもの」に登録する
 async function addShortcutFromRequest(id) {
   const r = state.requests[id];
@@ -251,6 +271,7 @@ async function addShortcutFromRequest(id) {
   if (r.category) entry.category = r.category;
   const ref = familyRef().child("shortcuts").push();
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
+  await ensureStockForShortcut(r.name); // 買う間隔はここでは指定しない（ストックタブから後で設定可）
   showToast(`⭐ 「${r.name}」をよく買うものに登録しました`, { sound: false });
   renderRequests();
   renderHistory();
@@ -300,6 +321,8 @@ function openShortcutRegisterSheet() {
   $("new-diff").value = "normal";
   $("new-assignee").value = "";
   setSelectedCategory(null);
+  $("new-cycle-days").value = "";
+  $("new-cycle-wrap").style.display = "";
   // ショートカット登録モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "⭐ よく買うものを登録";
   $("btn-add-request").textContent = "登録する";
@@ -317,6 +340,12 @@ async function addShortcutFromSheet() {
   const budget = parseInt($("new-budget").value, 10);
   const brand = $("new-brand").value.trim();
   const assignedTo = $("new-assignee").value;
+  const cycleRaw = $("new-cycle-days").value.trim();
+  if (cycleRaw && !(parseInt(cycleRaw, 10) >= 1 && parseInt(cycleRaw, 10) <= 365)) {
+    showToast("買う間隔は1〜365日で入力してください");
+    return;
+  }
+  const cycleDays = cycleRaw ? parseInt(cycleRaw, 10) : 0;
   const entry = { name, diff, urgent: urgent || false, createdAt: now(), createdBy: state.uid };
   if (memo) entry.memo = memo;
   if (budget > 0) entry.budget = budget;
@@ -325,6 +354,7 @@ async function addShortcutFromSheet() {
   if (selectedCategory) entry.category = selectedCategory;
   const ref = familyRef().child("shortcuts").push();
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
+  await ensureStockForShortcut(name, cycleDays);
   closeSheet();
   showToast(`⭐ 「${name}」をよく買うものに登録しました`);
 }
