@@ -431,10 +431,16 @@ function renderShortcuts() {
     });
   });
 }
+function openShortcutPanel() {
+  $("shortcut-sheet").classList.add("open");
+  $("sheet-backdrop").classList.add("open");
+  $("btn-shortcut-toggle").classList.add("open");
+}
 function closeShortcutPanel() {
-  const panel = $("shortcut-panel");
+  const sheet = $("shortcut-sheet");
   const btn = $("btn-shortcut-toggle");
-  if (panel) panel.classList.remove("open");
+  if (sheet) sheet.classList.remove("open");
+  $("sheet-backdrop").classList.remove("open");
   if (btn) btn.classList.remove("open");
 }
 async function claimRequest(id) {

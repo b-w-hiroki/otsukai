@@ -17,9 +17,11 @@ check("手入力の間隔(コンタクト洗浄液・あと1日)は履歴ゼロ�
 check("手入力は「約」を付けずに言い切る", /(?<!約)30日ごと/.test(txt), (txt.match(/[^\n]*30日ごと[^\n]*/)||[""])[0].trim());
 const baseCount = await page.locator(".lowstock-item").count();
 
-// ---- 設定タブ: 予告日数のセレクトがある ----
+// ---- 設定タブ: 予告日数のセレクトがある（アコーディオンを開く） ----
 await page.click('[data-tab="settings"]');
 await sleep(600);
+await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]');
+await sleep(400);
 check("設定に予告日数のセレクトがある", (await page.locator("#opt-low-lead").count())===1);
 check("既定値は2日前", (await page.locator("#opt-low-lead").inputValue())==="2");
 await page.screenshot({path:`${OUT}/ll-settings.png`});

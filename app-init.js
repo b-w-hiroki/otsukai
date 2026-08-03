@@ -33,6 +33,34 @@ function wireTabs() {
   });
 }
 
+// ===== 設定タブ: 各カードをアコーディオンに（長いスクロールを避ける） =====
+// 開閉状態は端末ごとに記憶する（テーマ/サウンドと同じ localStorage の使い方）。
+// renderSettings() は個々の要素を書き換えるだけでカードのDOM自体は作り直さないため、
+// ここで付けた open/closed クラスは再描画をまたいでそのまま残る。
+function settingsAccState() {
+  try { return JSON.parse(localStorage.getItem("settingsAccOpen") || "{}"); } catch (e) { return {}; }
+}
+function setSettingsAccOpen(id, open) {
+  const st = settingsAccState();
+  st[id] = open;
+  localStorage.setItem("settingsAccOpen", JSON.stringify(st));
+}
+function wireSettingsAccordion() {
+  const saved = settingsAccState();
+  document.querySelectorAll("#tab-settings .settings-acc").forEach((card) => {
+    if (saved[card.dataset.acc]) card.classList.remove("closed");
+  });
+  document.querySelectorAll("#tab-settings [data-acc-toggle]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".settings-acc");
+      const willOpen = card.classList.contains("closed");
+      card.classList.toggle("closed", !willOpen);
+      btn.setAttribute("aria-expanded", String(willOpen));
+      setSettingsAccOpen(card.dataset.acc, willOpen);
+    });
+  });
+}
+
 // ===== Init =====
 function wireGlobalEvents() {
   $("btn-google").addEventListener("click", signInGoogle);
@@ -50,17 +78,12 @@ function wireGlobalEvents() {
   $("btn-howto").addEventListener("click", openHowto);
   $("btn-howto-close").addEventListener("click", closeHowto);
   $("howto-modal-backdrop").addEventListener("click", closeHowto);
-  // Shortcut float toggle
-  $("btn-shortcut-toggle").addEventListener("click", (e) => {
-    e.stopPropagation();
-    const panel = $("shortcut-panel");
-    const btn = $("btn-shortcut-toggle");
-    const isOpen = panel.classList.contains("open");
-    panel.classList.toggle("open", !isOpen);
-    btn.classList.toggle("open", !isOpen);
+  // Shortcut sheet（旧: フロートボタン上の吹き出しポップオーバー → 他と同じボトムシートに）
+  $("btn-shortcut-toggle").addEventListener("click", () => {
+    if ($("shortcut-sheet").classList.contains("open")) closeShortcutPanel();
+    else openShortcutPanel();
   });
-  $("shortcut-panel").addEventListener("click", (e) => e.stopPropagation());
-  document.addEventListener("click", closeShortcutPanel);
+  $("btn-shortcut-sheet-close").addEventListener("click", closeShortcutPanel);
   // Stock detail sheet
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
   $("fab-add").addEventListener("click", () => {
@@ -70,7 +93,7 @@ function wireGlobalEvents() {
     else openSheet();
   });
   $("btn-sheet-close").addEventListener("click", closeSheet);
-  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); });
+  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeShortcutPanel(); });
   $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
   $("btn-shortcut-register").addEventListener("click", openShortcutRegisterSheet);
   $("btn-shortcut-edit").addEventListener("click", () => {
@@ -82,6 +105,7 @@ function wireGlobalEvents() {
   $("btn-logout").addEventListener("click", signOut);
   wireCategoryChips();
   wireMissionSubtabs();
+  wireSettingsAccordion();
   $("btn-member-admin-toggle").addEventListener("click", () => {
     memberAdminOpen = !memberAdminOpen;
     updateMemberAdminToggle();

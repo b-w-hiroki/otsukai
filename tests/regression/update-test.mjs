@@ -16,8 +16,9 @@ const swState = await page.evaluate(async()=>{
 });
 check("Service Worker が登録される", swState.count >= 1, JSON.stringify(swState));
 
-// メンテナンスボタンが存在
+// メンテナンスボタンが存在（アコーディオンを開く）
 await page.click('[data-tab="settings"]'); await sleep(600);
+await page.click('.settings-acc[data-acc="maintenance"] [data-acc-toggle]'); await sleep(400);
 for (const id of ["btn-refresh-data","btn-force-update","btn-force-signout"]) {
   check(`${id} が存在`, await page.locator("#"+id).count()===1);
 }

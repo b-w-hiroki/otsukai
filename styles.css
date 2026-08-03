@@ -183,6 +183,25 @@ body {
   border: 1px solid var(--border);
 }
 
+/* ======= 設定タブ: カードをアコーディオンに（縦スクロールを短くする） =======
+   開閉状態は端末ごとに localStorage で記憶する（テーマ設定と同じ考え方）。 */
+.settings-acc-hdr {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; min-height: 44px; text-align: left;
+  background: none; border: none; box-shadow: none; padding: 0;
+  margin: 0 0 8px; cursor: pointer; color: inherit; font: inherit;
+}
+.settings-acc-hdr:hover:not(:disabled) { background: none; box-shadow: none; transform: none; }
+.settings-acc-hdr:active:not(:disabled) { transform: none; box-shadow: none; }
+.settings-acc-hdr h2 { margin: 0; flex: 1; }
+.settings-acc-chevron {
+  color: var(--muted); font-size: 13px; flex-shrink: 0;
+  transition: transform .2s ease; display: inline-block;
+}
+.settings-acc.closed .settings-acc-hdr { margin-bottom: 0; }
+.settings-acc.closed .settings-acc-chevron { transform: rotate(-90deg); }
+.settings-acc.closed .settings-acc-body { display: none; }
+
 /* ======= Typography ======= */
 h1, h2, h3 { margin: 0 0 8px; }
 h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
@@ -365,13 +384,12 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 .shortcut-area-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
 .shortcut-chips {
+  /* スクロールはシート本体（.sheet-content）に任せる。二重スクロールにしない */
   display: flex; flex-direction: column; gap: 5px;
   margin-bottom: 10px;
-  max-height: min(48vh, 360px); overflow-y: auto;
 }
 .shortcut-chips:empty { margin-bottom: 0; }
 .shortcut-chips-empty { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-.shortcut-add-row { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 2px; }
 
 /* カテゴリ見出し（スクロール中も上に貼り付く） */
 .shortcut-cat-hdr {
@@ -381,36 +399,41 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 .shortcut-cat-hdr:first-child { padding-top: 0; }
 
-/* 1件 = 1行。品名を大きく、ヒントは下段。行タップで追加 */
+/* 1件 = 1行。品名を大きく、ヒントは下段。行タップで追加
+   色は⚡よく買うものボタンと同じアンバー系統（--c-claimed）に揃える。
+   紫（--pri）はアプリ全体の主操作色なので、ここでは使わず区別する。 */
 .shortcut-row {
   display: flex; align-items: center; gap: 10px;
   width: 100%; text-align: left;
-  background: var(--pri-soft); color: var(--pri);
-  border: 1.5px solid var(--pri-mid);
+  background: var(--c-claimed-soft); color: var(--ink);
+  border: 1.5px solid var(--c-claimed);
   border-radius: var(--r-md);
   padding: 9px 12px;
   cursor: pointer; user-select: none;
-  box-shadow: 0 1px 4px rgba(99,102,241,0.10);
+  box-shadow: none;
   transition: background .12s, box-shadow .12s, transform .1s;
 }
-.shortcut-row:hover { background: #e5e4fa; box-shadow: 0 3px 10px rgba(99,102,241,0.18); }
+/* :not(:disabled) を付けて button:hover:not(:disabled) より詳細度を上げる
+   （無いとグローバルの紫ホバーに負けて色が化ける。過去からの潜在バグで、
+   今回の配色変更で紫と衝突して顕在化した） */
+.shortcut-row:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: 0 3px 10px rgba(245,158,11,0.18); transform: none; color: var(--ink); }
 .shortcut-row:active { transform: scale(0.98); }
 .shortcut-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .shortcut-row-name {
-  font-size: 14px; font-weight: 700; color: var(--pri-dark);
+  font-size: 14px; font-weight: 700; color: var(--ink);
   display: flex; align-items: center; gap: 5px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .shortcut-row-hints {
-  font-size: 11px; font-weight: 600; color: var(--pri-dark); opacity: .65;
+  font-size: 11px; font-weight: 600; color: var(--ink-2); opacity: .75;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .shortcut-row-add {
   flex-shrink: 0; width: 28px; height: 28px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: var(--pri); color: #fff;
+  border-radius: 50%; background: var(--c-claimed); color: #fff;
   font-size: 17px; font-weight: 800; line-height: 1;
-  box-shadow: 0 2px 6px rgba(99,102,241,0.35);
+  box-shadow: 0 2px 6px rgba(245,158,11,0.35);
 }
 .shortcut-row-del {
   flex-shrink: 0; width: 28px; height: 28px;
@@ -420,8 +443,8 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1;
 }
 .shortcut-row.editing { cursor: default; }
-.shortcut-row.editing:hover { background: var(--pri-soft); box-shadow: 0 1px 4px rgba(99,102,241,0.10); }
-#btn-shortcut-edit.open { border-color: var(--pri); background: #eeecfb; color: var(--pri-dark); }
+.shortcut-row.editing:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: none; }
+#btn-shortcut-edit.open { border-color: var(--c-claimed); background: var(--c-claimed-soft); color: var(--ink); }
 
 /* ======= Bottom nav (floating) ======= */
 .bottom-nav {
@@ -970,20 +993,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .shortcut-float-btn:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); box-shadow: 0 6px 22px rgba(245,158,11,0.52), 0 2px 8px rgba(0,0,0,0.14); }
 .shortcut-float-btn:active { filter: brightness(0.94); transform: translateY(0); }
 .shortcut-float-btn.open { filter: brightness(0.93); }
-.shortcut-panel {
-  display: none;
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 280px;
-  max-width: calc(100vw - 24px);
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--r-md); padding: 14px 16px;
-  box-shadow: var(--shadow-deep);
-  animation: fadeUp .18s ease;
-}
-.shortcut-panel.open { display: block; }
 
 .history-date-hdr {
   font-size: 12px; font-weight: 800; color: var(--muted);
