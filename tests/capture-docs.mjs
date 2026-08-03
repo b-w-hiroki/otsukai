@@ -43,6 +43,10 @@ await page.click("#btn-store-mode-close"); await sleep(500);
 
 // よく買うもの
 await page.click("#btn-shortcut-toggle"); await sleep(700); await shot("08-shortcuts");
+await page.click("#btn-shortcut-register"); await sleep(700);
+await page.fill("#new-name", "柔軟剤"); await page.fill("#new-cycle-days", "25");
+await shot("18-shortcut-cycle"); // 買う間隔（任意）欄
+await page.click("#btn-sheet-close"); await sleep(400);
 await page.click("#btn-shortcut-toggle"); await sleep(400);
 
 // 履歴

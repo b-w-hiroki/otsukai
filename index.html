@@ -508,6 +508,15 @@
               <option value="">👥 誰でもOK</option>
             </select>
           </div>
+          <!-- よく買うもの登録のときだけ表示。ストックと連動する買う間隔（任意） -->
+          <div id="new-cycle-wrap" style="display:none;">
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">買う間隔（任意）</label>
+            <div class="row" style="gap:6px;">
+              <input id="new-cycle-days" type="number" min="1" max="365" inputmode="numeric" placeholder="例: 7" style="flex:1;" />
+              <span style="font-size:13px;font-weight:700;white-space:nowrap;">日ごと</span>
+            </div>
+            <p class="muted" style="font-size:11px;margin-top:4px;">指定すると、ストックのこの品にも設定され「⏳ そろそろ切れるかも」でお知らせします。空欄なら買い物履歴から自動で学習します。</p>
+          </div>
           <div class="row" style="gap:8px;">
             <button id="btn-add-request" style="flex:1;">追加する</button>
           </div>
