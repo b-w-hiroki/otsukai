@@ -230,107 +230,142 @@
 
       <!-- Tab: Settings -->
       <section id="tab-settings" class="tab">
-        <div class="card">
-          <h2>👤 プロフィール</h2>
-          <div class="setup-form">
-            <label>名前</label>
-            <input id="set-name" maxlength="20" />
-            <label>絵文字アイコン</label>
-            <div id="set-emoji-picker" class="emoji-picker"></div>
-            <button id="btn-update-profile">更新</button>
-          </div>
-        </div>
-        <div class="card">
-          <h2>👨‍👩‍👧‍👦 家族</h2>
-          <p><b id="set-family-name"></b></p>
-          <p class="muted">招待コード（家族を増やすときに共有）</p>
-          <div class="row">
-            <input id="set-invite-code" readonly style="font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px;" />
-            <button id="btn-copy-code" class="ghost tiny-btn" style="white-space:nowrap;">コピー</button>
-          </div>
-          <h3 style="margin-top:12px;">メンバー</h3>
-          <div id="member-list" class="row wrap"></div>
-        </div>
-        <div class="card">
-          <h2>⏳ そろそろ切れるかも</h2>
-          <p class="muted" style="font-size:12px;margin:0 0 10px;">
-            買い忘れそうなものを、お買い物タブのいちばん上に先回りで出します。
-          </p>
-          <div class="row" style="gap:8px;">
-            <span style="font-weight:700;font-size:13px;white-space:nowrap;">知らせる時期</span>
-            <select id="opt-low-lead" style="flex:1;">
-              <option value="0">切れる当日に</option>
-              <option value="1">1日前から</option>
-              <option value="2">2日前から（おすすめ）</option>
-              <option value="3">3日前から</option>
-              <option value="5">5日前から</option>
-              <option value="7">1週間前から</option>
-              <option value="10">10日前から</option>
-              <option value="14">2週間前から</option>
-              <option value="30">1か月前から</option>
-            </select>
-          </div>
-          <p class="muted" style="font-size:11px;margin-top:6px;">
-            買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
-            品ごとの間隔は、ストックタブで品名をタップすると指定できます。
-          </p>
-        </div>
-        <div class="card">
-          <h2>🔔 通知</h2>
-          <label class="row">
-            <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
-            <span>サウンドを鳴らす</span>
-          </label>
-          <div class="row" style="margin-top:12px;gap:8px;">
-            <span style="font-weight:700;font-size:13px;">🎨 テーマ</span>
-            <select id="opt-theme" style="flex:1;">
-              <option value="auto">端末の設定に合わせる</option>
-              <option value="light">ライト</option>
-              <option value="dark">ダーク</option>
-            </select>
-          </div>
-
-          <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
-            <div class="row" style="justify-content:space-between;align-items:center;">
-              <span style="font-weight:700;">📱 買い物リマインド</span>
-              <button id="btn-enable-push" class="ghost tiny-btn" style="white-space:nowrap;">通知をオンにする</button>
+        <div class="card settings-acc closed" data-acc="profile">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>👤 プロフィール</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <div class="setup-form">
+              <label>名前</label>
+              <input id="set-name" maxlength="20" />
+              <label>絵文字アイコン</label>
+              <div id="set-emoji-picker" class="emoji-picker"></div>
+              <button id="btn-update-profile">更新</button>
             </div>
-            <p id="push-status" class="muted" style="font-size:12px;margin-top:6px;"></p>
+          </div>
+        </div>
+        <div class="card settings-acc closed" data-acc="family">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>👨‍👩‍👧‍👦 家族</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <p><b id="set-family-name"></b></p>
+            <p class="muted">招待コード（家族を増やすときに共有）</p>
+            <div class="row">
+              <input id="set-invite-code" readonly style="font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px;" />
+              <button id="btn-copy-code" class="ghost tiny-btn" style="white-space:nowrap;">コピー</button>
+            </div>
+            <h3 style="margin-top:12px;">メンバー</h3>
+            <div id="member-list" class="row wrap"></div>
+          </div>
+        </div>
+        <div class="card settings-acc closed" data-acc="lowlead">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>⏳ そろそろ切れるかも</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <p class="muted" style="font-size:12px;margin:0 0 10px;">
+              買い忘れそうなものを、お買い物タブのいちばん上に先回りで出します。
+            </p>
+            <div class="row" style="gap:8px;">
+              <span style="font-weight:700;font-size:13px;white-space:nowrap;">知らせる時期</span>
+              <select id="opt-low-lead" style="flex:1;">
+                <option value="0">切れる当日に</option>
+                <option value="1">1日前から</option>
+                <option value="2">2日前から（おすすめ）</option>
+                <option value="3">3日前から</option>
+                <option value="5">5日前から</option>
+                <option value="7">1週間前から</option>
+                <option value="10">10日前から</option>
+                <option value="14">2週間前から</option>
+                <option value="30">1か月前から</option>
+              </select>
+            </div>
+            <p class="muted" style="font-size:11px;margin-top:6px;">
+              買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
+              品ごとの間隔は、ストックタブで品名をタップすると指定できます。
+            </p>
+          </div>
+        </div>
+        <div class="card settings-acc closed" data-acc="notify">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>🔔 通知</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <label class="row">
+              <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
+              <span>サウンドを鳴らす</span>
+            </label>
+            <div class="row" style="margin-top:12px;gap:8px;">
+              <span style="font-weight:700;font-size:13px;">🎨 テーマ</span>
+              <select id="opt-theme" style="flex:1;">
+                <option value="auto">端末の設定に合わせる</option>
+                <option value="light">ライト</option>
+                <option value="dark">ダーク</option>
+              </select>
+            </div>
 
-            <div style="margin-top:12px;">
-              <label class="muted" style="font-size:13px;">通知する時刻（毎日・家族で共有）</label>
-              <div id="reminder-times-list" class="row wrap" style="gap:6px;margin:8px 0;"></div>
-              <div class="row" style="gap:6px;">
-                <input type="time" id="reminder-time-input" step="300" style="flex:1;" />
-                <button id="btn-add-reminder-time" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
+            <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+              <div class="row" style="justify-content:space-between;align-items:center;">
+                <span style="font-weight:700;">📱 買い物リマインド</span>
+                <button id="btn-enable-push" class="ghost tiny-btn" style="white-space:nowrap;">通知をオンにする</button>
               </div>
-              <p class="muted" style="font-size:11px;margin-top:6px;">設定した時刻に、未完了の買い物があると家族へ通知します。</p>
+              <p id="push-status" class="muted" style="font-size:12px;margin-top:6px;"></p>
+
+              <div style="margin-top:12px;">
+                <label class="muted" style="font-size:13px;">通知する時刻（毎日・家族で共有）</label>
+                <div id="reminder-times-list" class="row wrap" style="gap:6px;margin:8px 0;"></div>
+                <div class="row" style="gap:6px;">
+                  <input type="time" id="reminder-time-input" step="300" style="flex:1;" />
+                  <button id="btn-add-reminder-time" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
+                </div>
+                <p class="muted" style="font-size:11px;margin-top:6px;">設定した時刻に、未完了の買い物があると家族へ通知します。</p>
+              </div>
             </div>
           </div>
         </div>
-        <div id="member-admin-card" class="card" style="display:none;">
-          <h2>🛡️ メンバー管理（保護者）</h2>
-          <button id="btn-member-admin-toggle" class="section-toggle-btn" aria-expanded="false">🔧 管理メニューを開く <span class="toggle-chevron">▾</span></button>
-          <div id="member-admin-body" style="display:none;">
-            <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
-            <div id="member-admin-list"></div>
+        <div id="member-admin-card" class="card settings-acc closed" data-acc="member-admin" style="display:none;">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>🛡️ メンバー管理（保護者）</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <button id="btn-member-admin-toggle" class="section-toggle-btn" aria-expanded="false">🔧 管理メニューを開く <span class="toggle-chevron">▾</span></button>
+            <div id="member-admin-body" style="display:none;">
+              <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
+              <div id="member-admin-list"></div>
+            </div>
           </div>
         </div>
-        <div class="card">
-          <h2>📊 今月のおかいもの</h2>
-          <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
-        </div>
-        <div class="card">
-          <h2>🔧 メンテナンス</h2>
-          <p class="muted" style="font-size:12px;">表示が古い・データがおかしいと感じたときに使ってください。</p>
-          <div class="btn-stack">
-            <button id="btn-refresh-data" class="btn-block btn-neutral">🔄 データを再読み込み</button>
-            <button id="btn-force-update" class="btn-block btn-neutral">⬇️ アプリを最新版に更新</button>
-            <button id="btn-force-signout" class="btn-block btn-neutral">🚪 強制ログアウト（設定リセット）</button>
+        <div class="card settings-acc closed" data-acc="monthly">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>📊 今月のおかいもの</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
           </div>
-          <p class="muted" style="font-size:11px;margin-top:8px;">
-            現在のバージョン: <span id="app-version">—</span>
-          </p>
+        </div>
+        <div class="card settings-acc closed" data-acc="maintenance">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>🔧 メンテナンス</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <p class="muted" style="font-size:12px;">表示が古い・データがおかしいと感じたときに使ってください。</p>
+            <div class="btn-stack">
+              <button id="btn-refresh-data" class="btn-block btn-neutral">🔄 データを再読み込み</button>
+              <button id="btn-force-update" class="btn-block btn-neutral">⬇️ アプリを最新版に更新</button>
+              <button id="btn-force-signout" class="btn-block btn-neutral">🚪 強制ログアウト（設定リセット）</button>
+            </div>
+            <p class="muted" style="font-size:11px;margin-top:8px;">
+              現在のバージョン: <span id="app-version">—</span>
+            </p>
+          </div>
         </div>
         <div class="card">
           <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>

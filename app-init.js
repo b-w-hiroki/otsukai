@@ -33,6 +33,34 @@ function wireTabs() {
   });
 }
 
+// ===== 設定タブ: 各カードをアコーディオンに（長いスクロールを避ける） =====
+// 開閉状態は端末ごとに記憶する（テーマ/サウンドと同じ localStorage の使い方）。
+// renderSettings() は個々の要素を書き換えるだけでカードのDOM自体は作り直さないため、
+// ここで付けた open/closed クラスは再描画をまたいでそのまま残る。
+function settingsAccState() {
+  try { return JSON.parse(localStorage.getItem("settingsAccOpen") || "{}"); } catch (e) { return {}; }
+}
+function setSettingsAccOpen(id, open) {
+  const st = settingsAccState();
+  st[id] = open;
+  localStorage.setItem("settingsAccOpen", JSON.stringify(st));
+}
+function wireSettingsAccordion() {
+  const saved = settingsAccState();
+  document.querySelectorAll("#tab-settings .settings-acc").forEach((card) => {
+    if (saved[card.dataset.acc]) card.classList.remove("closed");
+  });
+  document.querySelectorAll("#tab-settings [data-acc-toggle]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".settings-acc");
+      const willOpen = card.classList.contains("closed");
+      card.classList.toggle("closed", !willOpen);
+      btn.setAttribute("aria-expanded", String(willOpen));
+      setSettingsAccOpen(card.dataset.acc, willOpen);
+    });
+  });
+}
+
 // ===== Init =====
 function wireGlobalEvents() {
   $("btn-google").addEventListener("click", signInGoogle);
@@ -77,6 +105,7 @@ function wireGlobalEvents() {
   $("btn-logout").addEventListener("click", signOut);
   wireCategoryChips();
   wireMissionSubtabs();
+  wireSettingsAccordion();
   $("btn-member-admin-toggle").addEventListener("click", () => {
     memberAdminOpen = !memberAdminOpen;
     updateMemberAdminToggle();

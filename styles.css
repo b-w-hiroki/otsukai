@@ -183,6 +183,25 @@ body {
   border: 1px solid var(--border);
 }
 
+/* ======= 設定タブ: カードをアコーディオンに（縦スクロールを短くする） =======
+   開閉状態は端末ごとに localStorage で記憶する（テーマ設定と同じ考え方）。 */
+.settings-acc-hdr {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; min-height: 44px; text-align: left;
+  background: none; border: none; box-shadow: none; padding: 0;
+  margin: 0 0 8px; cursor: pointer; color: inherit; font: inherit;
+}
+.settings-acc-hdr:hover:not(:disabled) { background: none; box-shadow: none; transform: none; }
+.settings-acc-hdr:active:not(:disabled) { transform: none; box-shadow: none; }
+.settings-acc-hdr h2 { margin: 0; flex: 1; }
+.settings-acc-chevron {
+  color: var(--muted); font-size: 13px; flex-shrink: 0;
+  transition: transform .2s ease; display: inline-block;
+}
+.settings-acc.closed .settings-acc-hdr { margin-bottom: 0; }
+.settings-acc.closed .settings-acc-chevron { transform: rotate(-90deg); }
+.settings-acc.closed .settings-acc-body { display: none; }
+
 /* ======= Typography ======= */
 h1, h2, h3 { margin: 0 0 8px; }
 h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }

@@ -58,10 +58,14 @@ await sleep(400);
 // 月間サマリーが実支出ベースに
 await page.click('[data-tab="settings"]');
 await sleep(600);
+await page.click('.settings-acc[data-acc="monthly"] [data-acc-toggle]');
+await sleep(400);
 const monthly = await page.locator("#monthly-summary").innerText();
 check("月間サマリーが実支出表示", monthly.includes("実際の支出"), monthly.replace(/\n/g," ").slice(0,60));
 
 // ダークモード
+await page.click('.settings-acc[data-acc="notify"] [data-acc-toggle]');
+await sleep(400);
 await page.selectOption("#opt-theme","dark");
 await sleep(600);
 const theme = await page.evaluate(()=>document.documentElement.getAttribute("data-theme"));
