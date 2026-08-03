@@ -405,13 +405,6 @@
       <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買うもの</button>
       <button id="btn-history-float" class="shortcut-float-btn history"><span style="font-size:17px;line-height:1;">🧾</span> 履歴</button>
       <button id="btn-store-mode" class="shortcut-float-btn store" aria-label="店内モードを開く"><span style="font-size:17px;line-height:1;">🏪</span> 店内</button>
-      <div id="shortcut-panel" class="shortcut-panel">
-        <div id="shortcut-chips" class="shortcut-chips"></div>
-        <div class="shortcut-add-row">
-          <button id="btn-shortcut-register" class="ghost" style="flex:1;font-size:13px;padding:9px 12px;">＋ よく買うものを登録</button>
-          <button id="btn-shortcut-edit" class="ghost" style="font-size:13px;padding:9px 12px;white-space:nowrap;">✏️ 編集</button>
-        </div>
-      </div>
     </div>
 
     <!-- How-to modal -->
@@ -603,6 +596,26 @@
           <button id="btn-mission-history-close" class="sheet-close">✕</button>
         </div>
         <div id="mission-history-body" style="padding-bottom:16px;"></div>
+      </div>
+    </div>
+
+    <!-- Shortcut sheet（旧: フロートボタン上の吹き出しポップオーバー。
+         品数が多いと画面からはみ出て操作しづらかったため、他のシートと同じ
+         下から出るボトムシートに統一した） -->
+    <div id="shortcut-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">⚡ よく買うもの</div>
+          <button id="btn-shortcut-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div id="shortcut-chips" class="shortcut-chips"></div>
+      </div>
+      <div class="sheet-footer">
+        <div class="row" style="gap:8px;">
+          <button id="btn-shortcut-register" class="ghost" style="flex:1;font-size:13px;padding:9px 12px;">＋ よく買うものを登録</button>
+          <button id="btn-shortcut-edit" class="ghost" style="font-size:13px;padding:9px 12px;white-space:nowrap;">✏️ 編集</button>
+        </div>
       </div>
     </div>
 

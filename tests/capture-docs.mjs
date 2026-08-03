@@ -47,7 +47,7 @@ await page.click("#btn-shortcut-register"); await sleep(700);
 await page.fill("#new-name", "柔軟剤"); await page.fill("#new-cycle-days", "25");
 await shot("18-shortcut-cycle"); // 買う間隔（任意）欄
 await page.click("#btn-sheet-close"); await sleep(400);
-await page.click("#btn-shortcut-toggle"); await sleep(400);
+// btn-shortcut-register を開いた時点で shortcut-sheet は自動的に閉じている（openShortcutRegisterSheet 内）
 
 // 履歴
 await page.click("#btn-history-float"); await sleep(900); await shot("09-history");
