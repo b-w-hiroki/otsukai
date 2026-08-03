@@ -802,7 +802,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   border: 1.5px solid var(--border);
 }
 .seg-btn {
-  flex: 1; padding: 7px 4px; border-radius: var(--r-full);
+  flex: 1; min-height: 44px; padding: 7px 4px; border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center;
   background: transparent; border: none; box-shadow: none;
   color: var(--muted); font-size: 12px; font-weight: 700;
   transition: background .18s, color .18s; letter-spacing: -0.2px;
@@ -813,6 +814,10 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   box-shadow: 0 1px 6px rgba(99,102,241,0.14);
 }
 .seg-btn.active:hover:not(:disabled) { transform: none; }
+
+/* ミッションタブ内のサブタブ切り替え（.seg-control で選択） */
+.mission-subtab { display: none; }
+.mission-subtab.active { display: block; animation: fadeUp .2s ease; }
 
 /* ======= Mission styles ======= */
 .mission-card {

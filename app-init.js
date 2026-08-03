@@ -81,6 +81,7 @@ function wireGlobalEvents() {
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
   wireCategoryChips();
+  wireMissionSubtabs();
   $("btn-member-admin-toggle").addEventListener("click", () => {
     memberAdminOpen = !memberAdminOpen;
     updateMemberAdminToggle();

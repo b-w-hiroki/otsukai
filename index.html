@@ -216,9 +216,16 @@
       <!-- Tab: Missions -->
       <section id="tab-missions" class="tab">
         <div id="streak-section"></div>
-        <div id="weekly-missions-section"></div>
-        <div id="rewards-section"></div>
-        <div id="missions-content"></div>
+        <!-- ウィークリー/ごほうび/ミッションが縦積みで長くなっていたため、
+             サブタブで切り替える（ストリークだけは常に見える位置に残す）。 -->
+        <div class="seg-control" role="tablist" aria-label="ミッションタブ内の切り替え">
+          <button type="button" class="seg-btn active" data-msub="weekly" role="tab" aria-selected="true">⚡ ウィークリー</button>
+          <button type="button" class="seg-btn" data-msub="rewards" role="tab" aria-selected="false">🎁 ごほうび</button>
+          <button type="button" class="seg-btn" data-msub="admin" role="tab" aria-selected="false">🎯 ミッション</button>
+        </div>
+        <div id="weekly-missions-section" class="mission-subtab active" data-msub="weekly"></div>
+        <div id="rewards-section" class="mission-subtab" data-msub="rewards"></div>
+        <div id="missions-content" class="mission-subtab" data-msub="admin"></div>
       </section>
 
       <!-- Tab: Settings -->
