@@ -142,6 +142,24 @@ export async function startHarness(opts = {}) {
       await send("touchEnd");
       await cdp.detach();
     },
+    /** 実タッチの左右スワイプ（ページ内タブの切替検証などに使う） */
+    swipeLeft(y, xFrom, xTo, steps = 14) { return this.swipeX(y, xFrom, xTo, steps); },
+    swipeRight(y, xFrom, xTo, steps = 14) { return this.swipeX(y, xFrom, xTo, steps); },
+    async swipeX(y, xFrom, xTo, steps = 14) {
+      const cdp = await ctx.newCDPSession(page);
+      const send = (type, x) =>
+        cdp.send("Input.dispatchTouchEvent", {
+          type,
+          touchPoints: type === "touchEnd" ? [] : [{ x, y }],
+        });
+      await send("touchStart", xFrom);
+      for (let i = 1; i <= steps; i++) {
+        await send("touchMove", xFrom + ((xTo - xFrom) * i) / steps);
+        await new Promise((r) => setTimeout(r, 16));
+      }
+      await send("touchEnd");
+      await cdp.detach();
+    },
     check(name, ok, extra = "") {
       console.log((ok ? "OK  " : label.padEnd(4)) + " | " + name + (extra ? " — " + extra : ""));
       if (!ok) fail++;
