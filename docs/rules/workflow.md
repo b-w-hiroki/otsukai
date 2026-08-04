@@ -46,6 +46,7 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `circle-toggle-test` / `bought-test` | ◯ タップの宣言・取り消し・完了 |
 | `history-close-test` / `hist-footer-test` | 履歴シートが閉じる・実タッチでスクロールする |
 | `store-footer-test` | 店内モードの終了ボタン位置 |
+| `tab-swipe-test` | ページ内タブの左右スワイプ切替・端での折り返し無し・シート/店内モード中の抑止 |
 | `update-test` / `update-banner-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新 |
 | `photo-test` | 📷 写真の添付・表示・拡大・外す・店内モードのサムネイル |
 | `features-test` | 主要導線の通し |
@@ -59,7 +60,7 @@ const { page, sleep, OUT } = t;
 ```
 
 ハーネスが用意するもの: テストサーバー / ブラウザ（390×844・タッチ有効）/ `check()` /
-`t.swipeUp()` `t.swipeDown()`（CDP の実タッチ）/ `t.dialogs` / `t.finish()`。
+`t.swipeUp()` `t.swipeDown()` `t.swipeLeft()` `t.swipeRight()`（CDP の実タッチ）/ `t.dialogs` / `t.finish()`。
 
 **書くときの注意（過去にハマったもの）**
 

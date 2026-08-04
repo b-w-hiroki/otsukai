@@ -3,34 +3,82 @@
 // （クラシックスクリプトなのでグローバルスコープを共有。type="module" にはしていない）。
 
 // ===== Tabs =====
+// ボタンクリックとスワイプ（下の initTabSwipe）の両方から呼ぶ共通処理。
+function switchTab(t) {
+  document.querySelectorAll(".bottom-nav button[data-tab]").forEach((b) => b.classList.toggle("active", b.dataset.tab === t));
+  state.activeTab = t;
+  document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+  $("tab-" + t).classList.add("active");
+  closeSheet();
+  closeStockSheet();
+  closeMissionSheet();
+  closeShortcutPanel();
+  updateShortcutVisibility();
+  renderBadge();
+  renderStockBadge();
+  renderMissionBadge();
+  // スクロールを最上部へ。モバイルの描画タイミング差で同期実行だけだと
+  // 効かない場合があるため、次フレームでも再実行する。
+  const scrollTop = () => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  };
+  scrollTop();
+  requestAnimationFrame(scrollTop);
+}
 function wireTabs() {
   document.querySelectorAll(".bottom-nav button[data-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".bottom-nav button").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      const t = btn.dataset.tab;
-      state.activeTab = t;
-      document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
-      $("tab-" + t).classList.add("active");
-      closeSheet();
-      closeStockSheet();
-      closeMissionSheet();
-      closeShortcutPanel();
-      updateShortcutVisibility();
-      renderBadge();
-      renderStockBadge();
-      renderMissionBadge();
-      // スクロールを最上部へ。モバイルの描画タイミング差で同期実行だけだと
-      // 効かない場合があるため、次フレームでも再実行する。
-      const scrollTop = () => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      };
-      scrollTop();
-      requestAnimationFrame(scrollTop);
-    });
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+}
+
+// ===== ページ内タブ: 左右スワイプで切り替え =====
+// 下部ナビと同じ並び順（お買い物→ミッション→ストック→設定）でスワイプする。
+// 端まで来たら折り返さない（そこで指を離しても何も起きない）。
+const SWIPE_TAB_ORDER = ["requests", "missions", "stock", "settings"];
+// シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
+// 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。
+function tabSwipeBlocked() {
+  return !!document.querySelector(".sheet.open") ||
+    (document.getElementById("store-mode") || {}).classList?.contains("open") ||
+    (document.getElementById("howto-modal") || {}).classList?.contains("open") ||
+    (document.getElementById("photo-viewer") || {}).classList?.contains("open") ||
+    !document.getElementById("screen-main").classList.contains("active");
+}
+function initTabSwipe() {
+  const THRESHOLD = 60;
+  const app = document.querySelector(".app");
+  if (!app) return;
+  let startX = null, startY = null, swiping = false;
+
+  app.addEventListener("touchstart", (e) => {
+    if (tabSwipeBlocked() || e.touches.length !== 1) { startX = null; return; }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = false;
+  }, { passive: true });
+
+  app.addEventListener("touchmove", (e) => {
+    if (startX === null || swiping) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    // 縦方向の動きの方が大きいときは、通常の縦スクロールに譲る
+    if (Math.abs(dy) > Math.abs(dx)) { startX = null; return; }
+    if (Math.abs(dx) > 10) swiping = true;
+  }, { passive: true });
+
+  app.addEventListener("touchend", (e) => {
+    if (startX === null || !swiping) { startX = null; return; }
+    const dx = e.changedTouches[0].clientX - startX;
+    startX = null;
+    if (Math.abs(dx) < THRESHOLD) return;
+    const idx = SWIPE_TAB_ORDER.indexOf(state.activeTab);
+    if (idx === -1) return;
+    const nextIdx = dx < 0 ? idx + 1 : idx - 1; // 左にスワイプ→次のタブへ
+    if (nextIdx < 0 || nextIdx >= SWIPE_TAB_ORDER.length) return;
+    switchTab(SWIPE_TAB_ORDER[nextIdx]);
+  }, { passive: true });
 }
 
 // ===== 設定タブ: 各カードをアコーディオンに（長いスクロールを避ける） =====
@@ -163,6 +211,7 @@ function wireGlobalEvents() {
   $("btn-force-update").addEventListener("click", forceRefreshApp);
   $("btn-force-signout").addEventListener("click", forceSignOut);
   initPullToRefresh();
+  initTabSwipe();
   showAppVersion();
   // ホーム画面ショートカット（?action=add）から起動されたら追加シートを開く
   if (new URLSearchParams(location.search).get("action") === "add") {
