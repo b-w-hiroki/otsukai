@@ -463,13 +463,25 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   background: transparent; color: var(--muted); font-weight: 600;
   padding: 5px 4px; position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
-  border-radius: var(--r-md); transition: color .2s, background .2s;
+  border-radius: var(--r-md); transition: color .2s;
   border: none; box-shadow: none; font-size: 10px;
 }
+/* アクティブなタブの位置に合わせてスライドする背景。
+   left/width は JS（positionNavIndicator）がボタンの実測位置から transform で動かす。
+   ボタンより先に置く（＝DOM順で先）ことで z-index を使わずに背面に描画する。
+   中央のFAB（z-index:25）の下は自然に隠れて通り抜ける。 */
+.bottom-nav-indicator {
+  position: absolute; top: 4px; bottom: 4px; left: 0; width: 0;
+  background: var(--pri-soft); border-radius: var(--r-md);
+  pointer-events: none;
+  transition: transform .32s cubic-bezier(0.34,1.15,0.64,1), width .32s cubic-bezier(0.34,1.15,0.64,1);
+}
+/* スワイプ中は指の動きに1:1で追従させたいので、アニメーションを止める */
+.bottom-nav-indicator.dragging { transition: none; }
 .bottom-nav button .nav-icon { font-size: 22px; line-height: 1; transition: transform .28s cubic-bezier(0.34,1.6,0.64,1); display: flex; align-items: center; justify-content: center; }
 .bottom-nav button .nav-icon svg { width: 20px; height: 20px; display: block; flex-shrink: 0; }
 .bottom-nav button .nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1px; }
-.bottom-nav button.active { color: var(--pri); background: var(--pri-soft); }
+.bottom-nav button.active { color: var(--pri); }
 .bottom-nav button.active .nav-icon { transform: scale(1.18) translateY(-1px); }
 .bottom-nav button[data-tab]:hover:not(.active) { color: var(--ink-2); background: var(--bg); box-shadow: none; }
 .nav-badge {

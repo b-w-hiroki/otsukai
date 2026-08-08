@@ -3,10 +3,26 @@
 // （クラシックスクリプトなのでグローバルスコープを共有。type="module" にはしていない）。
 
 // ===== Tabs =====
+// アクティブなタブの位置に合わせて下部ナビの背景（.bottom-nav-indicator）を滑らせる。
+// タップでもスワイプでも同じ関数を通るので、操作方法によらず同じ動きになる。
+// animate=false は初期表示・リサイズ用（そこからいきなりスライドしてくるのを防ぐ）。
+function positionNavIndicator(tabName, animate) {
+  const btn = document.querySelector('.bottom-nav button[data-tab="' + tabName + '"]');
+  const nav = document.querySelector(".bottom-nav");
+  const indicator = document.querySelector(".bottom-nav-indicator");
+  if (!btn || !nav || !indicator) return;
+  const navRect = nav.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  indicator.classList.toggle("dragging", !animate);
+  indicator.style.transform = "translateX(" + (btnRect.left - navRect.left) + "px)";
+  indicator.style.width = btnRect.width + "px";
+}
+
 // ボタンクリックとスワイプ（下の initTabSwipe）の両方から呼ぶ共通処理。
 function switchTab(t) {
   document.querySelectorAll(".bottom-nav button[data-tab]").forEach((b) => b.classList.toggle("active", b.dataset.tab === t));
   state.activeTab = t;
+  positionNavIndicator(t, true);
   document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
   $("tab-" + t).classList.add("active");
   closeSheet();
@@ -32,12 +48,17 @@ function wireTabs() {
   document.querySelectorAll(".bottom-nav button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+  // 初期位置合わせ（フォント読み込み等での実測ズレを避けるため次フレームで）。
+  // リサイズ・画面回転でもボタン位置がずれるので追従させる（アニメーションなし）。
+  requestAnimationFrame(() => positionNavIndicator(state.activeTab, false));
+  window.addEventListener("resize", () => positionNavIndicator(state.activeTab, false));
 }
 
 // ===== ページ内タブ: 左右スワイプで切り替え =====
 // 下部ナビと同じ並び順（お買い物→ミッション→ストック→設定）でスワイプする。
 // 端まで来たら折り返さない（そこで指を離しても何も起きない）。
 const SWIPE_TAB_ORDER = ["requests", "missions", "stock", "settings"];
+const TAB_SWIPE_THRESHOLD = 60;
 // シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
 // 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。
 function tabSwipeBlocked() {
@@ -47,8 +68,32 @@ function tabSwipeBlocked() {
     (document.getElementById("photo-viewer") || {}).classList?.contains("open") ||
     !document.getElementById("screen-main").classList.contains("active");
 }
+// スワイプ中、指の動きに合わせて下部ナビの背景を今のタブ→隣のタブへ少しずつ寄せる
+// （＝「フッターがスライドする」操作感）。指を離したときに閾値未満なら元の位置へ戻す。
+function updateNavIndicatorDrag(dx) {
+  const idx = SWIPE_TAB_ORDER.indexOf(state.activeTab);
+  if (idx === -1) return;
+  const targetIdx = dx < 0 ? idx + 1 : idx - 1;
+  if (targetIdx < 0 || targetIdx >= SWIPE_TAB_ORDER.length) {
+    positionNavIndicator(state.activeTab, false); // 端では動かさない
+    return;
+  }
+  const homeBtn = document.querySelector('.bottom-nav button[data-tab="' + state.activeTab + '"]');
+  const targetBtn = document.querySelector('.bottom-nav button[data-tab="' + SWIPE_TAB_ORDER[targetIdx] + '"]');
+  const nav = document.querySelector(".bottom-nav");
+  const indicator = document.querySelector(".bottom-nav-indicator");
+  if (!homeBtn || !targetBtn || !nav || !indicator) return;
+  const navRect = nav.getBoundingClientRect();
+  const homeRect = homeBtn.getBoundingClientRect();
+  const targetRect = targetBtn.getBoundingClientRect();
+  const progress = Math.min(1, Math.abs(dx) / TAB_SWIPE_THRESHOLD);
+  const x = homeRect.left + (targetRect.left - homeRect.left) * progress - navRect.left;
+  const w = homeRect.width + (targetRect.width - homeRect.width) * progress;
+  indicator.classList.add("dragging");
+  indicator.style.transform = "translateX(" + x + "px)";
+  indicator.style.width = w + "px";
+}
 function initTabSwipe() {
-  const THRESHOLD = 60;
   const app = document.querySelector(".app");
   if (!app) return;
   let startX = null, startY = null, swiping = false;
@@ -61,24 +106,27 @@ function initTabSwipe() {
   }, { passive: true });
 
   app.addEventListener("touchmove", (e) => {
-    if (startX === null || swiping) return;
+    if (startX === null) return;
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
-    // 縦方向の動きの方が大きいときは、通常の縦スクロールに譲る
-    if (Math.abs(dy) > Math.abs(dx)) { startX = null; return; }
-    if (Math.abs(dx) > 10) swiping = true;
+    if (!swiping) {
+      // 縦方向の動きの方が大きいときは、通常の縦スクロールに譲る
+      if (Math.abs(dy) > Math.abs(dx)) { startX = null; return; }
+      if (Math.abs(dx) > 10) swiping = true;
+    }
+    if (swiping) updateNavIndicatorDrag(dx);
   }, { passive: true });
 
   app.addEventListener("touchend", (e) => {
     if (startX === null || !swiping) { startX = null; return; }
     const dx = e.changedTouches[0].clientX - startX;
     startX = null;
-    if (Math.abs(dx) < THRESHOLD) return;
+    if (Math.abs(dx) < TAB_SWIPE_THRESHOLD) { positionNavIndicator(state.activeTab, true); return; }
     const idx = SWIPE_TAB_ORDER.indexOf(state.activeTab);
-    if (idx === -1) return;
+    if (idx === -1) { positionNavIndicator(state.activeTab, true); return; }
     const nextIdx = dx < 0 ? idx + 1 : idx - 1; // 左にスワイプ→次のタブへ
-    if (nextIdx < 0 || nextIdx >= SWIPE_TAB_ORDER.length) return;
-    switchTab(SWIPE_TAB_ORDER[nextIdx]);
+    if (nextIdx < 0 || nextIdx >= SWIPE_TAB_ORDER.length) { positionNavIndicator(state.activeTab, true); return; }
+    switchTab(SWIPE_TAB_ORDER[nextIdx]); // インジケーターの最終位置合わせも中で行う
   }, { passive: true });
 }
 

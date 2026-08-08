@@ -108,6 +108,9 @@ window.addEventListener("unhandledrejection", (e) => {
 function showScreen(name) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   $("screen-" + name).classList.add("active");
+  // メイン画面はログイン直後など非表示から表示に切り替わる瞬間があり、その前に
+  // 計測した下部ナビの位置（幅0など）はあてにならないため、表示された直後に測り直す。
+  if (name === "main") requestAnimationFrame(() => positionNavIndicator(state.activeTab, false));
 }
 
 // ===== Toasts / Sound =====
