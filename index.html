@@ -348,6 +348,8 @@
           </button>
           <div class="settings-acc-body">
             <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
+            <div id="extra-expense-list"></div>
+            <button id="btn-open-expense-sheet" class="ghost tiny-btn" style="margin-top:10px;width:100%;">＋ その他の支出を記録</button>
           </div>
         </div>
         <div class="card settings-acc closed" data-acc="maintenance">
@@ -598,6 +600,30 @@
       </div>
     </div>
 
+    <!-- Extra expense sheet（お使いリスト以外で買ったものの金額ログ） -->
+    <div id="expense-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">💴 その他の支出を記録</div>
+          <button id="btn-expense-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div class="setup-form">
+          <p class="muted" style="font-size:12px;margin:0 0 4px;">お使いリスト以外で買ったものの金額も、まとめて集計できます。</p>
+          <label id="expense-receipt-label" class="stock-photo-upload">
+            <input type="file" id="expense-receipt-input" accept="image/*" capture="environment" style="display:none;" />
+            <span id="expense-receipt-status" class="stock-photo-placeholder">📷 レシート写真から金額を読み取る（任意）</span>
+          </label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
+            <input id="expense-amount" type="number" min="0" max="9999999" inputmode="numeric" placeholder="金額" style="padding-left:26px;" />
+          </div>
+          <input id="expense-memo" placeholder="メモ（任意）例: コンビニでお茶" maxlength="60" />
+          <button id="btn-add-expense">記録する</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Player profile sheet -->
     <div id="player-sheet" class="sheet">
       <div class="sheet-handle"></div>
@@ -715,6 +741,9 @@
        必要になった時点で app-core.js の loadFunctionsSdk() が動的に読み込む。
        このURLの文字列は起動時に読む他のSDKと同じ場所から作る（下のFIREBASE_SDK_BASE）。 -->
   <script>const FIREBASE_SDK_BASE = "https://www.gstatic.com/firebasejs/9.23.0/";</script>
+  <!-- レシート写真からの金額読み取り（app-history.js の loadOcrSdk()）でだけ使う、
+       無料の端末内OCR。こちらも起動時には読み込まない。 -->
+  <script>const OCR_SDK_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";</script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>

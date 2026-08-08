@@ -43,6 +43,7 @@
         },
 
         "requests":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "extraExpenses": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "comments":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "stats":         { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "shortcuts":     { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },

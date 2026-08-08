@@ -49,6 +49,7 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `tab-swipe-test` | ページ内タブの左右スワイプ切替・端での折り返し無し・シート/店内モード中の抑止 |
 | `update-test` / `update-banner-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新 |
 | `photo-test` | 📷 写真の添付・表示・拡大・外す・店内モードのサムネイル |
+| `expense-log-test` | 💴 その他の支出の記録・削除・レシートOCR（読み取り成功/失敗の両方） |
 | `features-test` | 主要導線の通し |
 
 **共通処理は `tests/harness.mjs` に集約**している。各テストは3行で始まる:

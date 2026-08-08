@@ -63,26 +63,146 @@ function renderMonthlySummary() {
   const monthStart = new Date(nowD.getFullYear(), nowD.getMonth(), 1).getTime();
   const done = Object.values(state.requests || {})
     .filter((r) => r && r.status === "done" && (r.completedAt || 0) >= monthStart);
-  if (!done.length) {
+  const extras = Object.entries(state.extraExpenses || {})
+    .filter(([, e]) => e && (e.addedAt || 0) >= monthStart);
+  renderExtraExpenseLog(extras);
+  if (!done.length && !extras.length) {
     el.textContent = "今月の完了はまだありません";
     return;
   }
-  const budgetSum = done.reduce((sum, r) => sum + (r.budget > 0 ? r.budget : 0), 0);
-  const budgeted = done.filter((r) => r.budget > 0).length;
-  // 実支出（履歴の 💴 で記録した金額）が1件でもあれば、そちらを主役に表示する
-  const costItems = done.filter((r) => r.actualCost > 0);
-  const costSum = costItems.reduce((sum, r) => sum + r.actualCost, 0);
-  const mainStat = costItems.length
-    ? `<div class="stat"><b>${costSum.toLocaleString()}円</b><span>実際の支出（${costItems.length}件分）</span></div>`
-    : `<div class="stat"><b>${budgetSum > 0 ? budgetSum.toLocaleString() + "円" : "—"}</b><span>予算の合計${budgeted ? `（${budgeted}件分）` : ""}</span></div>`;
+  let statsHtml = "";
+  const notes = [];
+  if (done.length) {
+    const budgetSum = done.reduce((sum, r) => sum + (r.budget > 0 ? r.budget : 0), 0);
+    const budgeted = done.filter((r) => r.budget > 0).length;
+    // 実支出（履歴の 💴 で記録した金額）が1件でもあれば、そちらを主役に表示する
+    const costItems = done.filter((r) => r.actualCost > 0);
+    const costSum = costItems.reduce((sum, r) => sum + r.actualCost, 0);
+    const mainStat = costItems.length
+      ? `<div class="stat"><b>${costSum.toLocaleString()}円</b><span>実際の支出（${costItems.length}件分）</span></div>`
+      : `<div class="stat"><b>${budgetSum > 0 ? budgetSum.toLocaleString() + "円" : "—"}</b><span>予算の合計${budgeted ? `（${budgeted}件分）` : ""}</span></div>`;
+    statsHtml += `<div class="stat"><b>${done.length}</b><span>完了した買い物</span></div>${mainStat}`;
+    notes.push(costItems.length
+      ? `お買い物の実支出は履歴の 💴 で記録した金額の合計です（未記録: ${done.length - costItems.length}件）`
+      : "お買い物の金額は依頼時の「〜円以下」の合計です。履歴の 💴 から実際の支払額を記録すると実支出で集計されます");
+  }
+  if (extras.length) {
+    const extraSum = extras.reduce((sum, [, e]) => sum + (e.amount > 0 ? e.amount : 0), 0);
+    statsHtml += `<div class="stat"><b>${extraSum.toLocaleString()}円</b><span>その他の支出（${extras.length}件）</span></div>`;
+    notes.push("その他の支出は下の一覧から削除できます");
+  }
   el.innerHTML = `
-    <div class="stat-grid" style="margin-top:0;">
-      <div class="stat"><b>${done.length}</b><span>完了した買い物</span></div>
-      ${mainStat}
-    </div>
-    <p class="muted" style="font-size:11px;margin-top:8px;">${costItems.length
-      ? `※ 履歴の 💴 ボタンで記録した実際の支払額の合計です（未記録: ${done.length - costItems.length}件）`
-      : "※ 予算は依頼時の「〜円以下」の合計です。履歴の 💴 から実際の支払額を記録すると、実支出で集計されます"}</p>`;
+    <div class="stat-grid" style="margin-top:0;">${statsHtml}</div>
+    <p class="muted" style="font-size:11px;margin-top:8px;">※ ${notes.join("／")}</p>`;
+}
+
+// ===== その他の支出（お使いリスト以外で買ったものの金額ログ） =====
+// レシート写真から金額を自動で読み取れると手間が減るが、精度は完璧ではないため
+// 「読み取れたら金額欄に仮入力→必ず本人が確認して保存」という一手間だけは残す。
+function renderExtraExpenseLog(entries) {
+  const el = $("extra-expense-list");
+  if (!el) return;
+  if (!entries || !entries.length) { el.innerHTML = ""; return; }
+  const sorted = [...entries].sort(([, a], [, b]) => (b.addedAt || 0) - (a.addedAt || 0));
+  el.innerHTML = sorted.map(([id, e]) => `
+    <div class="row" style="justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);gap:8px;">
+      <span style="min-width:0;">
+        <b style="font-size:13px;">${Number(e.amount).toLocaleString()}円</b>
+        ${e.memo ? ` <span class="muted" style="font-size:12px;">${escapeHtml(e.memo)}</span>` : ""}
+        <div class="muted" style="font-size:11px;">${escapeHtml(memberName(e.addedBy))}・${timeAgo(e.addedAt)}</div>
+      </span>
+      <button class="ghost tiny-btn" data-del-expense="${id}" aria-label="削除" style="flex-shrink:0;">×</button>
+    </div>`).join("");
+  el.querySelectorAll("[data-del-expense]").forEach((btn) => {
+    btn.addEventListener("click", () => deleteExtraExpense(btn.dataset.delExpense));
+  });
+}
+
+async function deleteExtraExpense(id) {
+  const e = state.extraExpenses[id];
+  if (!e) return;
+  if (!confirm(`${Number(e.amount).toLocaleString()}円の記録を削除しますか？`)) return;
+  await dbOp(familyRef().child("extraExpenses/" + id).remove(), "削除できませんでした");
+}
+
+function openExpenseSheet() {
+  $("expense-amount").value = "";
+  $("expense-memo").value = "";
+  $("expense-receipt-input").value = "";
+  $("expense-receipt-status").textContent = "📷 レシート写真から金額を読み取る（任意）";
+  $("expense-sheet").classList.add("open");
+  $("sheet-backdrop").classList.add("open");
+}
+function closeExpenseSheet() {
+  $("expense-sheet").classList.remove("open");
+  $("sheet-backdrop").classList.remove("open");
+}
+async function addExtraExpense() {
+  const amount = parseInt($("expense-amount").value, 10);
+  if (!(amount > 0)) return showToast("金額を入力してください");
+  const memo = $("expense-memo").value.trim();
+  const item = { amount, addedBy: state.uid, addedAt: now() };
+  if (memo) item.memo = memo;
+  const ref = familyRef().child("extraExpenses").push();
+  if (!(await dbOp(ref.set(item), "記録できませんでした"))) return;
+  closeExpenseSheet();
+  showToast(`💴 ${amount.toLocaleString()}円を記録しました`, { sound: false });
+}
+
+// ===== レシート写真からの金額読み取り（Tesseract.js・無料の端末内OCR） =====
+// 精度は完璧ではないので「自動で確定」はしない。読み取れた数字を金額欄に
+// 仮入力するだけで、保存は必ず本人が確認してから行う。
+let ocrSdkPromise = null;
+function loadOcrSdk() {
+  if (!ocrSdkPromise) {
+    ocrSdkPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = OCR_SDK_URL;
+      s.onload = () => resolve();
+      s.onerror = () => { ocrSdkPromise = null; reject(new Error("読み込みに失敗しました")); };
+      document.head.appendChild(s);
+    });
+  }
+  return ocrSdkPromise;
+}
+// OCRの文字はズレることがあるので全角数字・カンマも受ける
+function parseReceiptTotal(text) {
+  const normalized = String(text || "").replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const lines = normalized.split(/\r?\n/);
+  const keywords = ["合計", "ごうけい", "お会計", "計"];
+  let candidates = [];
+  lines.forEach((line) => {
+    if (!keywords.some((k) => line.includes(k))) return;
+    const nums = [...line.matchAll(/[\d,]{2,}/g)]
+      .map((m) => parseInt(m[0].replace(/,/g, ""), 10))
+      .filter((n) => Number.isFinite(n) && n > 0 && n < 1000000);
+    candidates.push(...nums);
+  });
+  if (!candidates.length) return null;
+  return Math.max(...candidates);
+}
+async function runReceiptOcr(file) {
+  const statusEl = $("expense-receipt-status");
+  statusEl.textContent = "🔍 読み取り中…（初回は少し時間がかかります）";
+  try {
+    await loadOcrSdk();
+    const worker = await Tesseract.createWorker("jpn");
+    try {
+      const { data } = await worker.recognize(file);
+      const total = parseReceiptTotal(data.text);
+      if (total) {
+        $("expense-amount").value = total;
+        statusEl.textContent = `✅ ${total.toLocaleString()}円を検出しました（間違っていたら書き換えてください）`;
+      } else {
+        statusEl.textContent = "🔍 金額を検出できませんでした。金額欄に入力してください";
+      }
+    } finally {
+      await worker.terminate();
+    }
+  } catch (e) {
+    console.error("runReceiptOcr failed", e);
+    statusEl.textContent = "⚠️ 自動読み取りに失敗しました。金額欄に入力してください";
+  }
 }
 
 async function addReminderTime() {

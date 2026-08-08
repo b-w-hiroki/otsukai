@@ -44,12 +44,17 @@ export async function startHarness(opts = {}) {
   } = opts;
 
   const stub = await readFile(join(HERE, "fb-stub.js"), "utf8");
+  const ocrStub = await readFile(join(HERE, "ocr-stub.js"), "utf8");
   const server = http.createServer(async (req, res) => {
     try {
       const p = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
       if (p.startsWith("/__fb/")) {
         res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });
         return res.end(p.includes("firebase-app-compat") ? stub : "//");
+      }
+      if (p.startsWith("/__ocr/")) {
+        res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });
+        return res.end(ocrStub);
       }
       const f = join(ROOT, p === "/" ? "index.html" : p.replace(/^\/+/, ""));
       if (!f.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
@@ -58,6 +63,7 @@ export async function startHarness(opts = {}) {
         b = Buffer.from(
           String(b)
             .replace(/https:\/\/www\.gstatic\.com\/firebasejs\/9\.23\.0\//g, "/__fb/")
+            .replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/tesseract\.js@5\.1\.1\/dist\/tesseract\.min\.js/g, "/__ocr/tesseract.min.js")
             .replace(/<link rel="stylesheet" href="https:\/\/fonts[^>]*>/g, ""),
           "utf-8"
         );

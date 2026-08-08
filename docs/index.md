@@ -126,6 +126,7 @@
 |---|---|---|
 | 1 | Firebase Console に `database.rules.json` を適用（`settings` の追加分） | [`rules/deploy.md` §2](./rules/deploy.md) |
 | 1b | **Storage のルールで `families/{familyId}/requests/` を許可**（おつかいの写真） | [`rules/deploy.md` §2](./rules/deploy.md) |
+| 1c | Firebase Console に `database.rules.json` を再適用（`extraExpenses` の追加分） | [`rules/deploy.md` §2](./rules/deploy.md) |
 | 2 | `firebase deploy --only functions` | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 3 | `firebase functions:artifacts:setpolicy --location asia-southeast1` | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |
