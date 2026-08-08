@@ -32,6 +32,17 @@ await t.ready();
 check("最初はお買い物タブ", (await activeTab()) === "tab-requests");
 check("初期表示で下部ナビの背景が「お買い物」の位置に揃っている", await indicatorAligned("requests"));
 
+// --- touch-action: pan-y が付いている ---
+// 「ミッションタブ以外でスワイプが効かない」不具合の実体は、縦にスクロールできる
+// ページ（お買い物・ストック・設定）だとブラウザが横方向の指の動きも縦スクロールの
+// 一部として先取りしてしまい、JS側の touchmove まで届かないというもの
+// （ミッションタブは元々縦が短くスクロール自体が要らないため症状が出にくかった）。
+// CDPの疑似タッチはこのブラウザ側のジェスチャー奪い合いを再現できないため、
+// 実際に効いているかは touch-action の指定そのものを確認する。
+const appTouchAction = await page.evaluate(() => getComputedStyle(document.querySelector(".app")).touchAction);
+check("縦スクロールできる画面でもスワイプが横取りされないよう touch-action: pan-y が指定されている",
+  appTouchAction === "pan-y", appTouchAction);
+
 // --- 左スワイプで次のタブへ（お買い物→ミッション→ストック→設定） ---
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
