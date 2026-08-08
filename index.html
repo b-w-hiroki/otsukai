@@ -381,6 +381,9 @@
     </div>
 
     <nav class="bottom-nav">
+      <!-- アクティブなタブの位置に合わせてスライドする背景（タップでもスワイプでも動く）。
+           実際の位置は JS（positionNavIndicator, app-init.js）がボタンの実測位置から計算する。 -->
+      <span class="bottom-nav-indicator" aria-hidden="true"></span>
       <!-- お買い物: ショッピングバッグ -->
       <button data-tab="requests" class="active">
         <span class="nav-icon">
