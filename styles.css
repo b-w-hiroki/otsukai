@@ -585,7 +585,13 @@ html { overscroll-behavior: none; }
 body { overscroll-behavior: none; }
 ::-webkit-scrollbar { width: 0; height: 0; }
 button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
-.app { -webkit-overflow-scrolling: touch; }
+/* touch-action指定なし（既定 auto）だと、ページが縦にスクロールできる状態では
+   ブラウザが横方向の指の動きも「縦スクロールの一部」として先取りしてしまい、
+   JS側のスワイプ判定（initTabSwipe, app-init.js）まで touchmove が届かないことがある。
+   pan-y にして「縦スクロールはブラウザに任せるが横方向はJSに渡す」ことを明示する。
+   （ミッションタブのように縦に短くスクロールが要らない画面では元々問題が出にくく、
+   　お買い物・ストック・設定のように長くなりがちな画面でだけ症状が出ていた） */
+.app { -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 
 /* ======= Topbar ======= */
 .topbar .title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
