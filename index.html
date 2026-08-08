@@ -711,12 +711,15 @@
     </div>
   </div>
 
+  <!-- functions-compat（アカウント完全削除でしか使わない）は起動時には読み込まず、
+       必要になった時点で app-core.js の loadFunctionsSdk() が動的に読み込む。
+       このURLの文字列は起動時に読む他のSDKと同じ場所から作る（下のFIREBASE_SDK_BASE）。 -->
+  <script>const FIREBASE_SDK_BASE = "https://www.gstatic.com/firebasejs/9.23.0/";</script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <script src="./firebase-config.js"></script>
   <!-- app.js を機能単位で分割（旧: 単一の app.js 3,758行）。
        クラシックスクリプトのままなのでグローバルスコープを共有し、挙動は分割前と同一。

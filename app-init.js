@@ -254,7 +254,7 @@ function wireGlobalEvents() {
       const ts = parseInt(el.dataset.timeago, 10);
       if (ts) el.textContent = timeAgo(ts);
     });
-  }, 60000);
+  }, 5 * 60000);
 }
 
 // i-mobile のバナータグを端末別に注入する。
@@ -342,7 +342,8 @@ function showAppVersion() {
 // ===== スライドで更新（引っ張って更新） =====
 // リアルタイム同期しているので通常は不要だが、「表示がおかしい気がする」ときに
 // 手元で確かめられる操作があると安心なので用意する。
-// 実行内容: 家族データのリスナーを張り直す＋アプリの更新チェック。
+// 実行内容: アプリの更新チェック（SW）。家族データのリスナーは既にリアルタイムで
+// 張られたままなので、ここで張り直す（＝全サブツリーを再取得する）必要は無い。
 let ptrStartY = null, ptrPulling = false, ptrRefreshing = false;
 
 function atPageTop() {
@@ -373,7 +374,6 @@ async function doPullRefresh() {
   const el = ptrIndicator();
   el.classList.add("spinning");
   try {
-    if (state.familyId) attachFamilyListeners(); // リスナーを張り直して最新を取り直す
     if (swRegistration) await swRegistration.update().catch(() => {});
     await new Promise((r) => setTimeout(r, 600)); // 体感用の最小表示時間
     showToast("🔄 最新の状態に更新しました", { sound: false });

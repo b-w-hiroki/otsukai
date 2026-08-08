@@ -271,6 +271,22 @@ async function removeMemberFromFamily(targetUid, name) {
   if (ok) showToast(`${name} さんを家族から外しました`, { sound: false });
 }
 
+// functions-compat SDK は「アカウント完全削除」でしか使わないため、起動時には
+// 読み込まず、必要になった時点で読み込む（初期表示を速くするため）。
+let functionsSdkPromise = null;
+function loadFunctionsSdk() {
+  if (!functionsSdkPromise) {
+    functionsSdkPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = FIREBASE_SDK_BASE + "firebase-functions-compat.js";
+      s.onload = () => resolve();
+      s.onerror = () => { functionsSdkPromise = null; reject(new Error("通信環境を確認してもう一度お試しください")); };
+      document.head.appendChild(s);
+    });
+  }
+  return functionsSdkPromise;
+}
+
 // アカウント完全削除（Cloud Functions 経由・保護者のみ）
 async function adminDeleteAccount(targetUid, name) {
   const isSelf = targetUid === state.uid;
@@ -280,6 +296,7 @@ async function adminDeleteAccount(targetUid, name) {
   if (!confirm(first)) return;
   if (!confirm("本当に削除しますか？ この操作は元に戻せません。")) return;
   try {
+    await loadFunctionsSdk();
     const fn = firebase.app().functions("asia-northeast1").httpsCallable("deleteMemberAccount");
     await fn({ familyId: state.familyId, targetUid });
     if (isSelf) {

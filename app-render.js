@@ -258,7 +258,7 @@ function checkDetail(r) {
   }
 
   return `<div class="check-detail">
-    ${r.photoUrl ? `<img class="req-photo" src="${escapeHtml(r.photoUrl)}" alt="${escapeHtml(r.name)}の写真" data-photo="${escapeHtml(r.photoUrl)}" />` : ""}
+    ${r.photoUrl ? `<img class="req-photo" src="${escapeHtml(r.photoUrl)}" alt="${escapeHtml(r.name)}の写真" data-photo="${escapeHtml(r.photoUrl)}" loading="lazy" />` : ""}
     ${hintParts.length ? `<div class="req-row-hints">${hintParts.map(p => `<span class="req-row-hint">${p}</span>`).join("")}</div>` : ""}
     <div class="check-detail-meta">${meta}</div>
     <div class="check-detail-actions">${actHtml}</div>
