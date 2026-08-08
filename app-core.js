@@ -56,6 +56,7 @@ const state = {
   rewards: {},
   rewardLogs: {},
   weekly: {},
+  extraExpenses: {},
   myRole: null
 };
 
@@ -544,6 +545,11 @@ function attachFamilyListeners() {
     renderRequests();
     renderHistory();
   }, handleFamilyAccessLost);
+  // その他の支出（お使いリスト以外で買ったものの金額ログ）
+  attach(familyRef().child("extraExpenses"), "value", (s) => {
+    state.extraExpenses = s.val() || {};
+    renderMonthlySummary();
+  });
   // Shortcuts
   attach(familyRef().child("shortcuts"), "value", (s) => {
     state.shortcuts = s.val() || {};

@@ -13,6 +13,7 @@ function switchTab(t) {
   closeStockSheet();
   closeMissionSheet();
   closeShortcutPanel();
+  closeExpenseSheet();
   updateShortcutVisibility();
   renderBadge();
   renderStockBadge();
@@ -141,7 +142,7 @@ function wireGlobalEvents() {
     else openSheet();
   });
   $("btn-sheet-close").addEventListener("click", closeSheet);
-  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeShortcutPanel(); });
+  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeShortcutPanel(); closeExpenseSheet(); });
   $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
   $("btn-shortcut-register").addEventListener("click", openShortcutRegisterSheet);
   $("btn-shortcut-edit").addEventListener("click", () => {
@@ -233,10 +234,19 @@ function wireGlobalEvents() {
     closeStockDetail();
     closeHowto();
     closeHistorySheet();
+    closeExpenseSheet();
     if (storeModeOpen) closeStoreMode();
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
   $("btn-add-stock").addEventListener("click", addStock);
+  $("btn-open-expense-sheet").addEventListener("click", openExpenseSheet);
+  $("btn-expense-sheet-close").addEventListener("click", closeExpenseSheet);
+  $("btn-add-expense").addEventListener("click", addExtraExpense);
+  $("expense-amount").addEventListener("keydown", (e) => { if (e.key === "Enter") addExtraExpense(); });
+  $("expense-receipt-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) runReceiptOcr(file);
+  });
   $("stock-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addStock(); });
   // Mission sheet
   $("btn-mission-sheet-close").addEventListener("click", closeMissionSheet);
