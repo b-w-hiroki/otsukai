@@ -73,7 +73,7 @@ function setReqPhotoPreview(url) {
 function photoThumbHtml(r) {
   if (!r.photoUrl) return "";
   return `<button class="photo-thumb" data-photo="${escapeHtml(r.photoUrl)}" aria-label="${escapeHtml(r.name)}の写真を見る">
-    <img src="${escapeHtml(r.photoUrl)}" alt="" />
+    <img src="${escapeHtml(r.photoUrl)}" alt="" loading="lazy" />
   </button>`;
 }
 

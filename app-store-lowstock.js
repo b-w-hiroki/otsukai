@@ -54,7 +54,7 @@ function renderStoreMode() {
     if (r.memo) subs.push(`📝${escapeHtml(r.memo)}`);
     html += `<button class="store-item${isDone ? " checked" : ""}${r.urgent && !isDone ? " urgent" : ""}" data-store="${r.id}">
       <span class="store-item-box">${isDone ? "✓" : ""}</span>
-      ${r.photoUrl ? `<span class="photo-thumb store-thumb" data-photo="${escapeHtml(r.photoUrl)}" role="button" aria-label="写真を見る"><img class="store-item-thumb" src="${escapeHtml(r.photoUrl)}" alt="" /></span>` : ""}
+      ${r.photoUrl ? `<span class="photo-thumb store-thumb" data-photo="${escapeHtml(r.photoUrl)}" role="button" aria-label="写真を見る"><img class="store-item-thumb" src="${escapeHtml(r.photoUrl)}" alt="" loading="lazy" /></span>` : ""}
       <span style="flex:1;min-width:0;">
         <span class="store-item-name">${r.urgent && !isDone ? "🔥 " : ""}${escapeHtml(r.name)}</span>
         ${subs.length ? `<span class="store-item-sub">${subs.join(" ・ ")}</span>` : ""}

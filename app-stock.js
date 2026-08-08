@@ -162,7 +162,7 @@ function stockCard(s, i) {
       <button class="stock-level-btn ${s.level}" data-sid="${s.id}" data-act="cycle" title="タップでレベルを変更">
         ${lvl.emoji}
       </button>
-      ${s.photoUrl ? `<img class="stock-img" src="${escapeHtml(s.photoUrl)}" alt="${escapeHtml(s.name)}" />` : ""}
+      ${s.photoUrl ? `<img class="stock-img" src="${escapeHtml(s.photoUrl)}" alt="${escapeHtml(s.name)}" loading="lazy" />` : ""}
       <div class="stock-info">
         <span class="stock-name">${escapeHtml(s.name)}</span>
         ${metaHtml}
