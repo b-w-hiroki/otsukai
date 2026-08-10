@@ -89,10 +89,38 @@ iOS は **Apple Developer Program が年 $99(約 15,000 円)継続コスト**な
    - 審査: 通常 1〜3 日(初回はもう少しかかる)
 
 ### Phase 1 を始める前に必要なもの
-- [ ] 独自ドメイン or `.well-known/assetlinks.json` の配置方法確定
-- [ ] プライバシーポリシー作成 + ホスティング(後述・無料)
-- [ ] アイコン高解像度版(現状 512px はあるが Play 用に再確認)
-- [ ] スクリーンショット 2〜5枚
+- [ ] `.well-known/assetlinks.json` の配置方法確定（下の「配置の解決策」参照。**独自ドメインなしでも可**）
+- [x] プライバシーポリシー作成 + ホスティング（`privacy.html` を GitHub Pages で配信済み）
+- [x] アイコン高解像度版（512px `any` + maskable を `manifest.json` に登録済み）
+- [x] スクリーンショット（`docs/screenshots/` 480×1039 を `manifest.json` の `screenshots` にも登録済み。Play 掲載用に 1080×1920 で撮り直す場合は `tests/capture-docs.mjs` の解像度を上げて流用可）
+- [x] `manifest.json` のストア対応（`id` / `categories` / `screenshots` / 説明文の充実 — PWABuilder のスコア項目）
+
+### assetlinks.json 配置の解決策（独自ドメイン不要）
+
+GitHub Pages では、**`b-w-hiroki.github.io` という名前のリポジトリ**を作ると
+その中身がドメイン直下（`https://b-w-hiroki.github.io/`）で配信される。
+そこに `.well-known/assetlinks.json` を置けば、独自ドメインを取らなくても
+Digital Asset Links の要件を満たせる（費用0円）。
+
+1. リポジトリ `b-w-hiroki/b-w-hiroki.github.io` を新規作成（公開）
+2. PWABuilder が生成した `assetlinks.json` を `.well-known/assetlinks.json` として置く
+3. `https://b-w-hiroki.github.io/.well-known/assetlinks.json` で開けることを確認
+
+※ 中身（SHA256 フィンガープリント）は PWABuilder のパッケージ生成時に決まるため、
+手順としては「PWABuilder でパッケージ生成 → assetlinks.json を配置」の順になる。
+
+### ストア掲載文の下書き
+
+**アプリ名**: おうちのおつかい
+
+**短い説明（80文字以内・下書き）**:
+> 家族で買い物リストを共有。頼む・買いに行くを分担して、買い忘れも防げるおつかいアプリ
+
+**詳細な説明の構成案**（4000文字以内。詳細は `docs/features.md` の各章から起こす）:
+1. できること3行（リスト共有 / 買い忘れ防止の予測 / 子どものやる気が続くポイント制）
+2. 主要機能の箇条書き（⏳そろそろ切れるかも・🏪店内モード・⚡よく買うもの・📦ストック・🎯ミッション・💴支出の記録）
+3. こんな家族に（共働き・おつかいを頼みたい・買い物の重複や買い忘れをなくしたい）
+4. 無料で使える旨と、プライバシーポリシーへの言及
 
 ---
 
