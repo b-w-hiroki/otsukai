@@ -10,10 +10,16 @@ function positionNavIndicator(tabName, animate) {
   const btn = document.querySelector('.bottom-nav button[data-tab="' + tabName + '"]');
   const nav = document.querySelector(".bottom-nav");
   const indicator = document.querySelector(".bottom-nav-indicator");
-  if (!btn || !nav || !indicator) return;
+  if (!nav || !indicator) return;
+  indicator.classList.toggle("dragging", !animate);
+  if (!btn) {
+    // 下部ナビに対応するボタンが無いタブ（ミッションはトップバー側の
+    // サイドボタンに移した）を表示中は、背景を畳んで何も選ばれていない状態にする
+    indicator.style.width = "0px";
+    return;
+  }
   const navRect = nav.getBoundingClientRect();
   const btnRect = btn.getBoundingClientRect();
-  indicator.classList.toggle("dragging", !animate);
   indicator.style.transform = "translateX(" + (btnRect.left - navRect.left) + "px)";
   indicator.style.width = btnRect.width + "px";
 }
@@ -48,6 +54,9 @@ function wireTabs() {
   document.querySelectorAll(".bottom-nav button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+  // ミッションはコア機能ではないため下部ナビから外し、トップバーのサイドボタンにした
+  // （下部ナビのタブ切替と違って .active 表示や左右スワイプの対象にはしない）。
+  $("btn-missions-nav").addEventListener("click", () => switchTab("missions"));
   // 初期位置合わせ（フォント読み込み等での実測ズレを避けるため次フレームで）。
   // リサイズ・画面回転でもボタン位置がずれるので追従させる（アニメーションなし）。
   requestAnimationFrame(() => positionNavIndicator(state.activeTab, false));
@@ -55,9 +64,10 @@ function wireTabs() {
 }
 
 // ===== ページ内タブ: 左右スワイプで切り替え =====
-// 下部ナビと同じ並び順（お買い物→ミッション→ストック→設定）でスワイプする。
+// 下部ナビと同じ並び順（お買い物→ストック→設定）でスワイプする。ミッションは
+// トップバーのサイドボタン経由のみで、スワイプの対象には含めない。
 // 端まで来たら折り返さない（そこで指を離しても何も起きない）。
-const SWIPE_TAB_ORDER = ["requests", "missions", "stock", "settings"];
+const SWIPE_TAB_ORDER = ["requests", "stock", "settings"];
 const TAB_SWIPE_THRESHOLD = 60;
 // シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
 // 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。

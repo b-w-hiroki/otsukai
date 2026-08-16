@@ -149,8 +149,11 @@ body {
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   background: rgba(250,249,247,0.92);
   border-bottom: 1px solid var(--border);
-  padding: 10px 16px; display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
 }
+/* バー自体（背景・ぼかし・下線）は画面端まで、中身だけ .app と同じ幅に揃える
+   （PC幅で見たときアバター/名前と？ボタンが遠く離れて浮いて見えるのを防ぐ） */
+.topbar-inner { display: flex; align-items: center; gap: 10px; max-width: 680px; margin: 0 auto; }
 .topbar .title { font-size: 15px; font-weight: 800; flex: 1; min-width: 0; letter-spacing: -0.4px; display: flex; align-items: center; gap: 5px; }
 .topbar .family-name { font-size: 11px; color: var(--muted); font-weight: 600; }
 .topbar-player-btn {
@@ -456,7 +459,9 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-float);
-  display: grid; grid-template-columns: repeat(5, minmax(0,1fr));
+  /* 中央のFABは他のタブと同じ 1fr にすると幅だけ広がって周りが空白になるため、
+     自身のコンテンツ幅（52px＋余白）だけ確保する auto にする（DOM順: タブ・FAB・タブ・タブ）。 */
+  display: grid; grid-template-columns: 1fr auto 1fr 1fr;
   align-items: center; gap: 4px; z-index: 30;
 }
 .bottom-nav button[data-tab] {
@@ -599,6 +604,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 /* ======= FAB (フッター組み込み・控えめに盛り上げ) ======= */
 .fab {
   position: relative;
+  grid-column: 2; grid-row: 1;
   justify-self: center; align-self: start;
   margin-top: -18px; margin-bottom: 0;
   width: 52px; height: 52px; border-radius: 50%;
@@ -610,10 +616,17 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
   font-size: 0;
 }
-/* バー中央を控えめに盛り上げてFABを抱えるクレードル（FABの背面に描画） */
+/* FABを控えめに盛り上げて抱えるクレードル（FABの背面に描画）。
+   .fab と同じグリッド列（2列目）に explicit に置くことで、両脇のタブ数が
+   左右非対称（例: 左1個・右2個）でも常にFABの実位置に揃う。
+   （以前は .fab::before にしていたが、負のz-indexが同じ要素の背景より
+   前面に出てしまい、FAB自体が真っ白に潰れる不具合になったため、
+   .bottom-nav の通常の兄弟要素として、z-index無指定＝FABより背面に置く） */
 .bottom-nav::before {
-  content: ""; position: absolute;
-  left: 50%; top: 10px; transform: translate(-50%, -50%);
+  content: "";
+  grid-column: 2; grid-row: 1;
+  justify-self: center; align-self: center;
+  margin-top: -14px;
   width: 66px; height: 66px; border-radius: 50%;
   background: var(--surface);
   box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
@@ -736,6 +749,20 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   flex-shrink: 0;
 }
 .howto-btn:hover { background: var(--pri-mid); box-shadow: none; transform: none; }
+
+/* ======= Topbar icon button（名前と？の間に置く、ミッションなどの副次的な導線用） ======= */
+.topbar-icon-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--pri-soft); border: 1.5px solid var(--pri-mid);
+  color: var(--pri);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; box-shadow: none; transform: none;
+  transition: background .15s, box-shadow .15s;
+  flex-shrink: 0; position: relative;
+}
+.topbar-icon-btn:hover:not(:disabled) { background: var(--pri-mid); box-shadow: none; transform: none; }
+.topbar-icon-btn svg { width: 20px; height: 20px; display: block; }
+.topbar-icon-btn .nav-badge { top: -2px; right: -2px; }
 
 /* ======= How-to modal ======= */
 .howto-modal-backdrop {
@@ -1652,3 +1679,15 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   font-size: 16px; font-weight: 800; line-height: 1;
 }
 .lowstock-x { flex-shrink: 0; color: var(--muted); font-size: 15px; font-weight: 800; padding: 0 2px; }
+
+/* ======= PC幅（広いビューポート）向けの調整 =======
+   このアプリは元々スマホ専用に作っており、.app の中身は max-width:680px で
+   中央寄せされる一方、下部ナビは画面端(left/right:12px)基準の固定配置だった。
+   PCの広い画面だとナビだけが横いっぱいに伸びてボタン間が間延びし、コンテンツ
+   列とも幅が揃わず不格好に見えていたので、コンテンツと同じ680pxに揃える。
+   （.topbar-inner の max-width は上の .topbar 定義側で常時指定済み・幅が
+   680px未満のときは無効になるだけなのでここでは触らない） */
+@media (min-width: 720px) {
+  .bottom-nav { left: 50%; right: auto; width: 680px; transform: translateX(-50%); }
+  .shortcut-float-wrap { max-width: 680px; }
+}

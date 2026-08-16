@@ -1,4 +1,6 @@
-// ページ内タブ（お買い物/ミッション/ストック/設定）を左右スワイプで切り替えられることの検証。
+// ページ内タブ（お買い物/ストック/設定）を左右スワイプで切り替えられることの検証。
+// ミッションはコア機能ではないため下部ナビから外し、トップバーのサイドボタン
+// （名前と？の間）に移した。スワイプの対象にも含めない。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
@@ -33,25 +35,34 @@ check("最初はお買い物タブ", (await activeTab()) === "tab-requests");
 check("初期表示で下部ナビの背景が「お買い物」の位置に揃っている", await indicatorAligned("requests"));
 
 // --- touch-action: pan-y が付いている ---
-// 「ミッションタブ以外でスワイプが効かない」不具合の実体は、縦にスクロールできる
-// ページ（お買い物・ストック・設定）だとブラウザが横方向の指の動きも縦スクロールの
-// 一部として先取りしてしまい、JS側の touchmove まで届かないというもの
-// （ミッションタブは元々縦が短くスクロール自体が要らないため症状が出にくかった）。
+// 「特定のタブ以外でスワイプが効かない」不具合の実体は、縦にスクロールできる
+// ページだとブラウザが横方向の指の動きも縦スクロールの一部として先取りしてしまい、
+// JS側の touchmove まで届かないというもの。
 // CDPの疑似タッチはこのブラウザ側のジェスチャー奪い合いを再現できないため、
 // 実際に効いているかは touch-action の指定そのものを確認する。
 const appTouchAction = await page.evaluate(() => getComputedStyle(document.querySelector(".app")).touchAction);
 check("縦スクロールできる画面でもスワイプが横取りされないよう touch-action: pan-y が指定されている",
   appTouchAction === "pan-y", appTouchAction);
 
-// --- 左スワイプで次のタブへ（お買い物→ミッション→ストック→設定） ---
-await t.swipeLeft(400, 320, 40);
-await sleep(400);
-check("左スワイプでミッションタブへ", (await activeTab()) === "tab-missions");
-check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "missions");
+// --- ミッションは下部ナビには無く、トップバーのサイドボタンから開く ---
+check("下部ナビにミッションのボタンは無い", (await page.locator('.bottom-nav button[data-tab="missions"]').count()) === 0);
+check("トップバーにミッションのサイドボタンがある（名前と？の間）", (await page.locator("#btn-missions-nav").count()) === 1);
+await page.click("#btn-missions-nav");
+await sleep(500);
+check("トップバーのボタンでミッションタブが開く", (await activeTab()) === "tab-missions");
+check("ミッション表示中は下部ナビの背景が畳まれる（対応するボタンが無いため）", (await indicatorState()).width === 0);
+const missionsBtnBox = await page.locator("#btn-missions-nav").boundingBox();
+check("ミッションのサイドボタンのタップ領域が44px以上",
+  missionsBtnBox.width >= 44 && missionsBtnBox.height >= 44,
+  `${Math.round(missionsBtnBox.width)}x${Math.round(missionsBtnBox.height)}`);
+await page.click('[data-tab="requests"]');
+await sleep(500);
 
+// --- 左スワイプで次のタブへ（お買い物→ストック→設定） ---
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
 check("左スワイプでストックタブへ", (await activeTab()) === "tab-stock");
+check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "stock");
 
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
@@ -67,8 +78,6 @@ await t.swipeRight(400, 40, 320);
 await sleep(400);
 check("右スワイプでストックタブへ戻る", (await activeTab()) === "tab-stock");
 
-await t.swipeRight(400, 40, 320);
-await sleep(400);
 await t.swipeRight(400, 40, 320);
 await sleep(400);
 check("右スワイプを重ねてお買い物タブまで戻る", (await activeTab()) === "tab-requests");
@@ -132,7 +141,7 @@ await send2("touchMove", 300, 400); // dx=-20（閾値60の一部だけ動いた
 await sleep(100);
 const midDrag = await indicatorState();
 const homeOffset = await btnOffset("requests");
-const targetOffset = await btnOffset("missions");
+const targetOffset = await btnOffset("stock");
 check("ドラッグ中はアニメーションを止めて指に追従する", midDrag.dragging);
 check("閾値未満の途中では、背景が今のタブと隣のタブの間にある（まだどちらにも揃っていない）",
   midDrag.x > Math.min(homeOffset.x, targetOffset.x) && midDrag.x < Math.max(homeOffset.x, targetOffset.x),
