@@ -34,7 +34,6 @@ function switchTab(t) {
   closeSheet();
   closeStockSheet();
   closeMissionSheet();
-  closeShortcutPanel();
   closeExpenseSheet();
   updateShortcutVisibility();
   renderBadge();
@@ -64,10 +63,10 @@ function wireTabs() {
 }
 
 // ===== ページ内タブ: 左右スワイプで切り替え =====
-// 下部ナビと同じ並び順（お買い物→ストック→設定）でスワイプする。ミッションは
-// トップバーのサイドボタン経由のみで、スワイプの対象には含めない。
+// 下部ナビと同じ並び順（お買い物→よく買うもの→ストック→設定）でスワイプする。
+// ミッションはトップバーのサイドボタン経由のみで、スワイプの対象には含めない。
 // 端まで来たら折り返さない（そこで指を離しても何も起きない）。
-const SWIPE_TAB_ORDER = ["requests", "stock", "settings"];
+const SWIPE_TAB_ORDER = ["requests", "shortcuts", "stock", "settings"];
 const TAB_SWIPE_THRESHOLD = 60;
 // シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
 // 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。
@@ -185,24 +184,18 @@ function wireGlobalEvents() {
   $("btn-howto").addEventListener("click", openHowto);
   $("btn-howto-close").addEventListener("click", closeHowto);
   $("howto-modal-backdrop").addEventListener("click", closeHowto);
-  // Shortcut sheet（旧: フロートボタン上の吹き出しポップオーバー → 他と同じボトムシートに）
-  $("btn-shortcut-toggle").addEventListener("click", () => {
-    if ($("shortcut-sheet").classList.contains("open")) closeShortcutPanel();
-    else openShortcutPanel();
-  });
-  $("btn-shortcut-sheet-close").addEventListener("click", closeShortcutPanel);
   // Stock detail sheet
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
   $("fab-add").addEventListener("click", () => {
     if (state.activeTab === "stock") openStockSheet();
+    else if (state.activeTab === "shortcuts") openShortcutRegisterSheet();
     else if (state.activeTab === "missions" && isParent()) openMissionSheet();
     else if (state.activeTab === "missions") { /* child: nothing */ }
     else openSheet();
   });
   $("btn-sheet-close").addEventListener("click", closeSheet);
-  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeShortcutPanel(); closeExpenseSheet(); });
+  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeExpenseSheet(); });
   $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
-  $("btn-shortcut-register").addEventListener("click", openShortcutRegisterSheet);
   $("btn-shortcut-edit").addEventListener("click", () => {
     shortcutsEditMode = !shortcutsEditMode;
     renderShortcuts();

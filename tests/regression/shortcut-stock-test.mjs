@@ -1,4 +1,5 @@
 // よく買うもの → ストック連動の検証（自動作成・買う間隔の反映・重複防止・二重管理防止）
+// よく買うものは下部ナビの独立タブ（旧: シート）。登録は他のタブと同じくFABから開く。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness();
 const { page, sleep } = t;
@@ -16,6 +17,12 @@ const stockCountNamed = async (name) =>
     const snap = await firebase.database().ref("families/fam1/stocks").once("value");
     return Object.values(snap.val() || {}).filter((s) => s && s.name === n).length;
   }, name);
+const openShortcutRegister = async () => {
+  await page.click('[data-tab="shortcuts"]');
+  await sleep(400);
+  await page.click("#fab-add");
+  await sleep(700);
+};
 
 await t.ready();
 
@@ -23,12 +30,7 @@ await t.ready();
 check("既存ショートカット「牛乳」はまだストックに無い", (await stockNamed("牛乳")) === null);
 
 // --- 新しい品名でよく買うものを登録すると、ストックが自動で作られる ---
-await page.click('[data-tab="requests"]');
-await sleep(500);
-await page.click("#btn-shortcut-toggle");
-await sleep(400);
-await page.click("#btn-shortcut-register");
-await sleep(700);
+await openShortcutRegister();
 check("登録シートに「買う間隔」欄が出る", await page.locator("#new-cycle-wrap").isVisible());
 await page.fill("#new-name", "柔軟剤");
 await page.click("#btn-add-request");
@@ -45,10 +47,7 @@ check("在庫レベルは🟢たっぷりで作られる", created && created.le
 check("買う間隔を空欄にしたら cycleDays は付かない", created && !created.cycleDays);
 
 // --- 買う間隔を指定して登録すると、ストック側の cycleDays に反映される ---
-await page.click("#btn-shortcut-toggle");
-await sleep(400);
-await page.click("#btn-shortcut-register");
-await sleep(700);
+await openShortcutRegister();
 await page.fill("#new-name", "洗濯洗剤");
 await page.fill("#new-cycle-days", "20");
 await page.click("#btn-add-request");
@@ -58,10 +57,7 @@ check("買う間隔つきで登録するとストックの cycleDays に入る",
 check("起点(lastFilledAt)も一緒に入る", withCycle && withCycle.lastFilledAt > 0);
 
 // --- 範囲外の値は弾かれる ---
-await page.click("#btn-shortcut-toggle");
-await sleep(400);
-await page.click("#btn-shortcut-register");
-await sleep(700);
+await openShortcutRegister();
 await page.fill("#new-name", "重複チェック用");
 await page.fill("#new-cycle-days", "9999");
 await page.click("#btn-add-request");
@@ -75,10 +71,7 @@ await page.click("#btn-sheet-close");
 await sleep(400);
 
 // --- 既にストックにある品名で登録すると、重複作成せず既存の買う間隔だけ更新する ---
-await page.click("#btn-shortcut-toggle");
-await sleep(400);
-await page.click("#btn-shortcut-register");
-await sleep(700);
+await openShortcutRegister();
 await page.fill("#new-name", "米"); // fb-stub の既存ストック(st1, level:low, cycleDaysなし)と同名
 await page.fill("#new-cycle-days", "14");
 await page.click("#btn-add-request");

@@ -1,4 +1,4 @@
-// ページ内タブ（お買い物/ストック/設定）を左右スワイプで切り替えられることの検証。
+// ページ内タブ（お買い物/よく買うもの/ストック/設定）を左右スワイプで切り替えられることの検証。
 // ミッションはコア機能ではないため下部ナビから外し、トップバーのサイドボタン
 // （名前と？の間）に移した。スワイプの対象にも含めない。
 import { startHarness } from "../harness.mjs";
@@ -58,11 +58,15 @@ check("ミッションのサイドボタンのタップ領域が44px以上",
 await page.click('[data-tab="requests"]');
 await sleep(500);
 
-// --- 左スワイプで次のタブへ（お買い物→ストック→設定） ---
+// --- 左スワイプで次のタブへ（お買い物→よく買うもの→ストック→設定） ---
+await t.swipeLeft(400, 320, 40);
+await sleep(400);
+check("左スワイプでよく買うものタブへ", (await activeTab()) === "tab-shortcuts");
+check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "shortcuts");
+
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
 check("左スワイプでストックタブへ", (await activeTab()) === "tab-stock");
-check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "stock");
 
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
@@ -77,6 +81,10 @@ check("最後のタブでさらに左スワイプしても何も起きない", (
 await t.swipeRight(400, 40, 320);
 await sleep(400);
 check("右スワイプでストックタブへ戻る", (await activeTab()) === "tab-stock");
+
+await t.swipeRight(400, 40, 320);
+await sleep(400);
+check("右スワイプでよく買うものタブへ戻る", (await activeTab()) === "tab-shortcuts");
 
 await t.swipeRight(400, 40, 320);
 await sleep(400);
@@ -141,7 +149,7 @@ await send2("touchMove", 300, 400); // dx=-20（閾値60の一部だけ動いた
 await sleep(100);
 const midDrag = await indicatorState();
 const homeOffset = await btnOffset("requests");
-const targetOffset = await btnOffset("stock");
+const targetOffset = await btnOffset("shortcuts");
 check("ドラッグ中はアニメーションを止めて指に追従する", midDrag.dragging);
 check("閾値未満の途中では、背景が今のタブと隣のタブの間にある（まだどちらにも揃っていない）",
   midDrag.x > Math.min(homeOffset.x, targetOffset.x) && midDrag.x < Math.max(homeOffset.x, targetOffset.x),
