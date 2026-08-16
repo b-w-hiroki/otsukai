@@ -46,6 +46,7 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `circle-toggle-test` / `bought-test` | ◯ タップの宣言・取り消し・完了 |
 | `history-close-test` / `hist-footer-test` | 履歴シートが閉じる・実タッチでスクロールする |
 | `store-footer-test` | 店内モードの終了ボタン位置 |
+| `shortcut-tab-test` | ⚡よく買うものタブ（下部ナビ）・FABからの登録・編集モード・大量件数のスクロール |
 | `tab-swipe-test` | ページ内タブの左右スワイプ切替・端での折り返し無し・シート/店内モード中の抑止・下部ナビの背景が指に追従して滑る／閾値未満なら元へ戻る |
 | `update-test` / `update-banner-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新 |
 | `photo-test` | 📷 写真の添付・表示・拡大・外す・店内モードのサムネイル |

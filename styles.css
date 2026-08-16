@@ -387,7 +387,8 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 .shortcut-area-label { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
 .shortcut-chips {
-  /* スクロールはシート本体（.sheet-content）に任せる。二重スクロールにしない */
+  /* 独自のタブ（#tab-shortcuts）なので、他のタブの一覧と同じくページ本体の
+     スクロールに任せる（シートではないので二重スクロールの心配がない） */
   display: flex; flex-direction: column; gap: 5px;
   margin-bottom: 10px;
 }
@@ -460,8 +461,9 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-float);
   /* 中央のFABは他のタブと同じ 1fr にすると幅だけ広がって周りが空白になるため、
-     自身のコンテンツ幅（52px＋余白）だけ確保する auto にする（DOM順: タブ・FAB・タブ・タブ）。 */
-  display: grid; grid-template-columns: 1fr auto 1fr 1fr;
+     自身のコンテンツ幅（52px＋余白）だけ確保する auto にする
+     （DOM順: お買い物・よく買うもの・FAB・ストック・設定）。 */
+  display: grid; grid-template-columns: 1fr 1fr auto 1fr 1fr;
   align-items: center; gap: 4px; z-index: 30;
 }
 .bottom-nav button[data-tab] {
@@ -604,7 +606,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 /* ======= FAB (フッター組み込み・控えめに盛り上げ) ======= */
 .fab {
   position: relative;
-  grid-column: 2; grid-row: 1;
+  grid-column: 3; grid-row: 1;
   justify-self: center; align-self: start;
   margin-top: -18px; margin-bottom: 0;
   width: 52px; height: 52px; border-radius: 50%;
@@ -617,14 +619,14 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   font-size: 0;
 }
 /* FABを控えめに盛り上げて抱えるクレードル（FABの背面に描画）。
-   .fab と同じグリッド列（2列目）に explicit に置くことで、両脇のタブ数が
-   左右非対称（例: 左1個・右2個）でも常にFABの実位置に揃う。
+   .fab と同じグリッド列（3列目）に explicit に置くことで、両脇のタブ数が
+   将来また非対称になっても常にFABの実位置に揃う。
    （以前は .fab::before にしていたが、負のz-indexが同じ要素の背景より
    前面に出てしまい、FAB自体が真っ白に潰れる不具合になったため、
    .bottom-nav の通常の兄弟要素として、z-index無指定＝FABより背面に置く） */
 .bottom-nav::before {
   content: "";
-  grid-column: 2; grid-row: 1;
+  grid-column: 3; grid-row: 1;
   justify-self: center; align-self: center;
   margin-top: -14px;
   width: 66px; height: 66px; border-radius: 50%;

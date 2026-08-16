@@ -310,7 +310,6 @@ function updateShortcutVisibility() {
 function openShortcutRegisterSheet() {
   shortcutMode = true;
   editingRequestId = null;
-  closeShortcutPanel();
   populateAssigneeSelect("");
   // フィールドをクリア
   $("new-name").value = "";
@@ -361,23 +360,22 @@ async function addShortcutFromSheet() {
 // 誤操作防止: 削除×は「✏️ 編集」モードの中だけに表示する
 let shortcutsEditMode = false;
 function renderShortcuts() {
-  const wrap = $("shortcut-float-wrap");
-  const btn = $("btn-shortcut-toggle");
   const chips = $("shortcut-chips");
-  if (!wrap || !btn || !chips) return;
+  if (!chips) return;
   const entries = Object.entries(state.shortcuts);
   updateShortcutVisibility();
   const count = entries.length;
-  btn.innerHTML = `<span style="font-size:17px;line-height:1;">⚡</span> よく買うもの${count ? ` <span style="background:rgba(255,255,255,0.25);border-radius:99px;padding:1px 7px;font-size:11px;font-weight:800;">${count}</span>` : ''}`;
   const editBtn = $("btn-shortcut-edit");
   if (editBtn) {
     editBtn.style.display = count ? "" : "none";
-    editBtn.textContent = shortcutsEditMode ? "✔ 完了" : "✏️ 編集";
+    editBtn.innerHTML = shortcutsEditMode
+      ? '✏️ 編集（閉じる） <span class="toggle-chevron">▴</span>'
+      : '✏️ 編集 <span class="toggle-chevron">▾</span>';
     editBtn.classList.toggle("open", shortcutsEditMode);
   }
   if (!count) {
     shortcutsEditMode = false;
-    chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。「＋ よく買うものを登録」か、リストの項目の ☆ から追加できます。</p>`;
+    chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。＋ をタップして登録するか、リストの項目の ☆ から追加できます。</p>`;
   } else {
     // カテゴリ順（食品→日用品→その他→未分類）→ 名前順で並べ、カテゴリ見出しを付けて見やすく。
     // 全件が未分類なら見出しは出さない。
@@ -419,7 +417,7 @@ function renderShortcuts() {
       if (e.target.closest(".shortcut-row-del")) return;
       if (shortcutsEditMode) return; // 編集中の誤タップで追加しない
       const s = state.shortcuts[row.dataset.sid];
-      if (s) { addFromShortcut(s); closeShortcutPanel(); }
+      if (s) addFromShortcut(s);
     });
   });
   chips.querySelectorAll(".shortcut-row-del").forEach(del => {
@@ -430,18 +428,6 @@ function renderShortcuts() {
       deleteShortcut(del.dataset.del);
     });
   });
-}
-function openShortcutPanel() {
-  $("shortcut-sheet").classList.add("open");
-  $("sheet-backdrop").classList.add("open");
-  $("btn-shortcut-toggle").classList.add("open");
-}
-function closeShortcutPanel() {
-  const sheet = $("shortcut-sheet");
-  const btn = $("btn-shortcut-toggle");
-  if (sheet) sheet.classList.remove("open");
-  $("sheet-backdrop").classList.remove("open");
-  if (btn) btn.classList.remove("open");
 }
 async function claimRequest(id) {
   // トランザクションで「open のときだけ」立候補する。
