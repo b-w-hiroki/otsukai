@@ -417,7 +417,9 @@ function renderShortcuts() {
       if (e.target.closest(".shortcut-row-del")) return;
       if (shortcutsEditMode) return; // 編集中の誤タップで追加しない
       const s = state.shortcuts[row.dataset.sid];
-      if (s) addFromShortcut(s);
+      // 独立タブになって行数が増え、うっかり隣の行に触れて追加してしまいやすく
+      // なったため、確認をひとつ挟む（誤タップ防止）
+      if (s && confirm(`「${s.name}」を買い物リストに追加しますか？`)) addFromShortcut(s);
     });
   });
   chips.querySelectorAll(".shortcut-row-del").forEach(del => {
