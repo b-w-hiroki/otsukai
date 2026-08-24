@@ -1,4 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <circle cx="50" cy="50" r="50" fill="#e6f3df"/>
-  <text x="50" y="54" font-size="54" text-anchor="middle" dominant-baseline="central">🥬</text>
+  <g>
+    <!-- 少しめくれた外葉（左に1枚だけ、非対称にすることで花っぽさを消す） -->
+    <path d="M22 45 Q14 34 24 26 Q34 30 32 44 Q27 46 22 45 Z" fill="#6a9c47"/>
+    <!-- 玉本体（丸くつまった球） -->
+    <circle cx="52" cy="58" r="29" fill="#8bc34a"/>
+    <!-- 巻いた葉の層をゆるいカーブで(まっすぐ横断させない・端で止める) -->
+    <path d="M28 50 Q45 58 52 50" stroke="#6a9c47" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M30 64 Q50 74 74 62" stroke="#6a9c47" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M50 40 Q65 46 72 58" stroke="#6a9c47" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- ハイライト -->
+    <ellipse cx="40" cy="46" rx="10" ry="7" fill="#dcedc0" opacity="0.6"/>
+  </g>
 </svg>
