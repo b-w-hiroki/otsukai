@@ -393,9 +393,15 @@ const SHORTCUT_ICON_MATCH = [
   { file: "cucumber", keywords: ["きゅうり", "キュウリ", "胡瓜"] },
   { file: "spinach", keywords: ["ほうれん草", "ホウレンソウ"] },
   { file: "broccoli", keywords: ["ブロッコリー"] },
-  { file: "chicken", keywords: ["鶏肉", "とり肉", "鳥肉", "チキン"] },
-  { file: "beef", keywords: ["牛肉", "ビーフ"] },
-  { file: "pork", keywords: ["豚肉", "ぶた肉", "ポーク"] },
+  {
+    file: "chicken",
+    keywords: [
+      "鶏肉", "とり肉", "鳥肉", "チキン",
+      "鶏もも", "とりもも", "鶏むね", "とりむね", "ささみ", "手羽先", "手羽元", "手羽中",
+    ],
+  },
+  { file: "beef", keywords: ["牛肉", "ビーフ", "牛もも", "牛バラ", "牛ロース", "牛ひき肉", "牛タン", "牛すね"] },
+  { file: "pork", keywords: ["豚肉", "ぶた肉", "ポーク", "豚バラ", "豚ロース", "豚もも", "豚ひき肉", "豚こま"] },
   { file: "salmon", keywords: ["サケ", "シャケ", "鮭"] },
   { file: "fish", keywords: ["魚", "さかな"] },
   { file: "egg", keywords: ["卵", "たまご", "玉子"] },

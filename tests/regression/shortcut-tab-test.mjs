@@ -53,6 +53,7 @@ await page.evaluate(async () => {
   const db = firebase.database();
   await db.ref("families/fam1/shortcuts").push().set({ name: "アボカド", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
   await db.ref("families/fam1/shortcuts").push().set({ name: "国産鶏肉むね", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
+  await db.ref("families/fam1/shortcuts").push().set({ name: "鶏もも肉", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
   await db.ref("families/fam1/shortcuts").push().set({ name: "シャケの切り身", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
   await db.ref("families/fam1/shortcuts").push().set({ name: "ブロッコリー", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
   await db.ref("families/fam1/shortcuts").push().set({ name: "謎の食材X", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
@@ -64,6 +65,9 @@ check("アボカドは対応するイラストが出る", avocadoIcon === "./sho
 const chickenCard = page.locator(".shortcut-card").filter({ hasText: "国産鶏肉むね" }).first();
 const chickenIcon = await chickenCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
 check("キーワードが名前の一部でも一致する（国産鶏肉むね→鶏肉）", chickenIcon === "./shortcut-icons/chicken.svg", chickenIcon);
+const chickenThighCard = page.locator(".shortcut-card").filter({ hasText: "鶏もも肉" }).first();
+const chickenThighIcon = await chickenThighCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("部位名（鶏もも肉）でも一致する", chickenThighIcon === "./shortcut-icons/chicken.svg", chickenThighIcon);
 const salmonCard = page.locator(".shortcut-card").filter({ hasText: "シャケの切り身" }).first();
 const salmonIcon = await salmonCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
 check("シャケは鮭のイラストが出る", salmonIcon === "./shortcut-icons/salmon.svg", salmonIcon);
