@@ -1,4 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <circle cx="50" cy="50" r="50" fill="#e2f2df"/>
-  <text x="50" y="54" font-size="54" text-anchor="middle" dominant-baseline="central">🍃</text>
+  <g>
+    <!-- 束ねた根元（赤みがかった軸） -->
+    <path d="M43 82 L50 72 L57 82 Z" fill="#c96a5a"/>
+    <!-- 肉厚でとがった葉を3枚、束になるよう扇状に -->
+    <g transform="rotate(-24 50 74)">
+      <path d="M50 74 C58 62 60 46 52 30 C46 44 44 62 50 74 Z" fill="#4f9153"/>
+      <path d="M50 70 L51 40" stroke="#7fbf7a" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    <g>
+      <path d="M50 76 C60 64 62 42 50 22 C38 42 40 64 50 76 Z" fill="#3f7f46"/>
+      <path d="M50 72 L50 32" stroke="#77b56f" stroke-width="2.2" stroke-linecap="round" opacity="0.7"/>
+    </g>
+    <g transform="rotate(24 50 74)">
+      <path d="M50 74 C58 62 60 46 52 30 C46 44 44 62 50 74 Z" fill="#4f9153"/>
+      <path d="M50 70 L51 40" stroke="#7fbf7a" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    </g>
+  </g>
 </svg>
