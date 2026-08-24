@@ -55,15 +55,17 @@ await page.screenshot({path:`${OUT}/f4-cost.png`});
 await page.click("#btn-history-close");
 await sleep(400);
 
-// 月間サマリーが実支出ベースに
-await page.click('[data-tab="settings"]');
+// 月間サマリーが実支出ベースに（左上のプレイヤー情報に入っている）
+await page.click("#btn-player-profile");
 await sleep(600);
-await page.click('.settings-acc[data-acc="monthly"] [data-acc-toggle]');
-await sleep(400);
 const monthly = await page.locator("#monthly-summary").innerText();
 check("月間サマリーが実支出表示", monthly.includes("実際の支出"), monthly.replace(/\n/g," ").slice(0,60));
+await page.click("#btn-player-sheet-close");
+await sleep(400);
 
 // ダークモード
+await page.click('[data-tab="settings"]');
+await sleep(600);
 await page.click('.settings-acc[data-acc="notify"] [data-acc-toggle]');
 await sleep(400);
 await page.selectOption("#opt-theme","dark");

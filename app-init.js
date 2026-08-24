@@ -306,7 +306,8 @@ function wireGlobalEvents() {
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
   $("btn-add-stock").addEventListener("click", addStock);
-  $("btn-open-expense-sheet").addEventListener("click", openExpenseSheet);
+  // 「＋ その他の支出を記録」ボタンはプレイヤー情報シート内にあり、シートを開くたび
+  // openPlayerSheet() が innerHTML ごと作り直すため、リスナーもそちらで都度つける
   $("btn-expense-sheet-close").addEventListener("click", closeExpenseSheet);
   $("btn-add-expense").addEventListener("click", addExtraExpense);
   $("expense-amount").addEventListener("keydown", (e) => { if (e.key === "Enter") addExtraExpense(); });

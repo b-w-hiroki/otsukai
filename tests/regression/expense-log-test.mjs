@@ -14,10 +14,9 @@ const PNG = Buffer.from(
 const pickReceipt = () => page.setInputFiles("#expense-receipt-input", { name: "receipt.png", mimeType: "image/png", buffer: PNG });
 
 await t.ready();
-await page.click('[data-tab="settings"]');
+// 「今月のおかいもの」は左上のプレイヤー情報（アバターをタップ）に入っている
+await page.click("#btn-player-profile");
 await sleep(500);
-await page.click('.settings-acc[data-acc="monthly"] [data-acc-toggle]');
-await sleep(400);
 
 // --- 起動時は OCR SDK を読み込んでいない ---
 const ocrLoadedBefore = await page.evaluate(() =>
