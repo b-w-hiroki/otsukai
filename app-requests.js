@@ -379,6 +379,35 @@ let shortcutsEditMode = false;
 // 編集モードで写真タップ→ファイル選択の間、どのカードを対象にしたかを覚えておく
 // （カードごとに <input type=file> を用意せず、共有の1つを使い回すため）
 let shortcutPhotoTargetId = null;
+
+// 写真が未設定のカードでも、品名からよくある品だとわかるものは
+// あらかじめ用意したイラスト（shortcut-icons/）を代わりに表示する。
+// 本物の写真ではないので、いつでも編集モードから本物の写真に差し替えられる。
+const SHORTCUT_ICON_MATCH = [
+  { file: "avocado", keywords: ["アボカド"] },
+  { file: "tomato", keywords: ["トマト"] },
+  { file: "carrot", keywords: ["にんじん", "人参"] },
+  { file: "onion", keywords: ["たまねぎ", "玉ねぎ", "玉葱"] },
+  { file: "cabbage", keywords: ["キャベツ"] },
+  { file: "potato", keywords: ["じゃがいも", "ジャガイモ"] },
+  { file: "cucumber", keywords: ["きゅうり", "キュウリ", "胡瓜"] },
+  { file: "spinach", keywords: ["ほうれん草", "ホウレンソウ"] },
+  { file: "chicken", keywords: ["鶏肉", "とり肉", "鳥肉", "チキン"] },
+  { file: "beef", keywords: ["牛肉", "ビーフ"] },
+  { file: "pork", keywords: ["豚肉", "ぶた肉", "ポーク"] },
+  { file: "fish", keywords: ["魚", "さかな"] },
+  { file: "egg", keywords: ["卵", "たまご", "玉子"] },
+  { file: "milk", keywords: ["牛乳", "ミルク"] },
+  { file: "bread", keywords: ["パン"] },
+  { file: "rice", keywords: ["米", "ごはん"] },
+  { file: "banana", keywords: ["バナナ"] },
+  { file: "apple", keywords: ["りんご", "リンゴ", "林檎"] },
+];
+function matchShortcutIcon(name) {
+  if (!name) return null;
+  const hit = SHORTCUT_ICON_MATCH.find((e) => e.keywords.some((k) => name.includes(k)));
+  return hit ? `./shortcut-icons/${hit.file}.svg` : null;
+}
 function renderShortcuts() {
   const chips = $("shortcut-chips");
   if (!chips) return;
@@ -426,12 +455,15 @@ function renderShortcuts() {
         if (m) hints.push(`👤${escapeHtml(m.name || '')}`);
       }
       const hintHtml = hints.length ? `<span class="shortcut-card-hints">${hints.join(' ')}</span>` : '';
+      const iconUrl = s.photoUrl ? null : matchShortcutIcon(s.name);
       html += `
       <button class="shortcut-card${shortcutsEditMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
         <span class="shortcut-card-photo"${shortcutsEditMode ? ` data-photo-edit="${id}" role="button" aria-label="${escapeHtml(s.name)}の写真を変更"` : ""}>
           ${s.photoUrl
             ? `<img src="${escapeHtml(s.photoUrl)}" alt="" loading="lazy" />`
-            : `<span class="shortcut-card-placeholder" aria-hidden="true">🛒</span>`}
+            : iconUrl
+              ? `<img src="${iconUrl}" class="shortcut-card-icon" alt="" loading="lazy" />`
+              : `<span class="shortcut-card-placeholder" aria-hidden="true">🛒</span>`}
           ${s.urgent ? `<span class="shortcut-card-urgent" aria-hidden="true">🔥</span>` : ""}
           ${shortcutsEditMode ? `<span class="shortcut-card-photo-hint" aria-hidden="true">📷</span>` : ""}
         </span>

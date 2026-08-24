@@ -28,6 +28,7 @@ const MIME = {
   ".css": "text/css; charset=utf-8",
   ".json": "application/json",
   ".png": "image/png",
+  ".svg": "image/svg+xml",
 };
 
 export async function startHarness(opts = {}) {

@@ -123,8 +123,16 @@ function initTabSwipe() {
       if (Math.abs(dy) > Math.abs(dx)) { startX = null; return; }
       if (Math.abs(dx) > 10) swiping = true;
     }
-    if (swiping) updateNavIndicatorDrag(dx);
-  }, { passive: true });
+    if (swiping) {
+      // touch-action: pan-y だけでは、指を置いた場所がボタン要素（ストックの
+      // 丸レベルボタン等、touch-action: manipulation 指定あり）だと端末によって
+      // 横方向のネイティブ処理に負けることがあったため、横スワイプと判定した
+      // 後は明示的に preventDefault してJS側の制御を確定させる
+      // （touchmove を passive:false にしているのはこのため）。
+      e.preventDefault();
+      updateNavIndicatorDrag(dx);
+    }
+  }, { passive: false });
 
   app.addEventListener("touchend", (e) => {
     if (startX === null || !swiping) { startX = null; return; }
