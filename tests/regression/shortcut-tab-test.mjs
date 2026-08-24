@@ -53,6 +53,8 @@ await page.evaluate(async () => {
   const db = firebase.database();
   await db.ref("families/fam1/shortcuts").push().set({ name: "アボカド", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
   await db.ref("families/fam1/shortcuts").push().set({ name: "国産鶏肉むね", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
+  await db.ref("families/fam1/shortcuts").push().set({ name: "シャケの切り身", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
+  await db.ref("families/fam1/shortcuts").push().set({ name: "ブロッコリー", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
   await db.ref("families/fam1/shortcuts").push().set({ name: "謎の食材X", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
 });
 await sleep(700);
@@ -62,6 +64,12 @@ check("アボカドは対応するイラストが出る", avocadoIcon === "./sho
 const chickenCard = page.locator(".shortcut-card").filter({ hasText: "国産鶏肉むね" }).first();
 const chickenIcon = await chickenCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
 check("キーワードが名前の一部でも一致する（国産鶏肉むね→鶏肉）", chickenIcon === "./shortcut-icons/chicken.svg", chickenIcon);
+const salmonCard = page.locator(".shortcut-card").filter({ hasText: "シャケの切り身" }).first();
+const salmonIcon = await salmonCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("シャケは鮭のイラストが出る", salmonIcon === "./shortcut-icons/salmon.svg", salmonIcon);
+const broccoliCard = page.locator(".shortcut-card").filter({ hasText: "ブロッコリー" }).first();
+const broccoliIcon = await broccoliCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("ブロッコリーは対応するイラストが出る", broccoliIcon === "./shortcut-icons/broccoli.svg", broccoliIcon);
 const unknownCard = page.locator(".shortcut-card").filter({ hasText: "謎の食材X" }).first();
 check("一致しない品名は通常のプレースホルダーのまま", (await unknownCard.locator(".shortcut-card-icon").count()) === 0);
 check("一致しない品名にはイラストではなくプレースホルダーが出る", (await unknownCard.locator(".shortcut-card-placeholder").count()) === 1);
