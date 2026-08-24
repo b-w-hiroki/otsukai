@@ -294,6 +294,12 @@ function openPlayerSheet() {
       <div class="stat"><b>${cl}</b><span>担当</span></div>
       <div class="stat"><b>${done}</b><span>完了</span></div>
     </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:20px;">
+      <h3 style="margin:0 0 8px;font-size:14px;">📊 今月のおかいもの</h3>
+      <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
+      <div id="extra-expense-list"></div>
+      <button id="btn-open-expense-sheet" class="ghost tiny-btn" style="margin-top:10px;width:100%;">＋ その他の支出を記録</button>
+    </div>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button id="ps-btn-family" class="ghost" style="width:100%;text-align:left;padding:14px 16px;border-radius:12px;font-size:14px;font-weight:700;">
         👨‍👩‍👧 家族の状況
@@ -310,6 +316,8 @@ function openPlayerSheet() {
   body.querySelector("#ps-btn-family").addEventListener("click", openFamilySheet);
   body.querySelector("#ps-btn-history").addEventListener("click", openHistorySheet);
   body.querySelector("#ps-btn-mission-history").addEventListener("click", openMissionHistorySheet);
+  body.querySelector("#btn-open-expense-sheet").addEventListener("click", openExpenseSheet);
+  renderMonthlySummary();
   $("player-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
 }

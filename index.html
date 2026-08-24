@@ -269,22 +269,6 @@
             </div>
           </div>
         </div>
-        <div class="card settings-acc closed" data-acc="family">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>👨‍👩‍👧‍👦 家族</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <p><b id="set-family-name"></b></p>
-            <p class="muted">招待コード（家族を増やすときに共有）</p>
-            <div class="row">
-              <input id="set-invite-code" readonly style="font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px;" />
-              <button id="btn-copy-code" class="ghost tiny-btn" style="white-space:nowrap;">コピー</button>
-            </div>
-            <h3 style="margin-top:12px;">メンバー</h3>
-            <div id="member-list" class="row wrap"></div>
-          </div>
-        </div>
         <div class="card settings-acc closed" data-acc="lowlead">
           <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
             <h2>⏳ そろそろ切れるかも</h2>
@@ -312,6 +296,35 @@
               買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
               品ごとの間隔は、ストックタブで品名をタップすると指定できます。
             </p>
+          </div>
+        </div>
+        <div class="card settings-acc closed" data-acc="family">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>👨‍👩‍👧‍👦 家族</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <p><b id="set-family-name"></b></p>
+            <p class="muted">招待コード（家族を増やすときに共有）</p>
+            <div class="row">
+              <input id="set-invite-code" readonly style="font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px;" />
+              <button id="btn-copy-code" class="ghost tiny-btn" style="white-space:nowrap;">コピー</button>
+            </div>
+            <h3 style="margin-top:12px;">メンバー</h3>
+            <div id="member-list" class="row wrap"></div>
+          </div>
+        </div>
+        <div id="member-admin-card" class="card settings-acc closed" data-acc="member-admin" style="display:none;">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>🛡️ メンバー管理（保護者）</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <button id="btn-member-admin-toggle" class="section-toggle-btn" aria-expanded="false">🔧 管理メニューを開く <span class="toggle-chevron">▾</span></button>
+            <div id="member-admin-body" style="display:none;">
+              <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
+              <div id="member-admin-list"></div>
+            </div>
           </div>
         </div>
         <div class="card settings-acc closed" data-acc="notify">
@@ -350,30 +363,6 @@
                 <p class="muted" style="font-size:11px;margin-top:6px;">設定した時刻に、未完了の買い物があると家族へ通知します。</p>
               </div>
             </div>
-          </div>
-        </div>
-        <div id="member-admin-card" class="card settings-acc closed" data-acc="member-admin" style="display:none;">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>🛡️ メンバー管理（保護者）</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <button id="btn-member-admin-toggle" class="section-toggle-btn" aria-expanded="false">🔧 管理メニューを開く <span class="toggle-chevron">▾</span></button>
-            <div id="member-admin-body" style="display:none;">
-              <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
-              <div id="member-admin-list"></div>
-            </div>
-          </div>
-        </div>
-        <div class="card settings-acc closed" data-acc="monthly">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>📊 今月のおかいもの</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
-            <div id="extra-expense-list"></div>
-            <button id="btn-open-expense-sheet" class="ghost tiny-btn" style="margin-top:10px;width:100%;">＋ その他の支出を記録</button>
           </div>
         </div>
         <div class="card settings-acc closed" data-acc="maintenance">
@@ -621,7 +610,22 @@
       </div>
     </div>
 
-    <!-- Extra expense sheet（お使いリスト以外で買ったものの金額ログ） -->
+    <!-- Player profile sheet -->
+    <div id="player-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title" id="player-sheet-title">プレイヤー情報</div>
+          <button id="btn-player-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div id="player-sheet-body"></div>
+      </div>
+    </div>
+
+    <!-- Extra expense sheet（お使いリスト以外で買ったものの金額ログ）。
+         「＋その他の支出を記録」ボタンはプレイヤー情報シートの中にあり、その上に
+         重ねて開くため、DOM順もプレイヤー情報シートより後ろに置く必要がある
+         （.sheet はどれも同じスタッキング文脈なので、後ろにある方が上に乗る）。 -->
     <div id="expense-sheet" class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-content">
@@ -642,18 +646,6 @@
           <input id="expense-memo" placeholder="メモ（任意）例: コンビニでお茶" maxlength="60" />
           <button id="btn-add-expense">記録する</button>
         </div>
-      </div>
-    </div>
-
-    <!-- Player profile sheet -->
-    <div id="player-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title" id="player-sheet-title">プレイヤー情報</div>
-          <button id="btn-player-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div id="player-sheet-body"></div>
       </div>
     </div>
 

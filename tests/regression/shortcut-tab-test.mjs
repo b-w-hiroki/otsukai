@@ -48,6 +48,33 @@ check("hover時も紫グラデに化けない", hoverColor.bgImage === "none", J
 // --- 写真が無いカードはプレースホルダーが出る ---
 check("写真未設定のカードはプレースホルダーが出る", (await page.locator(".shortcut-card-placeholder").count()) > 0);
 
+// --- 品名がよくある品と一致すると、写真の代わりに用意したイラストが出る ---
+await page.evaluate(async () => {
+  const db = firebase.database();
+  await db.ref("families/fam1/shortcuts").push().set({ name: "アボカド", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
+  await db.ref("families/fam1/shortcuts").push().set({ name: "国産鶏肉むね", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
+  await db.ref("families/fam1/shortcuts").push().set({ name: "謎の食材X", diff: "normal", createdAt: Date.now(), createdBy: "uid-parent" });
+});
+await sleep(700);
+const avocadoCard = page.locator(".shortcut-card").filter({ hasText: "アボカド" }).first();
+const avocadoIcon = await avocadoCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("アボカドは対応するイラストが出る", avocadoIcon === "./shortcut-icons/avocado.svg", avocadoIcon);
+const chickenCard = page.locator(".shortcut-card").filter({ hasText: "国産鶏肉むね" }).first();
+const chickenIcon = await chickenCard.locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("キーワードが名前の一部でも一致する（国産鶏肉むね→鶏肉）", chickenIcon === "./shortcut-icons/chicken.svg", chickenIcon);
+const unknownCard = page.locator(".shortcut-card").filter({ hasText: "謎の食材X" }).first();
+check("一致しない品名は通常のプレースホルダーのまま", (await unknownCard.locator(".shortcut-card-icon").count()) === 0);
+check("一致しない品名にはイラストではなくプレースホルダーが出る", (await unknownCard.locator(".shortcut-card-placeholder").count()) === 1);
+// 実際に写真を登録すれば、連想イラストより本物の写真が優先される
+await page.evaluate(async () => {
+  const snap = await firebase.database().ref("families/fam1/shortcuts").once("value");
+  const all = snap.val() || {};
+  const hit = Object.entries(all).find(([, s]) => s && s.name === "アボカド");
+  if (hit) await firebase.database().ref("families/fam1/shortcuts/" + hit[0] + "/photoUrl").set("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+});
+await sleep(700);
+check("本物の写真を登録すると連想イラストより優先される", (await avocadoCard.locator(".shortcut-card-icon").count()) === 0);
+
 // --- FABから写真付きで登録できる ---
 await page.click("#fab-add");
 await sleep(700);

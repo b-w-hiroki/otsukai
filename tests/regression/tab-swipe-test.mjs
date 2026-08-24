@@ -68,9 +68,22 @@ await t.swipeLeft(400, 320, 40);
 await sleep(400);
 check("左スワイプでストックタブへ", (await activeTab()) === "tab-stock");
 
-await t.swipeLeft(400, 320, 40);
-await sleep(400);
-check("左スワイプで設定タブへ", (await activeTab()) === "tab-settings");
+// --- ストックタブ: 指の置き場所が丸レベルボタン（touch-action:manipulation の
+// <button>）の上でも、横スワイプと判定した後は明示的に preventDefault して
+// JS側の制御に確定させているので、引き続きタブが切り替わる
+// （「フッターのストックから左右スライドが効かない」の再発防止） ---
+const levelBtnBox = await page.locator(".stock-level-btn").first().boundingBox();
+if (levelBtnBox) {
+  const y = levelBtnBox.y + levelBtnBox.height / 2;
+  await t.swipeLeft(y, 320, 40);
+  await sleep(400);
+  check("ストックの丸レベルボタンの上から始めても左スワイプで設定タブへ切り替わる",
+    (await activeTab()) === "tab-settings");
+} else {
+  await t.swipeLeft(400, 320, 40);
+  await sleep(400);
+  check("左スワイプで設定タブへ", (await activeTab()) === "tab-settings");
+}
 
 // --- 端まで来たら折り返さない ---
 await t.swipeLeft(400, 320, 40);

@@ -3,7 +3,7 @@
 // ・Firebase SDK（gstatic.com）や設定・アイコンなどの静的アセットはプリキャッシュし、
 //   キャッシュ優先で返す（圏外でもアプリが起動できるように）。
 // アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
-const CACHE = "otsukai-v50";
+const CACHE = "otsukai-v52";
 
 const PRECACHE = [
   "./index.html",
@@ -26,6 +26,24 @@ const PRECACHE = [
   "./icon-512.png",
   "./icon-maskable-512.png",
   "./apple-touch-icon.png",
+  "./shortcut-icons/apple.svg",
+  "./shortcut-icons/avocado.svg",
+  "./shortcut-icons/banana.svg",
+  "./shortcut-icons/beef.svg",
+  "./shortcut-icons/bread.svg",
+  "./shortcut-icons/cabbage.svg",
+  "./shortcut-icons/carrot.svg",
+  "./shortcut-icons/chicken.svg",
+  "./shortcut-icons/cucumber.svg",
+  "./shortcut-icons/egg.svg",
+  "./shortcut-icons/fish.svg",
+  "./shortcut-icons/milk.svg",
+  "./shortcut-icons/onion.svg",
+  "./shortcut-icons/pork.svg",
+  "./shortcut-icons/potato.svg",
+  "./shortcut-icons/rice.svg",
+  "./shortcut-icons/spinach.svg",
+  "./shortcut-icons/tomato.svg",
   "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js",
   "https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js",

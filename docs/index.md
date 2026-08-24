@@ -73,6 +73,7 @@
 | 成果物 | 置き場 | 名前の付け方 |
 |---|---|---|
 | アプリ本体 | **ルート直下**（`index.html` / `app-*.js`（機能ごとに10分割） / `styles.css` / `sw.js`） | 動かさない。移動するとPWAの配信パスが壊れる |
+| よく買うものの連想イラスト | `shortcut-icons/` | 英語名.svg（`app-requests.js` の `SHORTCUT_ICON_MATCH` から参照） |
 | 説明用スクショ | `docs/screenshots/` | `NN-名前.png`（連番・480px幅・256色） |
 | ドキュメント | `docs/` | 小文字ハイフン区切り。`hub.html` から参照されているものはリネーム禁止 |
 | ルール | `docs/rules/` | 小文字1語（`ui` / `deploy` / `workflow`） |
