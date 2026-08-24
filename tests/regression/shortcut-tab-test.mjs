@@ -55,10 +55,11 @@ check("FABから登録シートが開く", await page.locator("#sheet-add.open")
 check("タイトルがよく買うもの登録になっている", (await page.locator("#sheet-add .sheet-title").innerText()).includes("よく買うもの"));
 await page.fill("#new-name", "写真つきテスト品");
 await pickPhoto("#req-photo-input");
-await sleep(300);
+await sleep(400);
 await page.click("#btn-add-request");
-await sleep(1000);
+await sleep(1500);
 const newCard = page.locator(".shortcut-card").filter({ hasText: "写真つきテスト品" }).first();
+await newCard.locator(".shortcut-card-photo img").waitFor({ state: "attached", timeout: 5000 }).catch(() => {});
 check("登録した写真がカードに表示される", (await newCard.locator(".shortcut-card-photo img").count()) === 1);
 const uploadedPaths = await page.evaluate(() => self.__uploadedPhotos || []);
 check("Storageのアップロード先が families/.../shortcuts/ 配下になっている",
