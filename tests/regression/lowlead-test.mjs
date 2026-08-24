@@ -17,12 +17,12 @@ check("手入力の間隔(コンタクト洗浄液・あと1日)は履歴ゼロ�
 check("手入力は「約」を付けずに言い切る", /(?<!約)30日ごと/.test(txt), (txt.match(/[^\n]*30日ごと[^\n]*/)||[""])[0].trim());
 const baseCount = await page.locator(".lowstock-item").count();
 
-// ---- 設定タブ: 予告日数のセレクトがある（アコーディオンを開く） ----
-await page.click('[data-tab="settings"]');
+// ---- ストックタブ: 予告日数のセレクトがある（アコーディオンを開く） ----
+await page.click('[data-tab="stock"]');
 await sleep(600);
 await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]');
 await sleep(400);
-check("設定に予告日数のセレクトがある", (await page.locator("#opt-low-lead").count())===1);
+check("ストックタブに予告日数のセレクトがある", (await page.locator("#opt-low-lead").count())===1);
 check("既定値は2日前", (await page.locator("#opt-low-lead").inputValue())==="2");
 await page.screenshot({path:`${OUT}/ll-settings.png`});
 
@@ -38,7 +38,7 @@ check("件数が増える", wideCount>baseCount, `${baseCount} → ${wideCount}`
 await page.screenshot({path:`${OUT}/ll-wide.png`});
 
 // ---- 0日（当日のみ）に狭める ----
-await page.click('[data-tab="settings"]');
+await page.click('[data-tab="stock"]');
 await sleep(500);
 await page.selectOption("#opt-low-lead","0");
 await sleep(800);
@@ -55,15 +55,13 @@ const saved = await page.evaluate(async () =>
   (await firebase.database().ref("families/fam1/settings/lowLeadDays").once("value")).val());
 check("家族共通の設定としてDBに保存される", saved===0, `families/fam1/settings/lowLeadDays = ${JSON.stringify(saved)}`);
 
-// 元に戻す
-await page.click('[data-tab="settings"]');
+// 元に戻す（ストックタブは既に開いている）
+await page.click('[data-tab="stock"]');
 await sleep(500);
 await page.selectOption("#opt-low-lead","2");
 await sleep(700);
 
 // ---- 品目ごとの買う間隔をストック詳細から指定 ----
-await page.click('[data-tab="stock"]');
-await sleep(700);
 const soy = page.locator(".stock-item").filter({hasText:"しょうゆ"}).first();
 check("しょうゆのストックがある", (await soy.count())===1);
 await soy.click();

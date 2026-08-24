@@ -66,8 +66,7 @@ await shot("16-stock-cycle");
 await page.click("#stock-detail-sheet .sheet-close").catch(()=>{});
 await page.click("#sheet-backdrop").catch(()=>{}); await sleep(500);
 
-// 設定（カードはアコーディオンで既定は閉じている。撮る前に開く）
-await page.click('[data-tab="settings"]'); await sleep(800); await shot("12-settings");
+// そろそろ切れるかも（ストックタブ上部のアコーディオン。既定は閉じている。撮る前に開く）
 await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]'); await sleep(400);
 await page.locator("#opt-low-lead").scrollIntoViewIfNeeded(); await sleep(300);
 // 固定のボトムナビ/FAB がカードに重なるので、この1枚だけ隠して撮る
@@ -77,7 +76,9 @@ await page.locator("#opt-low-lead").locator("xpath=ancestor::div[contains(@class
   .screenshot({path:`${OUT}/17-lowlead-setting.png`}); console.log("  ✓ 17-lowlead-setting");
 await page.reload({waitUntil:"domcontentloaded"});
 await page.waitForSelector("#screen-main",{state:"visible",timeout:20000}); await sleep(1200);
-await page.click('[data-tab="settings"]'); await sleep(800);
+
+// 設定（カードはアコーディオンで既定は閉じている。撮る前に開く）
+await page.click('[data-tab="settings"]'); await sleep(800); await shot("12-settings");
 await page.click('.settings-acc[data-acc="member-admin"] [data-acc-toggle]'); await sleep(400);
 await page.click("#btn-member-admin-toggle"); await sleep(400);
 await page.locator("#member-admin-card").scrollIntoViewIfNeeded(); await sleep(300);

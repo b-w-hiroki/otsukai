@@ -160,11 +160,13 @@ function setSettingsAccOpen(id, open) {
   localStorage.setItem("settingsAccOpen", JSON.stringify(st));
 }
 function wireSettingsAccordion() {
+  // 設定タブ以外（ストックタブの「そろそろ切れるかも」など）にも同じ
+  // アコーディオンを使うため、#tab-settings に限定しない
   const saved = settingsAccState();
-  document.querySelectorAll("#tab-settings .settings-acc").forEach((card) => {
+  document.querySelectorAll(".settings-acc").forEach((card) => {
     if (saved[card.dataset.acc]) card.classList.remove("closed");
   });
-  document.querySelectorAll("#tab-settings [data-acc-toggle]").forEach((btn) => {
+  document.querySelectorAll("[data-acc-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const card = btn.closest(".settings-acc");
       const willOpen = card.classList.contains("closed");

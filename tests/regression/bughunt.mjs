@@ -41,7 +41,7 @@ await page.evaluate(()=>localStorage.clear());
 await page.reload({waitUntil:"domcontentloaded"});
 await page.waitForSelector("#screen-main",{state:"visible",timeout:20000});
 await sleep(1200);
-await page.click('[data-tab="settings"]'); await sleep(500);
+await page.click('[data-tab="stock"]'); await sleep(500);
 await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]'); await sleep(400);
 await page.selectOption("#opt-low-lead","30"); await sleep(700);
 await page.click('[data-tab="requests"]'); await sleep(800);

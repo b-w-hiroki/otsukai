@@ -11,7 +11,7 @@ await sleep(500);
 
 // --- 既定ではすべて閉じている ---
 const accCount = await page.locator("#tab-settings .settings-acc").count();
-check("設定タブにアコーディオンカードがある", accCount >= 6, `${accCount}枚`);
+check("設定タブにアコーディオンカードがある", accCount >= 5, `${accCount}枚`);
 const closedCount = await page.locator("#tab-settings .settings-acc.closed").count();
 check("既定ではすべて閉じている", closedCount === accCount, `closed=${closedCount}/${accCount}`);
 check("閉じているときは本文が非表示", !(await page.locator("#set-name").isVisible()));
