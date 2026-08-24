@@ -217,8 +217,12 @@
       <!-- Tab: Shortcuts -->
       <section id="tab-shortcuts" class="tab">
         <div class="section-header"><h2>⚡ よく買うもの</h2></div>
+        <p class="muted" style="font-size:11px;margin:0 0 10px;">「✏️ 編集」中は写真をタップすると差し替えられます。</p>
         <div id="shortcut-chips" class="shortcut-chips"></div>
         <button id="btn-shortcut-edit" class="section-toggle-btn" style="display:none;">✏️ 編集 <span class="toggle-chevron">▾</span></button>
+        <!-- 編集モード中、カードの写真をタップすると発火する共有のファイル入力
+             （カードごとに用意せず、どのカードを対象にするかはJS側の変数で覚える） -->
+        <input type="file" id="shortcut-photo-replace-input" accept="image/*" style="display:none;" />
       </section>
 
       <!-- Tab: Stock -->
