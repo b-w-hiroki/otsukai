@@ -227,6 +227,35 @@
 
       <!-- Tab: Stock -->
       <section id="tab-stock" class="tab">
+        <div class="card settings-acc closed" data-acc="lowlead">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>⏳ そろそろ切れるかも</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <p class="muted" style="font-size:12px;margin:0 0 10px;">
+              買い忘れそうなものを、お買い物タブのいちばん上に先回りで出します。
+            </p>
+            <div class="row" style="gap:8px;">
+              <span style="font-weight:700;font-size:13px;white-space:nowrap;">知らせる時期</span>
+              <select id="opt-low-lead" style="flex:1;">
+                <option value="0">切れる当日に</option>
+                <option value="1">1日前から</option>
+                <option value="2">2日前から（おすすめ）</option>
+                <option value="3">3日前から</option>
+                <option value="5">5日前から</option>
+                <option value="7">1週間前から</option>
+                <option value="10">10日前から</option>
+                <option value="14">2週間前から</option>
+                <option value="30">1か月前から</option>
+              </select>
+            </div>
+            <p class="muted" style="font-size:11px;margin-top:6px;">
+              買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
+              品ごとの間隔は、下の品名をタップすると指定できます。
+            </p>
+          </div>
+        </div>
         <div id="stock-out-section"></div>
         <div id="stock-low-section"></div>
         <div id="stock-ok-section"></div>
@@ -267,35 +296,6 @@
               <div id="set-emoji-picker" class="emoji-picker"></div>
               <button id="btn-update-profile">更新</button>
             </div>
-          </div>
-        </div>
-        <div class="card settings-acc closed" data-acc="lowlead">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>⏳ そろそろ切れるかも</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <p class="muted" style="font-size:12px;margin:0 0 10px;">
-              買い忘れそうなものを、お買い物タブのいちばん上に先回りで出します。
-            </p>
-            <div class="row" style="gap:8px;">
-              <span style="font-weight:700;font-size:13px;white-space:nowrap;">知らせる時期</span>
-              <select id="opt-low-lead" style="flex:1;">
-                <option value="0">切れる当日に</option>
-                <option value="1">1日前から</option>
-                <option value="2">2日前から（おすすめ）</option>
-                <option value="3">3日前から</option>
-                <option value="5">5日前から</option>
-                <option value="7">1週間前から</option>
-                <option value="10">10日前から</option>
-                <option value="14">2週間前から</option>
-                <option value="30">1か月前から</option>
-              </select>
-            </div>
-            <p class="muted" style="font-size:11px;margin-top:6px;">
-              買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
-              品ごとの間隔は、ストックタブで品名をタップすると指定できます。
-            </p>
           </div>
         </div>
         <div class="card settings-acc closed" data-acc="family">
