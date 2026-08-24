@@ -246,6 +246,14 @@ function wireGlobalEvents() {
     pendingReqPhoto = "";           // 「外す」の意思表示
     setReqPhotoPreview("");
   });
+  // よく買うもの: 編集モードでカードの写真をタップしたときの差し替え
+  $("shortcut-photo-replace-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    e.target.value = ""; // 同じファイルを続けて選べるようにリセット
+    if (!file || !shortcutPhotoTargetId) return;
+    replaceShortcutPhoto(shortcutPhotoTargetId, file);
+    shortcutPhotoTargetId = null;
+  });
   $("btn-photo-viewer-close").addEventListener("click", closePhotoViewer);
   $("photo-viewer").addEventListener("click", (e) => {
     if (e.target === $("photo-viewer")) closePhotoViewer();

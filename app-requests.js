@@ -308,19 +308,12 @@ function updateShortcutVisibility() {
   wrap.style.display = state.activeTab === "requests" ? "flex" : "none";
 }
 function openShortcutRegisterSheet() {
+  // resetSheetToAddMode() で写真プレビュー等も含めて確実にクリーンな状態にしてから、
+  // ショートカット登録モードに上書きする（他のモードで選んだ写真が紛れ込むのを防ぐ）
+  resetSheetToAddMode();
   shortcutMode = true;
   editingRequestId = null;
   populateAssigneeSelect("");
-  // フィールドをクリア
-  $("new-name").value = "";
-  $("new-memo").value = "";
-  $("new-budget").value = "";
-  $("new-brand").value = "";
-  $("new-urgent").checked = false;
-  $("new-diff").value = "normal";
-  $("new-assignee").value = "";
-  setSelectedCategory(null);
-  $("new-cycle-days").value = "";
   $("new-cycle-wrap").style.display = "";
   // ショートカット登録モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "⭐ よく買うものを登録";
@@ -352,13 +345,40 @@ async function addShortcutFromSheet() {
   if (assignedTo) entry.assignedTo = assignedTo;
   if (selectedCategory) entry.category = selectedCategory;
   const ref = familyRef().child("shortcuts").push();
+  if (pendingReqPhoto) {
+    const url = await uploadShortcutPhoto(pendingReqPhoto, ref.key);
+    if (url) entry.photoUrl = url;
+  }
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
   await ensureStockForShortcut(name, cycleDays);
   closeSheet();
   showToast(`⭐ 「${name}」をよく買うものに登録しました`);
 }
-// 誤操作防止: 削除×は「✏️ 編集」モードの中だけに表示する
+async function uploadShortcutPhoto(file, shortcutId) {
+  showToast("写真をアップロード中...", { sound: false });
+  try {
+    return await uploadPhoto(file, `families/${state.familyId}/shortcuts/${shortcutId}`);
+  } catch (e) {
+    console.error("photo upload failed", e);
+    showToast("⚠️ 写真だけアップロードできませんでした（内容は保存されます）");
+    return null;
+  }
+}
+// 編集モード中、カードの写真をタップして選び直した画像をアップロードし、
+// そのカードの photoUrl だけ差し替える（他の項目には影響しない）
+async function replaceShortcutPhoto(shortcutId, file) {
+  const s = state.shortcuts[shortcutId];
+  if (!s) return;
+  const url = await uploadShortcutPhoto(file, shortcutId);
+  if (!url) return;
+  if (!(await dbOp(familyRef().child("shortcuts/" + shortcutId + "/photoUrl").set(url), "写真を更新できませんでした"))) return;
+  showToast(`📷 「${s.name}」の写真を変更しました`, { sound: false });
+}
+// 誤操作防止: 削除×・写真の差し替えは「✏️ 編集」モードの中だけに表示する
 let shortcutsEditMode = false;
+// 編集モードで写真タップ→ファイル選択の間、どのカードを対象にしたかを覚えておく
+// （カードごとに <input type=file> を用意せず、共有の1つを使い回すため）
+let shortcutPhotoTargetId = null;
 function renderShortcuts() {
   const chips = $("shortcut-chips");
   if (!chips) return;
@@ -378,18 +398,25 @@ function renderShortcuts() {
     chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。＋ をタップして登録するか、リストの項目の ☆ から追加できます。</p>`;
   } else {
     // カテゴリ順（食品→日用品→その他→未分類）→ 名前順で並べ、カテゴリ見出しを付けて見やすく。
-    // 全件が未分類なら見出しは出さない。
+    // 全件が未分類なら見出しは出さない。カード形式なので、見出しごとに
+    // グリッドを区切る（グリッドをまたいだ列揃えは狙わない）。
     const sorted = entries.sort(([, a], [, b]) =>
       categoryOrder(a) - categoryOrder(b) || (a.name || "").localeCompare(b.name || "", "ja"));
     const anyCategorized = sorted.some(([, s]) => s.category && CATEGORY[s.category]);
     let html = "";
-    let curCat;
+    let curCat = null;
+    let gridOpen = false;
     sorted.forEach(([id, s]) => {
       const catKey = s.category && CATEGORY[s.category] ? s.category : "none";
       if (anyCategorized && catKey !== curCat) {
         curCat = catKey;
+        if (gridOpen) html += `</div>`;
         const hdr = catKey === "none" ? "📎 未分類" : `${CATEGORY[catKey].emoji} ${CATEGORY[catKey].label}`;
-        html += `<div class="shortcut-cat-hdr">${hdr}</div>`;
+        html += `<div class="shortcut-cat-hdr">${hdr}</div><div class="shortcut-card-grid">`;
+        gridOpen = true;
+      } else if (!gridOpen) {
+        html += `<div class="shortcut-card-grid">`;
+        gridOpen = true;
       }
       const hints = [];
       if (s.budget > 0) hints.push(`💰${Number(s.budget).toLocaleString()}円`);
@@ -398,36 +425,47 @@ function renderShortcuts() {
         const m = (state.family && state.family.members && state.family.members[s.assignedTo]);
         if (m) hints.push(`👤${escapeHtml(m.name || '')}`);
       }
-      const hintHtml = hints.length ? `<span class="shortcut-row-hints">${hints.join(' ')}</span>` : '';
+      const hintHtml = hints.length ? `<span class="shortcut-card-hints">${hints.join(' ')}</span>` : '';
       html += `
-      <button class="shortcut-row${shortcutsEditMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
-        <span class="shortcut-row-main">
-          <span class="shortcut-row-name">${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}</span>
-          ${hintHtml}
+      <button class="shortcut-card${shortcutsEditMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
+        <span class="shortcut-card-photo"${shortcutsEditMode ? ` data-photo-edit="${id}" role="button" aria-label="${escapeHtml(s.name)}の写真を変更"` : ""}>
+          ${s.photoUrl
+            ? `<img src="${escapeHtml(s.photoUrl)}" alt="" loading="lazy" />`
+            : `<span class="shortcut-card-placeholder" aria-hidden="true">🛒</span>`}
+          ${s.urgent ? `<span class="shortcut-card-urgent" aria-hidden="true">🔥</span>` : ""}
+          ${shortcutsEditMode ? `<span class="shortcut-card-photo-hint" aria-hidden="true">📷</span>` : ""}
         </span>
-        ${shortcutsEditMode
-          ? `<span class="shortcut-row-del" data-del="${id}" role="button" aria-label="削除">×</span>`
-          : `<span class="shortcut-row-add" aria-hidden="true">＋</span>`}
+        <span class="shortcut-card-name">${escapeHtml(s.name)}</span>
+        ${hintHtml}
+        ${shortcutsEditMode ? `<span class="shortcut-card-del" data-del="${id}" role="button" aria-label="削除">×</span>` : ""}
       </button>`;
     });
+    if (gridOpen) html += `</div>`;
     chips.innerHTML = html;
   }
-  chips.querySelectorAll(".shortcut-row").forEach(row => {
-    row.addEventListener("click", (e) => {
-      if (e.target.closest(".shortcut-row-del")) return;
+  chips.querySelectorAll(".shortcut-card").forEach(card => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".shortcut-card-del") || e.target.closest("[data-photo-edit]")) return;
       if (shortcutsEditMode) return; // 編集中の誤タップで追加しない
-      const s = state.shortcuts[row.dataset.sid];
-      // 独立タブになって行数が増え、うっかり隣の行に触れて追加してしまいやすく
+      const s = state.shortcuts[card.dataset.sid];
+      // 独立タブになって項目数が増え、うっかり隣のカードに触れて追加してしまいやすく
       // なったため、確認をひとつ挟む（誤タップ防止）
       if (s && confirm(`「${s.name}」を買い物リストに追加しますか？`)) addFromShortcut(s);
     });
   });
-  chips.querySelectorAll(".shortcut-row-del").forEach(del => {
+  chips.querySelectorAll(".shortcut-card-del").forEach(del => {
     del.addEventListener("click", (e) => {
       e.stopPropagation();
       const s = state.shortcuts[del.dataset.del];
       if (s && !confirm(`「${s.name}」をよく買うものから削除しますか？`)) return;
       deleteShortcut(del.dataset.del);
+    });
+  });
+  chips.querySelectorAll("[data-photo-edit]").forEach(photo => {
+    photo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      shortcutPhotoTargetId = photo.dataset.photoEdit;
+      $("shortcut-photo-replace-input").click();
     });
   });
 }

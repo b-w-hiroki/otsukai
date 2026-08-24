@@ -36,15 +36,17 @@
 
 ### Storage のルール
 
-写真は Firebase Storage に置く。パスは2つ:
+写真は Firebase Storage に置く。パスは3つ:
 
 | 用途 | パス |
 |---|---|
 | ストックの写真 | `families/{familyId}/stocks/{stockId}` |
-| **おつかいの写真** | `families/{familyId}/requests/{requestId}` |
+| おつかいの写真 | `families/{familyId}/requests/{requestId}` |
+| よく買うものの写真 | `families/{familyId}/shortcuts/{shortcutId}` |
 
 Storage のルールも Console 管理（リポジトリに `storage.rules` は置いていない）。
-**`families/{familyId}/{allPaths=**}` でまとめて許可**しておくと、以後パスを増やしても追加作業が要らない。
+**`families/{familyId}/{allPaths=**}` でまとめて許可**しているため、上表のようにパスが
+増えても追加作業は不要（既に済んでいるルールでそのまま動く）。
 
 Firebase Console → Storage → ルール に、そのまま貼れる内容:
 

@@ -403,16 +403,20 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 .shortcut-cat-hdr:first-child { padding-top: 0; }
 
-/* 1件 = 1行。品名を大きく、ヒントは下段。行タップで追加
+/* カード形式のグリッド。写真を主役にして、タップで追加。
    色は⚡よく買うものボタンと同じアンバー系統（--c-claimed）に揃える。
    紫（--pri）はアプリ全体の主操作色なので、ここでは使わず区別する。 */
-.shortcut-row {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; text-align: left;
+.shortcut-card-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 14px;
+}
+.shortcut-card {
+  position: relative;
+  display: flex; flex-direction: column; align-items: stretch;
+  width: 100%; text-align: center; padding: 0; overflow: hidden;
   background: var(--c-claimed-soft); color: var(--ink);
   border: 1.5px solid var(--c-claimed);
   border-radius: var(--r-md);
-  padding: 9px 12px;
   cursor: pointer; user-select: none;
   box-shadow: none;
   transition: background .12s, box-shadow .12s, transform .1s;
@@ -420,34 +424,48 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 /* :not(:disabled) を付けて button:hover:not(:disabled) より詳細度を上げる
    （無いとグローバルの紫ホバーに負けて色が化ける。過去からの潜在バグで、
    今回の配色変更で紫と衝突して顕在化した） */
-.shortcut-row:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: 0 3px 10px rgba(245,158,11,0.18); transform: none; color: var(--ink); }
-.shortcut-row:active { transform: scale(0.98); }
-.shortcut-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.shortcut-row-name {
-  font-size: 14px; font-weight: 700; color: var(--ink);
-  display: flex; align-items: center; gap: 5px;
+.shortcut-card:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: 0 3px 10px rgba(245,158,11,0.18); transform: none; color: var(--ink); }
+.shortcut-card:active { transform: scale(0.98); }
+.shortcut-card.editing { cursor: default; }
+.shortcut-card.editing:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: none; }
+.shortcut-card-photo {
+  position: relative; width: 100%; aspect-ratio: 1 / 1;
+  background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.shortcut-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shortcut-card-placeholder { font-size: 28px; opacity: .45; }
+.shortcut-card-urgent {
+  position: absolute; top: 4px; left: 4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(255,255,255,0.85); font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+}
+/* 編集モード中だけ写真の上に重ねる「タップで差し替え」の目印 */
+.shortcut-card-photo-hint {
+  position: absolute; inset: 0;
+  background: rgba(28,25,23,0.45); color: #fff; font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.shortcut-card-name {
+  font-size: 12.5px; font-weight: 700; color: var(--ink);
+  padding: 6px 6px 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.shortcut-row-hints {
-  font-size: 11px; font-weight: 600; color: var(--ink-2); opacity: .75;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.shortcut-card-hints {
+  font-size: 10.5px; font-weight: 600; color: var(--ink-2); opacity: .75;
+  padding: 0 6px 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.shortcut-row-add {
-  flex-shrink: 0; width: 28px; height: 28px;
+.shortcut-card-name:last-child { padding-bottom: 8px; }
+.shortcut-card-del {
+  position: absolute; top: 4px; right: 4px; z-index: 2;
+  width: 28px; height: 28px;
   display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: var(--c-claimed); color: #fff;
-  font-size: 17px; font-weight: 800; line-height: 1;
-  box-shadow: 0 2px 6px rgba(245,158,11,0.35);
-}
-.shortcut-row-del {
-  flex-shrink: 0; width: 28px; height: 28px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border: none; border-radius: 50%;
+  border: 2px solid var(--surface); border-radius: 50%;
   background: #fee2e2; color: #dc2626;
-  font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1;
+  font-size: 15px; font-weight: 800; line-height: 1;
 }
-.shortcut-row.editing { cursor: default; }
-.shortcut-row.editing:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: none; }
 #btn-shortcut-edit.open { border-color: var(--c-claimed); background: var(--c-claimed-soft); color: var(--ink); }
 
 /* ======= Bottom nav (floating) ======= */
@@ -1387,7 +1405,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   :root:not([data-theme="light"]) #btn-shortcut-edit.open { background: var(--pri-soft); }
   :root:not([data-theme="light"]) .check-detail { background: var(--surface-2); }
   :root:not([data-theme="light"]) .rc-star-btn.starred { background: #3a2f14; border-color: #7a6420; }
-  :root:not([data-theme="light"]) .shortcut-row-del { background: #40232a; color: #fca5a5; }
+  :root:not([data-theme="light"]) .shortcut-card-del { background: #40232a; color: #fca5a5; }
 }
 :root[data-theme="dark"] .topbar { background: rgba(20,19,26,0.92); }
 :root[data-theme="dark"] .cat-chips .cat-chip.selected,
@@ -1398,7 +1416,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 :root[data-theme="dark"] #btn-shortcut-edit.open { background: var(--pri-soft); }
 :root[data-theme="dark"] .check-detail { background: var(--surface-2); }
 :root[data-theme="dark"] .rc-star-btn.starred { background: #3a2f14; border-color: #7a6420; }
-:root[data-theme="dark"] .shortcut-row-del { background: #40232a; color: #fca5a5; }
+:root[data-theme="dark"] .shortcut-card-del { background: #40232a; color: #fca5a5; }
 
 /* ======= 完了時の紙吹雪 ======= */
 .confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
