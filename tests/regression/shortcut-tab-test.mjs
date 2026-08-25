@@ -1,7 +1,7 @@
-// 「よく買うもの」がフッター（下部ナビ）の独立タブになっていることの検証。
-// 以前はシート（ボトムシート）だったが、コア機能として下部ナビの空き枠に昇格した。
-// 登録は他のタブ（ストック等）と同じくFABから開く。カード形式で、写真を
-// 付けられる・編集モードで差し替えられることも合わせて検証する。
+// 「よく買うもの」は下部タブを廃止し、買い物ページのフローティングボタン
+// （⚡よく買う）から開くシート（#shortcut-sheet）に一本化した。登録・編集
+// （削除・写真差し替え）・カード形式で写真を付けられることを、このシート
+// を通して検証する。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
@@ -13,20 +13,24 @@ const PNG = Buffer.from(
   "base64"
 );
 const pickPhoto = (sel) => page.setInputFiles(sel, { name: "photo.png", mimeType: "image/png", buffer: PNG });
+const openSheet = async () => { await page.click("#btn-shortcut-toggle"); await sleep(500); };
 
 await t.ready();
 
-// --- 下部ナビにタブとして存在し、44px以上のタップ領域を確保している ---
-const navBtn = page.locator('.bottom-nav button[data-tab="shortcuts"]');
-check("下部ナビに「よく買うもの」タブがある", (await navBtn.count()) === 1);
-const navBtnBox = await navBtn.boundingBox();
-check("タップ領域が44px以上", navBtnBox.height >= 44, `高さ=${Math.round(navBtnBox.height)}`);
+// --- 買い物ページにフローティングボタンがあり、44px以上のタップ領域を確保している ---
+const floatBtn = page.locator("#btn-shortcut-toggle");
+check("買い物ページに「⚡よく買う」ボタンがある", (await floatBtn.count()) === 1);
+const floatBtnBox = await floatBtn.boundingBox();
+check("タップ領域が44px以上", floatBtnBox.height >= 44, `高さ=${Math.round(floatBtnBox.height)}`);
 
-// --- タップで開く・下部ナビの選択状態と背景も連動する ---
-await navBtn.click();
-await sleep(500);
-check("タブが開く", await page.locator("#tab-shortcuts.active").isVisible());
-check("下部ナビの選択状態が連動する", await navBtn.evaluate((el) => el.classList.contains("active")));
+// --- タップでシートが開く ---
+await openSheet();
+check("シートが開く", await page.locator("#shortcut-sheet.open").isVisible());
+
+// --- 既定はリスト形式。カード形式に切り替えて以降の見た目を検証する ---
+check("既定はリスト形式", (await page.locator("#shortcut-sheet .shortcut-row").count()) > 0);
+await page.click('#shortcut-sheet .shortcut-viewmode-btn[data-viewmode="card"]');
+await sleep(400);
 
 // --- カード形式（グリッド）で、色がアンバー系統になっている（紫の主操作色とは別系統） ---
 check("カード形式のグリッドで表示される", (await page.locator(".shortcut-card-grid").count()) > 0);
@@ -87,16 +91,18 @@ await page.evaluate(async () => {
 await sleep(700);
 check("本物の写真を登録すると連想イラストより優先される", (await avocadoCard.locator(".shortcut-card-icon").count()) === 0);
 
-// --- FABから写真付きで登録できる ---
-await page.click("#fab-add");
+// --- シート内の「＋ 新しく登録する」から写真付きで登録できる ---
+await page.click("#btn-shortcut-register");
 await sleep(700);
-check("FABから登録シートが開く", await page.locator("#sheet-add.open").isVisible());
+check("登録シートが開く", await page.locator("#sheet-add.open").isVisible());
 check("タイトルがよく買うもの登録になっている", (await page.locator("#sheet-add .sheet-title").innerText()).includes("よく買うもの"));
 await page.fill("#new-name", "写真つきテスト品");
 await pickPhoto("#req-photo-input");
 await sleep(400);
 await page.click("#btn-add-request");
 await sleep(1500);
+// 登録すると sheet-add は閉じる（shortcut-sheet はその前に自動で閉じている）ので、開き直して確認する
+await openSheet();
 const newCard = page.locator(".shortcut-card").filter({ hasText: "写真つきテスト品" }).first();
 await newCard.locator(".shortcut-card-photo img").waitFor({ state: "attached", timeout: 5000 }).catch(() => {});
 check("登録した写真がカードに表示される", (await newCard.locator(".shortcut-card-photo img").count()) === 1);
@@ -104,7 +110,7 @@ const uploadedPaths = await page.evaluate(() => self.__uploadedPhotos || []);
 check("Storageのアップロード先が families/.../shortcuts/ 配下になっている",
   uploadedPaths.some((p) => p.includes("/shortcuts/")), JSON.stringify(uploadedPaths));
 
-// --- 品数が多いときもページとして普通にスクロールでき、末尾の項目まで操作できる ---
+// --- 品数が多いときもシート内でスクロールでき、末尾の項目まで操作できる ---
 await page.evaluate(async () => {
   const db = firebase.database();
   const writes = [];
@@ -124,14 +130,13 @@ check("一番下の項目までスクロールして表示できる", await last
 const beforeCount = await page.locator(".check-row").count();
 await lastCard.click();
 await sleep(800);
-await page.click('[data-tab="requests"]');
-await sleep(500);
+await page.click("#btn-shortcut-sheet-close");
+await sleep(400);
 check("末尾の項目も実際にタップして買い物リストに追加できる",
   (await page.locator(".check-row").filter({ hasText: "大量テスト品24" }).count()) === 1, `直前リスト件数=${beforeCount}`);
 
 // --- ✏️編集ボタンで削除×と写真の差し替え目印が出る ---
-await page.click('[data-tab="shortcuts"]');
-await sleep(500);
+await openSheet();
 await page.click("#btn-shortcut-edit");
 await sleep(400);
 check("編集モードで削除×が出る", (await page.locator(".shortcut-card-del").count()) > 0);
@@ -166,7 +171,7 @@ await sleep(300);
 check("編集モード解除で削除×が消える", (await page.locator(".shortcut-card-del").count()) === 0);
 check("編集モード解除で差し替え目印も消える", (await page.locator(".shortcut-card-photo-hint").count()) === 0);
 
-// --- 登録が無いときの案内文がFABを指している ---
+// --- 登録が無いときの案内文が「＋」を指している ---
 await page.evaluate(async () => {
   const snap = await firebase.database().ref("families/fam1/shortcuts").once("value");
   const all = snap.val() || {};
@@ -174,6 +179,6 @@ await page.evaluate(async () => {
 });
 await sleep(700);
 const emptyText = await page.locator(".shortcut-chips-empty").innerText();
-check("登録が無いときはFABでの登録を案内する", emptyText.includes("＋"), emptyText);
+check("登録が無いときは「＋」での登録を案内する", emptyText.includes("＋"), emptyText);
 
 await t.finish();

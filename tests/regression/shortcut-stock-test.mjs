@@ -1,5 +1,6 @@
 // よく買うもの → ストック連動の検証（自動作成・買う間隔の反映・重複防止・二重管理防止）
-// よく買うものは下部ナビの独立タブ（旧: シート）。登録は他のタブと同じくFABから開く。
+// よく買うものは下部タブを廃止し、買い物ページのフローティングボタン（⚡よく買う）
+// から開くシートに一本化した。登録はそのシート内の「＋ 新しく登録する」から行う。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness();
 const { page, sleep } = t;
@@ -18,9 +19,9 @@ const stockCountNamed = async (name) =>
     return Object.values(snap.val() || {}).filter((s) => s && s.name === n).length;
   }, name);
 const openShortcutRegister = async () => {
-  await page.click('[data-tab="shortcuts"]');
-  await sleep(400);
-  await page.click("#fab-add");
+  await page.click("#btn-shortcut-toggle");
+  await sleep(500);
+  await page.click("#btn-shortcut-register");
   await sleep(700);
 };
 

@@ -549,9 +549,11 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-float);
-  /* 5タブ均等割り（DOM順: よく買うもの・支出・家計・お買い物（中央・丸）・ストック・設定）。
-     お買い物は3列目に固定で explicit に置く（.bottom-nav-home 参照）。 */
-  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+  /* 3タブ均等割り（DOM順: ストック・お買い物（中央・丸）・設定）。
+     お買い物は2列目（中央）に固定で explicit に置く（.bottom-nav-home 参照）。
+     よく買うもの・支出はここから外し、それぞれ買い物ページのシート／
+     プレイヤー情報シートに一本化した */
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
   align-items: center; gap: 4px; z-index: 30;
 }
 .bottom-nav button[data-tab] {
@@ -695,7 +697,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
    以前この位置にあった＋（追加）ボタンと入れ替え、お買い物を一番目立つ位置にした。
    ＋は画面右下に浮かせる独立ボタンに移した（.floating-add-btn）。 */
 .bottom-nav-home {
-  grid-column: 3; grid-row: 1;
+  grid-column: 2; grid-row: 1;
   z-index: 26;
 }
 .bottom-nav-home .nav-icon-raised {
@@ -716,12 +718,12 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .bottom-nav-home.active .nav-icon-raised { transform: scale(1.06); }
 .nav-icon-raised .nav-badge { top: -3px; right: -3px; }
 /* 丸ボタンを控えめに盛り上げて抱えるクレードル（背面に描画）。
-   .bottom-nav-home と同じグリッド列（3列目＝中央）に explicit に置くことで、
-   auto配置される他の4タブと衝突しない（以前FABで同じ理由の不具合を踏んだため、
+   .bottom-nav-home と同じグリッド列（2列目＝中央）に explicit に置くことで、
+   auto配置される他のタブと衝突しない（以前FABで同じ理由の不具合を踏んだため、
    ボタン側にも同じ列を明示している）。 */
 .bottom-nav::before {
   content: "";
-  grid-column: 3; grid-row: 1;
+  grid-column: 2; grid-row: 1;
   justify-self: center; align-self: center;
   margin-top: -14px;
   width: 66px; height: 66px; border-radius: 50%;

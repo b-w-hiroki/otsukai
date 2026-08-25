@@ -1,5 +1,6 @@
-// ページ内タブ（お買い物/よく買うもの/支出・家計/ストック/設定）を左右スワイプで
-// 切り替えられることの検証。ミッションはコア機能ではないため下部ナビから外し、
+// ページ内タブ（ストック/お買い物/設定）を左右スワイプで切り替えられることの検証。
+// よく買うもの・支出は下部タブを廃止した（買い物ページのシート／プレイヤー情報シートに
+// 一本化）ため対象外。ミッションもコア機能ではないため下部ナビから外し、
 // トップバーのサイドボタン（名前と？の間）に移した。スワイプの対象にも含めない。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
@@ -17,18 +18,6 @@ const indicatorState = () => page.evaluate(() => {
   const m = new DOMMatrixReadOnly(style.transform);
   return { x: m.m41, width: parseFloat(style.width), dragging: indicator.classList.contains("dragging"), navLeft: navRect.left };
 });
-const btnOffset = (tabName) => page.evaluate((tab) => {
-  const nav = document.querySelector(".bottom-nav");
-  const btn = document.querySelector(`.bottom-nav button[data-tab="${tab}"]`);
-  const navRect = nav.getBoundingClientRect();
-  const btnRect = btn.getBoundingClientRect();
-  return { x: btnRect.left - navRect.left, width: btnRect.width };
-}, tabName);
-const indicatorAligned = async (tabName) => {
-  const ind = await indicatorState();
-  const btn = await btnOffset(tabName);
-  return Math.abs(ind.x - btn.x) < 1 && Math.abs(ind.width - btn.width) < 1;
-};
 
 await t.ready();
 check("最初はお買い物タブ", (await activeTab()) === "tab-requests");
@@ -59,19 +48,30 @@ check("ミッションのサイドボタンのタップ領域が44px以上",
 await page.click('[data-tab="requests"]');
 await sleep(500);
 
-// --- 左スワイプで次のタブへ（お買い物→よく買うもの→支出・家計→ストック→設定） ---
+// --- 左スワイプで次のタブへ（お買い物→設定。下部ナビの並びはストック・お買い物・設定の3つ） ---
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
-check("左スワイプでよく買うものタブへ", (await activeTab()) === "tab-shortcuts");
-check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "shortcuts");
+check("左スワイプで設定タブへ", (await activeTab()) === "tab-settings");
+check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "settings");
 
+// --- 端まで来たら折り返さない ---
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
-check("左スワイプで支出タブへ", (await activeTab()) === "tab-expenses");
+check("最後のタブでさらに左スワイプしても何も起きない", (await activeTab()) === "tab-settings");
 
-await t.swipeLeft(400, 320, 40);
+// --- 右スワイプで前のタブへ ---
+await t.swipeRight(400, 40, 320);
 await sleep(400);
-check("左スワイプでストックタブへ", (await activeTab()) === "tab-stock");
+check("右スワイプでお買い物タブへ戻る", (await activeTab()) === "tab-requests");
+
+await t.swipeRight(400, 40, 320);
+await sleep(400);
+check("右スワイプでストックタブへ", (await activeTab()) === "tab-stock");
+
+// --- 端まで来たら折り返さない（逆方向） ---
+await t.swipeRight(400, 40, 320);
+await sleep(400);
+check("最初のタブでさらに右スワイプしても何も起きない", (await activeTab()) === "tab-stock");
 
 // --- ストックタブ: 指の置き場所が丸レベルボタン（touch-action:manipulation の
 // <button>）の上でも、横スワイプと判定した後は明示的に preventDefault して
@@ -82,39 +82,13 @@ if (levelBtnBox) {
   const y = levelBtnBox.y + levelBtnBox.height / 2;
   await t.swipeLeft(y, 320, 40);
   await sleep(400);
-  check("ストックの丸レベルボタンの上から始めても左スワイプで設定タブへ切り替わる",
-    (await activeTab()) === "tab-settings");
+  check("ストックの丸レベルボタンの上から始めても左スワイプでお買い物タブへ切り替わる",
+    (await activeTab()) === "tab-requests");
 } else {
   await t.swipeLeft(400, 320, 40);
   await sleep(400);
-  check("左スワイプで設定タブへ", (await activeTab()) === "tab-settings");
+  check("左スワイプでお買い物タブへ", (await activeTab()) === "tab-requests");
 }
-
-// --- 端まで来たら折り返さない ---
-await t.swipeLeft(400, 320, 40);
-await sleep(400);
-check("最後のタブでさらに左スワイプしても何も起きない", (await activeTab()) === "tab-settings");
-
-// --- 右スワイプで前のタブへ ---
-await t.swipeRight(400, 40, 320);
-await sleep(400);
-check("右スワイプでストックタブへ戻る", (await activeTab()) === "tab-stock");
-
-await t.swipeRight(400, 40, 320);
-await sleep(400);
-check("右スワイプで支出タブへ戻る", (await activeTab()) === "tab-expenses");
-
-await t.swipeRight(400, 40, 320);
-await sleep(400);
-check("右スワイプでよく買うものタブへ戻る", (await activeTab()) === "tab-shortcuts");
-
-await t.swipeRight(400, 40, 320);
-await sleep(400);
-check("右スワイプを重ねてお買い物タブまで戻る", (await activeTab()) === "tab-requests");
-
-await t.swipeRight(400, 40, 320);
-await sleep(400);
-check("最初のタブでさらに右スワイプしても何も起きない", (await activeTab()) === "tab-requests");
 
 // --- 移動量が小さいときは切り替わらない ---
 await t.swipeLeft(400, 320, 280);
@@ -158,35 +132,20 @@ check("ボタンでのタブ切替も引き続き動く", (await activeTab()) ==
 
 // --- タップで切り替えたときも、下部ナビの背景が新しい位置へ滑る ---
 await sleep(500); // トランジション完了を待つ
-check("タップ後、背景がストックの位置に揃う", await indicatorAligned("stock"));
-check("タップ後はドラッグ中扱いではない（アニメーション付きで動く）", !(await indicatorState()).dragging);
+const stockBtnBox = await page.evaluate(() => {
+  const nav = document.querySelector(".bottom-nav");
+  const btn = document.querySelector('.bottom-nav button[data-tab="stock"]');
+  const navRect = nav.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  return { x: btnRect.left - navRect.left, width: btnRect.width };
+});
+const indAfterTap = await indicatorState();
+check("タップ後、背景がストックの位置に揃う",
+  Math.abs(indAfterTap.x - stockBtnBox.x) < 1 && Math.abs(indAfterTap.width - stockBtnBox.width) < 1);
+check("タップ後はドラッグ中扱いではない（アニメーション付きで動く）", !indAfterTap.dragging);
 
-// --- スワイプ中は指の動きに合わせて背景が今のタブと隣のタブの間を追従する ---
-// （お買い物が絡むドラッグは対象外。まずはお買い物以外の2タブ間で確認する）
-await page.click('[data-tab="shortcuts"]');
-await sleep(500);
-const cdp2 = await t.ctx.newCDPSession(t.page);
-const send2 = (type, x, y) => cdp2.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
-await send2("touchStart", 320, 400);
-await send2("touchMove", 300, 400); // dx=-20（閾値60の一部だけ動いた状態）
-await sleep(100);
-const midDrag = await indicatorState();
-const homeOffset = await btnOffset("shortcuts");
-const targetOffset = await btnOffset("expenses");
-check("ドラッグ中はアニメーションを止めて指に追従する", midDrag.dragging);
-check("閾値未満の途中では、背景が今のタブと隣のタブの間にある（まだどちらにも揃っていない）",
-  midDrag.x > Math.min(homeOffset.x, targetOffset.x) && midDrag.x < Math.max(homeOffset.x, targetOffset.x),
-  `home=${homeOffset.x} target=${targetOffset.x} mid=${midDrag.x}`);
-
-// --- 閾値未満で指を離すと、背景は元のタブへ戻る（タブも切り替わらない） ---
-await send2("touchEnd");
-await cdp2.detach();
-await sleep(500);
-check("閾値未満で離すとタブは変わらない", (await activeTab()) === "tab-shortcuts");
-check("背景も元の位置（よく買うもの）へ戻る", await indicatorAligned("shortcuts"));
-check("戻った後はドラッグ中扱いが解除される", !(await indicatorState()).dragging);
-
-// --- お買い物が絡むドラッグでは、背景は畳んだまま追従しない ---
+// --- お買い物が絡むドラッグ（下部ナビが3タブしか無いため、隣り合うタブは常に
+// お買い物のどちらかを含む）では、背景は畳んだまま指の動きに追従しない ---
 await page.click('[data-tab="requests"]');
 await sleep(500);
 const cdp3 = await t.ctx.newCDPSession(t.page);
