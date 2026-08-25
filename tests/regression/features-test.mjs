@@ -8,9 +8,9 @@ await page.goto(url,{waitUntil:"domcontentloaded"});
 await page.waitForSelector("#screen-main",{state:"visible",timeout:20000});
 await sleep(900);
 
-// 定期購入の提案（同名3回以上の履歴がある品）
-const suggests = await page.locator(".suggest-chip").count();
-check("定期購入の提案が表示", suggests >= 0, suggests+"件");
+// 定期購入の提案（同名3回以上の履歴がある品。⏳そろそろ切れるかもに出る）
+const suggests = await page.locator(".lowstock-item").count();
+check("定期購入の提案が表示", suggests > 0, suggests+"件");
 
 // ストリーク/称号
 await page.click('[data-tab="missions"]');

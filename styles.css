@@ -1518,19 +1518,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .rotate-overlay-icon { font-size: 48px; transform: rotate(90deg); }
 
-/* ======= 定期購入の提案 ======= */
-.suggest-wrap { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.suggest-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--c-claimed-soft); color: var(--ink);
-  border: 1.5px solid var(--c-claimed); border-radius: var(--r-full);
-  padding: 7px 14px; font-size: 13px; font-weight: 700;
-  cursor: pointer; box-shadow: none;
-}
-.suggest-chip:hover:not(:disabled) { background: var(--c-claimed-soft); color: var(--ink); border-color: var(--c-claimed); transform: none; box-shadow: none; }
-.suggest-label { font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 6px; letter-spacing: .04em; }
-.suggest-dismiss { font-size: 15px; opacity: .55; margin-left: 2px; }
-
 /* ======= ストリーク / 称号 ======= */
 .streak-row { display: flex; align-items: center; gap: 12px; }
 .streak-big { font-size: 26px; font-weight: 800; color: var(--c-claimed); line-height: 1; }
@@ -1692,13 +1679,15 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .lowstock-lead { font-size: 11px; color: var(--muted); margin: 5px 0 10px; }
 .lowstock-lead b { color: var(--c-urgent); }
-.lowstock-items { display: flex; flex-direction: column; gap: 6px; }
+/* 品目ごとに文字数どおりの幅を持つ小さなボタンにし、横に並べて
+   幅いっぱいになったら折り返す（チップ表示）。以前は全幅1列だった */
+.lowstock-items { display: flex; flex-wrap: wrap; gap: 8px; }
 .lowstock-item {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; text-align: left;
+  display: inline-flex; align-items: center; gap: 6px;
+  text-align: left;
   background: var(--surface-2); color: var(--ink);
-  border: 1.5px solid var(--border); border-radius: var(--r-md);
-  padding: 9px 10px 9px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--r-full);
+  padding: 6px 6px 6px 12px;
   cursor: pointer; box-shadow: none;
   transition: background .12s, border-color .12s;
 }
@@ -1708,15 +1697,15 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .lowstock-item:active { transform: scale(0.99); }
 .lowstock-item.urgent { border-color: var(--c-urgent); background: var(--c-urgent-soft); }
-.lowstock-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
-.lowstock-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.lowstock-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.lowstock-name { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .lowstock-add {
-  flex-shrink: 0; width: 26px; height: 26px;
+  flex-shrink: 0; width: 22px; height: 22px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 50%; background: var(--pri); color: #fff;
-  font-size: 16px; font-weight: 800; line-height: 1;
+  font-size: 14px; font-weight: 800; line-height: 1;
 }
-.lowstock-x { flex-shrink: 0; color: var(--muted); font-size: 15px; font-weight: 800; padding: 0 2px; }
+.lowstock-x { flex-shrink: 0; color: var(--muted); font-size: 14px; font-weight: 800; padding: 0 2px; }
 
 /* ======= PC幅（広いビューポート）向けの調整 =======
    このアプリは元々スマホ専用に作っており、.app の中身は max-width:680px で
