@@ -169,7 +169,6 @@ function renderSuggestions() {
           <button class="lowstock-item${i.urgent ? " urgent" : ""}" data-suggest="${escapeHtml(i.name)}">
             <span class="lowstock-icon">${i.kind === "stock" ? (i.urgent ? "🔴" : "🟡") : "🔄"}</span>
             <span class="lowstock-name">${escapeHtml(i.name)}</span>
-            <span class="lowstock-add">＋</span>
             <span class="lowstock-x" data-suggest-x="${escapeHtml(i.name)}" role="button" aria-label="このお知らせを消す">×</span>
           </button>`).join("")}
       </div>

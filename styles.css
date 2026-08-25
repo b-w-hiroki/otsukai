@@ -1690,12 +1690,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .lowstock-item.urgent { border-color: var(--c-urgent); background: var(--c-urgent-soft); }
 .lowstock-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
 .lowstock-name { font-size: 13px; font-weight: 700; white-space: nowrap; }
-.lowstock-add {
-  flex-shrink: 0; width: 22px; height: 22px;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: var(--pri); color: #fff;
-  font-size: 14px; font-weight: 800; line-height: 1;
-}
 .lowstock-x { flex-shrink: 0; color: var(--muted); font-size: 14px; font-weight: 800; padding: 0 2px; }
 
 /* ======= PC幅（広いビューポート）向けの調整 =======
