@@ -60,6 +60,10 @@ body {
 .app {
   max-width: 680px; margin: 0 auto;
   padding: 16px 14px calc(var(--nav-height) + 20px);
+  /* 中身が少ないタブ（支出・家計など）だと .app の実高さが画面より短くなり、
+     画面下寄りのタッチが .app の外（何もリスナーが無い領域）に当たって
+     左右スワイプのタブ切替が反応しなくなる不具合があったため、最低の高さを確保する */
+  min-height: 60dvh;
 }
 .center-pad { max-width: 400px; margin: 0 auto; padding: 0 16px 40px; }
 
@@ -403,6 +407,53 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 .shortcut-cat-hdr:first-child { padding-top: 0; }
 
+/* リスト形式。1件 = 1行、品名を大きく、ヒントは下段。行タップで追加
+   （カード形式より項目数を多く見渡せる。「よく買うものタブが分かりにくい」
+   というフィードバックを受けて、下部タブに昇格する前のリスト形式を復活させた）。
+   色は⚡よく買うものボタンと同じアンバー系統（--c-claimed）に揃える。
+   紫（--pri）はアプリ全体の主操作色なので、ここでは使わず区別する。 */
+.shortcut-row {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left;
+  background: var(--c-claimed-soft); color: var(--ink);
+  border: 1.5px solid var(--c-claimed);
+  border-radius: var(--r-md);
+  padding: 9px 12px;
+  cursor: pointer; user-select: none;
+  box-shadow: none;
+  transition: background .12s, box-shadow .12s, transform .1s;
+}
+/* :not(:disabled) を付けて button:hover:not(:disabled) より詳細度を上げる
+   （無いとグローバルの紫ホバーに負けて色が化ける） */
+.shortcut-row:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: 0 3px 10px rgba(245,158,11,0.18); transform: none; color: var(--ink); }
+.shortcut-row:active { transform: scale(0.98); }
+.shortcut-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.shortcut-row-name {
+  font-size: 14px; font-weight: 700; color: var(--ink);
+  display: flex; align-items: center; gap: 5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shortcut-row-hints {
+  font-size: 11px; font-weight: 600; color: var(--ink-2); opacity: .75;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.shortcut-row-add {
+  flex-shrink: 0; width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--c-claimed); color: #fff;
+  font-size: 17px; font-weight: 800; line-height: 1;
+  box-shadow: 0 2px 6px rgba(245,158,11,0.35);
+}
+.shortcut-row-del {
+  flex-shrink: 0; width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 50%;
+  background: #fee2e2; color: #dc2626;
+  font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1;
+}
+.shortcut-row.editing { cursor: default; }
+.shortcut-row.editing:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: none; }
+
 /* カード形式のグリッド。写真を主役にして、タップで追加。
    色は⚡よく買うものボタンと同じアンバー系統（--c-claimed）に揃える。
    紫（--pri）はアプリ全体の主操作色なので、ここでは使わず区別する。 */
@@ -498,10 +549,9 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-float);
-  /* 中央のFABは他のタブと同じ 1fr にすると幅だけ広がって周りが空白になるため、
-     自身のコンテンツ幅（52px＋余白）だけ確保する auto にする
-     （DOM順: お買い物・よく買うもの・FAB・ストック・設定）。 */
-  display: grid; grid-template-columns: 1fr 1fr auto 1fr 1fr;
+  /* 5タブ均等割り（DOM順: よく買うもの・支出・家計・お買い物（中央・丸）・ストック・設定）。
+     お買い物は3列目に固定で explicit に置く（.bottom-nav-home 参照）。 */
+  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   align-items: center; gap: 4px; z-index: 30;
 }
 .bottom-nav button[data-tab] {
@@ -528,7 +578,7 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 .bottom-nav button .nav-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1px; }
 .bottom-nav button.active { color: var(--pri); }
 .bottom-nav button.active .nav-icon { transform: scale(1.18) translateY(-1px); }
-.bottom-nav button[data-tab]:hover:not(.active) { color: var(--ink-2); background: var(--bg); box-shadow: none; }
+.bottom-nav button[data-tab]:hover:not(.active):not(.bottom-nav-home) { color: var(--ink-2); background: var(--bg); box-shadow: none; }
 .nav-badge {
   position: absolute; top: 3px; right: calc(50% - 20px);
   background: var(--c-urgent); color: #fff;
@@ -641,27 +691,34 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 /* ======= Topbar ======= */
 .topbar .title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
 
-/* ======= FAB (フッター組み込み・控えめに盛り上げ) ======= */
-.fab {
-  position: relative;
+/* ======= お買い物ボタン（下部ナビ中央・丸く浮き出た見た目） =======
+   以前この位置にあった＋（追加）ボタンと入れ替え、お買い物を一番目立つ位置にした。
+   ＋は画面右下に浮かせる独立ボタンに移した（.floating-add-btn）。 */
+.bottom-nav-home {
   grid-column: 3; grid-row: 1;
-  justify-self: center; align-self: start;
-  margin-top: -18px; margin-bottom: 0;
+  z-index: 26;
+}
+.bottom-nav-home .nav-icon-raised {
+  position: relative;
   width: 52px; height: 52px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
-  color: #fff; border: none; cursor: pointer; z-index: 25;
+  margin-top: -18px;
   display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
+  color: #fff;
   box-shadow: 0 6px 14px rgba(99,102,241,0.42), 0 2px 6px rgba(0,0,0,0.16),
               inset 0 1px 0 rgba(255,255,255,0.26);
   transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
-  font-size: 0;
 }
-/* FABを控えめに盛り上げて抱えるクレードル（FABの背面に描画）。
-   .fab と同じグリッド列（3列目）に explicit に置くことで、両脇のタブ数が
-   将来また非対称になっても常にFABの実位置に揃う。
-   （以前は .fab::before にしていたが、負のz-indexが同じ要素の背景より
-   前面に出てしまい、FAB自体が真っ白に潰れる不具合になったため、
-   .bottom-nav の通常の兄弟要素として、z-index無指定＝FABより背面に置く） */
+.bottom-nav-home .nav-icon-raised svg { width: 22px; height: 22px; flex-shrink: 0; }
+.bottom-nav-home:hover:not(:disabled) { background: transparent; color: var(--muted); box-shadow: none; }
+.bottom-nav-home:hover:not(:disabled) .nav-icon-raised { transform: scale(1.06); box-shadow: 0 8px 18px rgba(99,102,241,0.5); }
+.bottom-nav-home.active { color: var(--pri); }
+.bottom-nav-home.active .nav-icon-raised { transform: scale(1.06); }
+.nav-icon-raised .nav-badge { top: -3px; right: -3px; }
+/* 丸ボタンを控えめに盛り上げて抱えるクレードル（背面に描画）。
+   .bottom-nav-home と同じグリッド列（3列目＝中央）に explicit に置くことで、
+   auto配置される他の4タブと衝突しない（以前FABで同じ理由の不具合を踏んだため、
+   ボタン側にも同じ列を明示している）。 */
 .bottom-nav::before {
   content: "";
   grid-column: 3; grid-row: 1;
@@ -672,14 +729,28 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
   pointer-events: none;
 }
-.fab:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 10px 22px rgba(99,102,241,0.5); }
-.fab:active { transform: scale(0.93); }
+
+/* ======= 追加ボタン（右下フロート） ======= */
+.floating-add-btn {
+  position: fixed; right: 16px;
+  bottom: calc(var(--nav-height) + 14px);
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
+  color: #fff; border: none; cursor: pointer; z-index: 28;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 14px rgba(99,102,241,0.42), 0 2px 6px rgba(0,0,0,0.16),
+              inset 0 1px 0 rgba(255,255,255,0.26);
+  transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
+  font-size: 0;
+}
+.floating-add-btn:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 10px 22px rgba(99,102,241,0.5); }
+.floating-add-btn:active { transform: scale(0.93); }
 .fab-icon {
   font-size: 30px; line-height: 1; font-weight: 300;
   transition: transform .3s cubic-bezier(0.34,1.56,0.64,1);
   display: block;
 }
-.fab.open .fab-icon { transform: rotate(45deg); }
+.floating-add-btn.open .fab-icon { transform: rotate(45deg); }
 
 /* ======= Sheet backdrop ======= */
 .sheet-backdrop {
@@ -1066,7 +1137,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .shortcut-float-btn.history:hover:not(:disabled) { box-shadow: 0 6px 22px rgba(124,58,237,0.52), 0 2px 8px rgba(0,0,0,0.14); }
 .shortcut-float-btn {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; box-sizing: border-box;
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   border: none;
   border-radius: var(--r-full); padding: 13px 22px;
@@ -1425,7 +1497,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   :root:not([data-theme="light"]) #btn-shortcut-edit.open { background: var(--pri-soft); }
   :root:not([data-theme="light"]) .check-detail { background: var(--surface-2); }
   :root:not([data-theme="light"]) .rc-star-btn.starred { background: #3a2f14; border-color: #7a6420; }
-  :root:not([data-theme="light"]) .shortcut-card-del { background: #40232a; color: #fca5a5; }
+  :root:not([data-theme="light"]) .shortcut-card-del,
+  :root:not([data-theme="light"]) .shortcut-row-del { background: #40232a; color: #fca5a5; }
 }
 :root[data-theme="dark"] .topbar { background: rgba(20,19,26,0.92); }
 :root[data-theme="dark"] .cat-chips .cat-chip.selected,
@@ -1436,7 +1509,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 :root[data-theme="dark"] #btn-shortcut-edit.open { background: var(--pri-soft); }
 :root[data-theme="dark"] .check-detail { background: var(--surface-2); }
 :root[data-theme="dark"] .rc-star-btn.starred { background: #3a2f14; border-color: #7a6420; }
-:root[data-theme="dark"] .shortcut-card-del { background: #40232a; color: #fca5a5; }
+:root[data-theme="dark"] .shortcut-card-del,
+:root[data-theme="dark"] .shortcut-row-del { background: #40232a; color: #fca5a5; }
 
 /* ======= 完了時の紙吹雪 ======= */
 .confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
@@ -1709,9 +1783,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .lowstock-item:active { transform: scale(0.99); }
 .lowstock-item.urgent { border-color: var(--c-urgent); background: var(--c-urgent-soft); }
 .lowstock-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
-.lowstock-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.lowstock-name { font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
-.lowstock-note { font-size: 11px; color: var(--muted); font-weight: 600; }
+.lowstock-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
 .lowstock-add {
   flex-shrink: 0; width: 26px; height: 26px;
   display: inline-flex; align-items: center; justify-content: center;

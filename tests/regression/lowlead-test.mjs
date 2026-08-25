@@ -14,12 +14,15 @@ let txt = await lowText();
 check("既定でカードが出る", (await page.locator(".lowstock-card").count())===1);
 check("既定では遠い品(ティッシュ箱買い・あと10日)は出ない", !txt.includes("ティッシュ箱買い"));
 check("手入力の間隔(コンタクト洗浄液・あと1日)は履歴ゼロでも出る", txt.includes("コンタクト洗浄液"));
-check("手入力は「約」を付けずに言い切る", /(?<!約)30日ごと/.test(txt), (txt.match(/[^\n]*30日ごと[^\n]*/)||[""])[0].trim());
 const baseCount = await page.locator(".lowstock-item").count();
 
 // ---- ストックタブ: 予告日数のセレクトがある（アコーディオンを開く） ----
 await page.click('[data-tab="stock"]');
 await sleep(600);
+// 「そろそろ切れるかも」の項目は名前だけの表示になったため、「手入力は「約」を
+// 付けずに言い切る」の表示はストックタブの品目カード（買う間隔の表示）で検証する
+const stockCardTxt = await page.locator(".stock-item").filter({ hasText: "コンタクト洗浄液" }).first().innerText();
+check("手入力は「約」を付けずに言い切る", /(?<!約)30日ごと/.test(stockCardTxt), stockCardTxt.replace(/\n/g, "／"));
 await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]');
 await sleep(400);
 check("ストックタブに予告日数のセレクトがある", (await page.locator("#opt-low-lead").count())===1);

@@ -49,6 +49,9 @@ await page.click("#fab-add"); await sleep(700);
 await page.fill("#new-name", "柔軟剤"); await page.fill("#new-cycle-days", "25");
 await shot("18-shortcut-cycle"); // 買う間隔（任意）欄
 await page.click("#btn-sheet-close"); await sleep(400);
+
+// 支出・家計
+await page.click('[data-tab="expenses"]'); await sleep(700); await shot("19-expenses");
 await page.click('[data-tab="requests"]'); await sleep(500);
 
 // 履歴
