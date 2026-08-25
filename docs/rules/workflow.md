@@ -49,7 +49,7 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `shortcut-sheet-test` | お買い物ページのフローティングボタン（⚡よく買う）から開くシート・表示切替の永続化・タップでの追加 |
 | `shortcut-confirm-test` | カードタップ時の確認ダイアログ（品名の表示・キャンセルで未追加） |
 | `tab-swipe-test` | ページ内タブ（ストック/お買い物/設定）の左右スワイプ切替・端での折り返し無し・シート中の抑止・下部ナビの背景が指に追従して滑る／閾値未満なら元へ戻る |
-| `update-test` / `update-banner-test` / `update-autoapply-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新・安全なタイミングでの自動適用 |
+| `update-test` / `update-modal-test` / `update-forced-test` | 強制アップデートのモーダル（背面ブロック含む）・強制更新・強制ログアウト・引っ張って更新・安全なタイミングまで待つこと |
 | `photo-test` | 📷 写真の添付・表示・拡大・外す |
 | `icon-picker-test` | 🎨 イラストから選ぶピッカー（おつかい/よく買うもの/ストックの写真欄で共通） |
 | `expense-log-test` | 💴 支出・家計（プレイヤー情報シート）での記録・削除・レシートOCR（読み取り成功/失敗の両方） |

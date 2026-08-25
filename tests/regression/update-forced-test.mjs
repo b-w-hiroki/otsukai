@@ -1,7 +1,7 @@
-// 新バージョンを検知したときの「自動適用」の検証。
-// 何か操作中（シートが開いている・入力欄にフォーカスがある）は自動更新を待ち、
+// 「強制アップデート」のモーダルは、入力中やシートを開いている間は出さずに待ち、
 // 安全なタイミング（何も開いておらず、入力欄にもフォーカスが無い）になってから
-// 数秒おきの確認を経て自動でリロードされることを確かめる。
+// 数秒おきの確認を経て表示されることを確かめる。表示された後は自動では進まず、
+// 「アップデート」を押すまで待つ（それ自体は update-modal-test.mjs で検証）。
 import { startHarness } from "../harness.mjs";
 let SW_VERSION = "v40";
 let APP_MARKER = "OLD";
@@ -35,26 +35,30 @@ await page.evaluate(async () => {
   try { await reg.update(); } catch (e) {}
   await new Promise((r) => setTimeout(r, 2500));
 });
-check("新バージョン検知で更新バナーが出る", await page.locator("#update-banner").count() === 1);
 
-// --- シートを開いたままなら、しばらく待っても自動更新されない ---
-await sleep(9000); // 自動適用の確認間隔（8秒）をまたぐ
-const buildStillOpen = await page.evaluate(() => self.__BUILD).catch(() => "reloaded");
-check("シートを開いている間は自動更新されない", buildStillOpen === "OLD", buildStillOpen);
+// --- シートを開いたままなら、しばらく待ってもモーダルは出ない ---
+await sleep(9000); // 安全確認の間隔（8秒）をまたぐ
+check("シートを開いている間は強制アップデートのモーダルが出ない", !(await page.locator("#update-modal.open").count()));
 check("シートも開いたまま", await page.locator("#sheet-add.open").isVisible());
+const buildStillOpen = await page.evaluate(() => self.__BUILD);
+check("コードもまだ古いまま（勝手に更新されていない）", buildStillOpen === "OLD", buildStillOpen);
 
 // --- シートを閉じる（＝安全なタイミングになる） ---
 await page.click("#btn-sheet-close");
 await sleep(500);
 check("シートを閉じた", !(await page.locator("#sheet-add.open").isVisible()));
 
-// --- 次の確認タイミング（8秒おき）で自動的に更新・リロードされる ---
+// --- 次の確認タイミング（8秒おき）で強制アップデートのモーダルが出る ---
 await sleep(9000);
+check("シートを閉じると強制アップデートのモーダルが出る", await page.locator("#update-modal.open").count() === 1);
+check("押すまでは新しいコードに切り替わらない", (await page.evaluate(() => self.__BUILD)) === "OLD");
+await page.screenshot({ path: `${OUT}/u-forced.png` });
+
+// --- 「アップデート」を押すと切り替わる ---
+await page.click("#btn-apply-update");
 await page.waitForSelector("#screen-main", { state: "visible", timeout: 15000 });
 await sleep(1500);
 const build2 = await page.evaluate(() => self.__BUILD);
-check("シートを閉じると自動で新しいコードに切り替わる（ボタン操作なし）", build2 === "NEW", `${build1} → ${build2}`);
-check("自動更新後はバナーが消えている", await page.locator("#update-banner").count() === 0);
-await page.screenshot({ path: `${OUT}/u-autoapply.png` });
+check("押すと自動で新しいコードに切り替わる", build2 === "NEW", `${build1} → ${build2}`);
 
 await t.finish();

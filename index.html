@@ -28,6 +28,17 @@
   <!-- Toasts (global) -->
   <div id="toasts" class="toast-wrap"></div>
 
+  <!-- 更新モーダル（新バージョン検知・ソシャゲ風の強制アップデート）。
+       閉じるボタンは無い。showUpdateModal() / scheduleForcedUpdate()（app-init.js）参照。 -->
+  <div id="update-modal" class="update-modal">
+    <div class="update-modal-card">
+      <div class="update-modal-icon">🆕</div>
+      <div class="update-modal-title">新しいバージョンがあります</div>
+      <p class="update-modal-text">ご利用には最新版へのアップデートが必要です。</p>
+      <button id="btn-apply-update" class="btn-block">アップデート</button>
+    </div>
+  </div>
+
   <!-- Screen: Loading -->
   <div id="screen-loading" class="screen active">
     <div class="loading-screen">
