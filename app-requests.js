@@ -486,6 +486,137 @@ function renderIconPickerGrid() {
     });
   });
 }
+// ===== カード形式 / リスト形式の切り替え =====
+// カードは写真中心で見やすく、リストは1行が小さく詰まった分いちどに多く見渡せる
+// （「よく買うものタブが分かりにくい」というフィードバックを受けて、旧リスト形式を復活）。
+// 端末ごとに覚え、買い物ページから開く簡易シート（#shortcut-sheet）とも共通の設定。
+let shortcutViewMode = localStorage.getItem("shortcutViewMode") === "list" ? "list" : "card";
+function setShortcutViewMode(mode) {
+  if (mode !== "card" && mode !== "list") return;
+  shortcutViewMode = mode;
+  localStorage.setItem("shortcutViewMode", mode);
+  renderShortcuts();
+}
+function updateShortcutViewToggles() {
+  document.querySelectorAll(".shortcut-viewmode-btn").forEach((btn) => {
+    const on = btn.dataset.viewmode === shortcutViewMode;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", String(on));
+  });
+}
+function wireShortcutViewToggles() {
+  document.querySelectorAll(".shortcut-viewmode-btn").forEach((btn) => {
+    btn.addEventListener("click", () => setShortcutViewMode(btn.dataset.viewmode));
+  });
+}
+
+function shortcutHintsHtml(s, cardStyle) {
+  const hints = [];
+  if (s.budget > 0) hints.push(`💰${Number(s.budget).toLocaleString()}円`);
+  if (s.brand) hints.push(`🏷️${escapeHtml(s.brand)}`);
+  if (s.assignedTo) {
+    const m = (state.family && state.family.members && state.family.members[s.assignedTo]);
+    if (m) hints.push(`👤${escapeHtml(m.name || '')}`);
+  }
+  if (!hints.length) return "";
+  return `<span class="${cardStyle ? "shortcut-card-hints" : "shortcut-row-hints"}">${hints.join(' ')}</span>`;
+}
+function shortcutCardHtml(id, s, editMode) {
+  const iconUrl = s.photoUrl ? null : matchShortcutIcon(s.name);
+  return `
+  <button class="shortcut-card${editMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
+    <span class="shortcut-card-photo"${editMode ? ` data-photo-edit="${id}" role="button" aria-label="${escapeHtml(s.name)}の写真を変更"` : ""}>
+      ${s.photoUrl
+        ? `<img src="${escapeHtml(s.photoUrl)}" alt="" loading="lazy" />`
+        : iconUrl
+          ? `<img src="${iconUrl}" class="shortcut-card-icon" alt="" loading="lazy" />`
+          : `<span class="shortcut-card-placeholder" aria-hidden="true">🛒</span>`}
+      ${s.urgent ? `<span class="shortcut-card-urgent" aria-hidden="true">🔥</span>` : ""}
+      ${editMode ? `<span class="shortcut-card-photo-hint" aria-hidden="true">📷</span>` : ""}
+    </span>
+    <span class="shortcut-card-name">${escapeHtml(s.name)}</span>
+    ${shortcutHintsHtml(s, true)}
+    ${editMode ? `<span class="shortcut-card-del" data-del="${id}" role="button" aria-label="削除">×</span>` : ""}
+  </button>`;
+}
+// 元々（下部タブに昇格する前）のシンプルな行形式。写真は出さず品名を主役にして、
+// 一度にたくさんの項目を見渡せるようにする（カード形式との使い分け）。
+function shortcutRowHtml(id, s, editMode) {
+  return `
+  <button class="shortcut-row${editMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
+    <span class="shortcut-row-main">
+      <span class="shortcut-row-name">${s.urgent ? '🔥 ' : ''}${escapeHtml(s.name)}</span>
+      ${shortcutHintsHtml(s, false)}
+    </span>
+    ${editMode
+      ? `<span class="shortcut-row-del" data-del="${id}" role="button" aria-label="削除">×</span>`
+      : `<span class="shortcut-row-add" aria-hidden="true">＋</span>`}
+  </button>`;
+}
+// カテゴリ順（食品→日用品→その他→未分類）→ 名前順で並べ、カテゴリ見出しを付けて見やすく。
+// 全件が未分類なら見出しは出さない。カード形式は見出しごとにグリッドを区切る
+// （グリッドをまたいだ列揃えは狙わない）。リスト形式は見出しの下に行が並ぶだけ。
+function shortcutsListHtml(sorted, mode, editMode) {
+  const anyCategorized = sorted.some(([, s]) => s.category && CATEGORY[s.category]);
+  const wrapClass = mode === "card" ? "shortcut-card-grid" : null;
+  let html = "";
+  let curCat = null;
+  let groupOpen = false;
+  sorted.forEach(([id, s]) => {
+    const catKey = s.category && CATEGORY[s.category] ? s.category : "none";
+    if (anyCategorized && catKey !== curCat) {
+      curCat = catKey;
+      if (groupOpen && wrapClass) html += `</div>`;
+      const hdr = catKey === "none" ? "📎 未分類" : `${CATEGORY[catKey].emoji} ${CATEGORY[catKey].label}`;
+      html += `<div class="shortcut-cat-hdr">${hdr}</div>`;
+      groupOpen = false;
+    }
+    if (wrapClass && !groupOpen) { html += `<div class="${wrapClass}">`; groupOpen = true; }
+    html += mode === "card" ? shortcutCardHtml(id, s, editMode) : shortcutRowHtml(id, s, editMode);
+  });
+  if (groupOpen && wrapClass) html += `</div>`;
+  return html;
+}
+function wireShortcutsContainer(container, editMode) {
+  container.querySelectorAll(".shortcut-card, .shortcut-row").forEach(item => {
+    item.addEventListener("click", (e) => {
+      if (e.target.closest(".shortcut-card-del") || e.target.closest(".shortcut-row-del") || e.target.closest("[data-photo-edit]")) return;
+      if (editMode) return; // 編集中の誤タップで追加しない
+      const s = state.shortcuts[item.dataset.sid];
+      // 項目数が増えると、うっかり隣の項目に触れて追加してしまいやすくなるため、
+      // 確認をひとつ挟む（誤タップ防止）
+      if (s && confirm(`「${s.name}」を買い物リストに追加しますか？`)) addFromShortcut(s);
+    });
+  });
+  container.querySelectorAll(".shortcut-card-del, .shortcut-row-del").forEach(del => {
+    del.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const s = state.shortcuts[del.dataset.del];
+      if (s && !confirm(`「${s.name}」をよく買うものから削除しますか？`)) return;
+      deleteShortcut(del.dataset.del);
+    });
+  });
+  container.querySelectorAll("[data-photo-edit]").forEach(photo => {
+    photo.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = photo.dataset.photoEdit;
+      openIconPicker({
+        onCamera: () => { shortcutPhotoTargetId = id; $("shortcut-photo-replace-input").click(); },
+        onSelect: (path) => setShortcutIllustration(id, path),
+      });
+    });
+  });
+}
+function renderShortcutsInto(container, entries, editMode) {
+  if (!entries.length) {
+    container.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。＋ をタップして登録するか、リストの項目の ☆ から追加できます。</p>`;
+  } else {
+    const sorted = [...entries].sort(([, a], [, b]) =>
+      categoryOrder(a) - categoryOrder(b) || (a.name || "").localeCompare(b.name || "", "ja"));
+    container.innerHTML = shortcutsListHtml(sorted, shortcutViewMode, editMode);
+  }
+  wireShortcutsContainer(container, editMode);
+}
 function renderShortcuts() {
   const chips = $("shortcut-chips");
   if (!chips) return;
@@ -500,87 +631,25 @@ function renderShortcuts() {
       : '✏️ 編集 <span class="toggle-chevron">▾</span>';
     editBtn.classList.toggle("open", shortcutsEditMode);
   }
-  if (!count) {
-    shortcutsEditMode = false;
-    chips.innerHTML = `<p class="shortcut-chips-empty">まだ登録がありません。＋ をタップして登録するか、リストの項目の ☆ から追加できます。</p>`;
-  } else {
-    // カテゴリ順（食品→日用品→その他→未分類）→ 名前順で並べ、カテゴリ見出しを付けて見やすく。
-    // 全件が未分類なら見出しは出さない。カード形式なので、見出しごとに
-    // グリッドを区切る（グリッドをまたいだ列揃えは狙わない）。
-    const sorted = entries.sort(([, a], [, b]) =>
-      categoryOrder(a) - categoryOrder(b) || (a.name || "").localeCompare(b.name || "", "ja"));
-    const anyCategorized = sorted.some(([, s]) => s.category && CATEGORY[s.category]);
-    let html = "";
-    let curCat = null;
-    let gridOpen = false;
-    sorted.forEach(([id, s]) => {
-      const catKey = s.category && CATEGORY[s.category] ? s.category : "none";
-      if (anyCategorized && catKey !== curCat) {
-        curCat = catKey;
-        if (gridOpen) html += `</div>`;
-        const hdr = catKey === "none" ? "📎 未分類" : `${CATEGORY[catKey].emoji} ${CATEGORY[catKey].label}`;
-        html += `<div class="shortcut-cat-hdr">${hdr}</div><div class="shortcut-card-grid">`;
-        gridOpen = true;
-      } else if (!gridOpen) {
-        html += `<div class="shortcut-card-grid">`;
-        gridOpen = true;
-      }
-      const hints = [];
-      if (s.budget > 0) hints.push(`💰${Number(s.budget).toLocaleString()}円`);
-      if (s.brand) hints.push(`🏷️${escapeHtml(s.brand)}`);
-      if (s.assignedTo) {
-        const m = (state.family && state.family.members && state.family.members[s.assignedTo]);
-        if (m) hints.push(`👤${escapeHtml(m.name || '')}`);
-      }
-      const hintHtml = hints.length ? `<span class="shortcut-card-hints">${hints.join(' ')}</span>` : '';
-      const iconUrl = s.photoUrl ? null : matchShortcutIcon(s.name);
-      html += `
-      <button class="shortcut-card${shortcutsEditMode ? " editing" : ""}" data-sid="${id}" aria-label="${escapeHtml(s.name)}を買い物リストに追加">
-        <span class="shortcut-card-photo"${shortcutsEditMode ? ` data-photo-edit="${id}" role="button" aria-label="${escapeHtml(s.name)}の写真を変更"` : ""}>
-          ${s.photoUrl
-            ? `<img src="${escapeHtml(s.photoUrl)}" alt="" loading="lazy" />`
-            : iconUrl
-              ? `<img src="${iconUrl}" class="shortcut-card-icon" alt="" loading="lazy" />`
-              : `<span class="shortcut-card-placeholder" aria-hidden="true">🛒</span>`}
-          ${s.urgent ? `<span class="shortcut-card-urgent" aria-hidden="true">🔥</span>` : ""}
-          ${shortcutsEditMode ? `<span class="shortcut-card-photo-hint" aria-hidden="true">📷</span>` : ""}
-        </span>
-        <span class="shortcut-card-name">${escapeHtml(s.name)}</span>
-        ${hintHtml}
-        ${shortcutsEditMode ? `<span class="shortcut-card-del" data-del="${id}" role="button" aria-label="削除">×</span>` : ""}
-      </button>`;
-    });
-    if (gridOpen) html += `</div>`;
-    chips.innerHTML = html;
+  if (!count) shortcutsEditMode = false;
+  renderShortcutsInto(chips, entries, shortcutsEditMode);
+  updateShortcutViewToggles();
+  // 買い物ページから開ける簡易シートが今開いていれば、そちらも同じ内容で更新する
+  // （編集モードは無く、常に追加専用として描画する）
+  const sheet = $("shortcut-sheet");
+  const sheetChips = $("shortcut-sheet-chips");
+  if (sheet && sheetChips && sheet.classList.contains("open")) {
+    renderShortcutsInto(sheetChips, entries, false);
   }
-  chips.querySelectorAll(".shortcut-card").forEach(card => {
-    card.addEventListener("click", (e) => {
-      if (e.target.closest(".shortcut-card-del") || e.target.closest("[data-photo-edit]")) return;
-      if (shortcutsEditMode) return; // 編集中の誤タップで追加しない
-      const s = state.shortcuts[card.dataset.sid];
-      // 独立タブになって項目数が増え、うっかり隣のカードに触れて追加してしまいやすく
-      // なったため、確認をひとつ挟む（誤タップ防止）
-      if (s && confirm(`「${s.name}」を買い物リストに追加しますか？`)) addFromShortcut(s);
-    });
-  });
-  chips.querySelectorAll(".shortcut-card-del").forEach(del => {
-    del.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const s = state.shortcuts[del.dataset.del];
-      if (s && !confirm(`「${s.name}」をよく買うものから削除しますか？`)) return;
-      deleteShortcut(del.dataset.del);
-    });
-  });
-  chips.querySelectorAll("[data-photo-edit]").forEach(photo => {
-    photo.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const id = photo.dataset.photoEdit;
-      openIconPicker({
-        onCamera: () => { shortcutPhotoTargetId = id; $("shortcut-photo-replace-input").click(); },
-        onSelect: (path) => setShortcutIllustration(id, path),
-      });
-    });
-  });
+}
+function openShortcutSheet() {
+  $("shortcut-sheet").classList.add("open");
+  $("sheet-backdrop").classList.add("open");
+  renderShortcuts();
+}
+function closeShortcutSheet() {
+  $("shortcut-sheet").classList.remove("open");
+  $("sheet-backdrop").classList.remove("open");
 }
 async function claimRequest(id) {
   // トランザクションで「open のときだけ」立候補する。

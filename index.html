@@ -217,12 +217,26 @@
       <!-- Tab: Shortcuts -->
       <section id="tab-shortcuts" class="tab">
         <div class="section-header"><h2>⚡ よく買うもの</h2></div>
+        <!-- カード形式（写真中心）とリスト形式（品名を詰めて多く見せる）の切り替え。
+             端末ごとに覚える（localStorage）。よく買うものシート（買い物ページから開く）とも共通 -->
+        <div class="seg-control" role="tablist" aria-label="表示形式の切り替え">
+          <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="card" role="tab">🖼️ カード</button>
+          <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="list" role="tab">☰ リスト</button>
+        </div>
         <p class="muted" style="font-size:11px;margin:0 0 10px;">「✏️ 編集」中は写真をタップすると差し替えられます。</p>
         <div id="shortcut-chips" class="shortcut-chips"></div>
         <button id="btn-shortcut-edit" class="section-toggle-btn" style="display:none;">✏️ 編集 <span class="toggle-chevron">▾</span></button>
         <!-- 編集モード中、カードの写真をタップすると発火する共有のファイル入力
              （カードごとに用意せず、どのカードを対象にするかはJS側の変数で覚える） -->
         <input type="file" id="shortcut-photo-replace-input" accept="image/*" style="display:none;" />
+      </section>
+
+      <!-- Tab: Expenses -->
+      <section id="tab-expenses" class="tab">
+        <div class="section-header"><h2>💴 支出・家計</h2></div>
+        <div id="monthly-summary" class="muted" style="font-size:13px;">まだデータがありません</div>
+        <div id="extra-expense-list"></div>
+        <button id="btn-open-expense-sheet" class="ghost tiny-btn" style="margin-top:10px;width:100%;">＋ その他の支出を記録</button>
       </section>
 
       <!-- Tab: Stock -->
@@ -418,6 +432,17 @@
         </span>
         <span class="nav-label">よく買う</span>
       </button>
+      <!-- 支出・家計: 財布 -->
+      <button data-tab="expenses">
+        <span class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="18" height="13" rx="2"/>
+            <path d="M3 10h18"/>
+            <circle cx="16" cy="14.5" r="1.4" fill="currentColor" stroke="none"/>
+          </svg>
+        </span>
+        <span class="nav-label">支出</span>
+      </button>
       <button id="fab-add" class="fab" aria-label="追加">
         <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:23px;height:23px;display:block;">
           <line x1="12" y1="4" x2="12" y2="20"/>
@@ -450,6 +475,9 @@
 
     <!-- Shortcut float button (fixed above footer, requests tab only) -->
     <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
+      <!-- 下部タブの「よく買う」に気づきにくいという声を受けて、買い物ページからも
+           同じ内容をシートで開けるようにした（下部タブ自体は残す） -->
+      <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買う</button>
       <button id="btn-history-float" class="shortcut-float-btn history"><span style="font-size:17px;line-height:1;">🧾</span> 履歴</button>
       <button id="btn-store-mode" class="shortcut-float-btn store" aria-label="店内モードを開く"><span style="font-size:17px;line-height:1;">🏪</span> 店内</button>
     </div>
@@ -571,6 +599,25 @@
             <button id="btn-add-request" style="flex:1;">追加する</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Shortcut sheet: 買い物ページのフローティングボタン（⚡よく買う）から開く簡易表示。
+         編集（削除・写真差し替え）は下部タブの「よく買うもの」で行う想定なので、
+         こちらは追加専用（編集モードは常にオフ）。カード/リストの表示切替は
+         下部タブと共通の設定（localStorage の shortcutViewMode）を使う。 -->
+    <div id="shortcut-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">⚡ よく買うもの</div>
+          <button id="btn-shortcut-sheet-close" class="sheet-close">✕</button>
+        </div>
+        <div class="seg-control" role="tablist" aria-label="表示形式の切り替え">
+          <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="card" role="tab">🖼️ カード</button>
+          <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="list" role="tab">☰ リスト</button>
+        </div>
+        <div id="shortcut-sheet-chips" class="shortcut-chips"></div>
       </div>
     </div>
 

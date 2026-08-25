@@ -35,6 +35,7 @@ function switchTab(t) {
   closeStockSheet();
   closeMissionSheet();
   closeExpenseSheet();
+  closeShortcutSheet();
   updateShortcutVisibility();
   renderBadge();
   renderStockBadge();
@@ -63,10 +64,10 @@ function wireTabs() {
 }
 
 // ===== ページ内タブ: 左右スワイプで切り替え =====
-// 下部ナビと同じ並び順（お買い物→よく買うもの→ストック→設定）でスワイプする。
+// 下部ナビと同じ並び順（お買い物→よく買うもの→支出・家計→ストック→設定）でスワイプする。
 // ミッションはトップバーのサイドボタン経由のみで、スワイプの対象には含めない。
 // 端まで来たら折り返さない（そこで指を離しても何も起きない）。
-const SWIPE_TAB_ORDER = ["requests", "shortcuts", "stock", "settings"];
+const SWIPE_TAB_ORDER = ["requests", "shortcuts", "expenses", "stock", "settings"];
 const TAB_SWIPE_THRESHOLD = 60;
 // シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
 // 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。
@@ -199,20 +200,26 @@ function wireGlobalEvents() {
   $("fab-add").addEventListener("click", () => {
     if (state.activeTab === "stock") openStockSheet();
     else if (state.activeTab === "shortcuts") openShortcutRegisterSheet();
+    else if (state.activeTab === "expenses") openExpenseSheet();
     else if (state.activeTab === "missions" && isParent()) openMissionSheet();
     else if (state.activeTab === "missions") { /* child: nothing */ }
     else openSheet();
   });
   $("btn-sheet-close").addEventListener("click", closeSheet);
-  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeExpenseSheet(); });
+  $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeExpenseSheet(); closeShortcutSheet(); });
   $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
   $("btn-shortcut-edit").addEventListener("click", () => {
     shortcutsEditMode = !shortcutsEditMode;
     renderShortcuts();
   });
+  // 買い物ページから「よく買うもの」を開く導線（下部タブが分かりにくいという声を受けて追加）
+  $("btn-shortcut-toggle").addEventListener("click", openShortcutSheet);
+  $("btn-shortcut-sheet-close").addEventListener("click", closeShortcutSheet);
+  wireShortcutViewToggles();
   $("btn-history-float").addEventListener("click", openHistorySheet);
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
+  $("btn-open-expense-sheet").addEventListener("click", openExpenseSheet);
   wireCategoryChips();
   wireMissionSubtabs();
   wireSettingsAccordion();
@@ -314,6 +321,7 @@ function wireGlobalEvents() {
     closeHowto();
     closeHistorySheet();
     closeExpenseSheet();
+    closeShortcutSheet();
     if (storeModeOpen) closeStoreMode();
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
@@ -336,8 +344,6 @@ function wireGlobalEvents() {
     replaceStockPhoto(stockPhotoTargetId, file);
     stockPhotoTargetId = null;
   });
-  // 「＋ その他の支出を記録」ボタンはプレイヤー情報シート内にあり、シートを開くたび
-  // openPlayerSheet() が innerHTML ごと作り直すため、リスナーもそちらで都度つける
   $("btn-expense-sheet-close").addEventListener("click", closeExpenseSheet);
   $("btn-add-expense").addEventListener("click", addExtraExpense);
   $("expense-amount").addEventListener("keydown", (e) => { if (e.key === "Enter") addExtraExpense(); });

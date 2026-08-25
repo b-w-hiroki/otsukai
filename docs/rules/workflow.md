@@ -29,7 +29,7 @@ CI（`.github/workflows/check.yml`）は2ジョブ:
 
 CI は**最低限**しか見ない。UI を触ったら**手元の回帰スイート**も通す。
 
-### 回帰スイート（`tests/regression/` の12本）
+### 回帰スイート（`tests/regression/` の22本）
 
 インメモリの Firebase スタブ（`tests/fb-stub.js`）で家族データを再現して動かす。
 本物の Firebase には一切つながないので、オフラインでも走る。
@@ -46,13 +46,14 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `circle-toggle-test` / `bought-test` | ◯ タップの宣言・取り消し・完了 |
 | `history-close-test` / `hist-footer-test` | 履歴シートが閉じる・実タッチでスクロールする |
 | `store-footer-test` | 店内モードの終了ボタン位置 |
-| `shortcut-tab-test` | ⚡よく買うものタブ（下部ナビ）・カード形式・写真の登録と編集モードでの差し替え・品名からの連想イラスト・大量件数のスクロール |
+| `shortcut-tab-test` | ⚡よく買うものタブ（下部ナビ）・カード/リスト表示切替・写真の登録と編集モードでの差し替え・品名からの連想イラスト・大量件数のスクロール |
+| `shortcut-sheet-test` | お買い物ページのフローティングボタン（⚡よく買う）から開く簡易シート・表示切替の共有 |
 | `shortcut-confirm-test` | カードタップ時の確認ダイアログ（品名の表示・キャンセルで未追加） |
-| `tab-swipe-test` | ページ内タブの左右スワイプ切替・端での折り返し無し・シート/店内モード中の抑止・下部ナビの背景が指に追従して滑る／閾値未満なら元へ戻る |
+| `tab-swipe-test` | ページ内タブ（お買い物/よく買うもの/支出/ストック/設定）の左右スワイプ切替・端での折り返し無し・シート/店内モード中の抑止・下部ナビの背景が指に追従して滑る／閾値未満なら元へ戻る |
 | `update-test` / `update-banner-test` | 更新バナー・強制更新・強制ログアウト・引っ張って更新 |
 | `photo-test` | 📷 写真の添付・表示・拡大・外す・店内モードのサムネイル |
 | `icon-picker-test` | 🎨 イラストから選ぶピッカー（おつかい/よく買うもの/ストックの写真欄で共通） |
-| `expense-log-test` | 💴 その他の支出の記録・削除・レシートOCR（読み取り成功/失敗の両方） |
+| `expense-log-test` | 💴 支出・家計タブでの記録・削除・レシートOCR（読み取り成功/失敗の両方） |
 | `features-test` | 主要導線の通し |
 
 **共通処理は `tests/harness.mjs` に集約**している。各テストは3行で始まる:
@@ -109,9 +110,9 @@ node tests/docs-check.mjs
 `docs/screenshots/` は `docs/features.md` から参照している。UI を変えたら撮り直す。
 
 ```bash
-node tests/capture-docs.mjs   # 17枚をまとめて撮り直す
+node tests/capture-docs.mjs   # 18枚をまとめて撮り直す
 ```
 
-- 幅 **480px・256色**に最適化してから置く（17枚で 3.3MB → 874KB の実績）
+- 幅 **480px・256色**に最適化してから置く（18枚で 3.3MB → 900KB前後の実績）
 - 固定のボトムナビや FAB が被る場合は、その1枚だけ `visibility:hidden` にして撮る
 - **テスト用のサンプルデータで撮る**。実データを混ぜない

@@ -53,7 +53,7 @@
 
 | ファイル | 中身 | 鮮度 |
 |---|---|---|
-| [`features.md`](./features.md) | 機能仕様12章（利用者向け・スクショ17枚） | 機能追加のたび更新 |
+| [`features.md`](./features.md) | 機能仕様13章（利用者向け・スクショ18枚） | 機能追加のたび更新 |
 | [`../functions/README.md`](../functions/README.md) | 関数9つの責務・仕組み図・VAPID/Blaze の設定 | 関数追加のたび更新 |
 | [`release-plan.md`](./release-plan.md) | ストア配信 Phase 0/1/2・費用表 | **金額は2026年7月時点**（Play $25 / Apple $99・年） |
 | [`monetization-ideas.md`](./monetization-ideas.md) | 広告配置案・i-mobile の PID/asid 実値・残タスク | 配置変更のたび更新 |
@@ -104,10 +104,10 @@
 | **ルート直下** | アプリ本体（PWA） | `index.html` → `app-core.js`（読み込み順は `index.html` の `<script>` 参照） |
 | `docs/` | ドキュメント一式 | **このファイル** |
 | `docs/rules/` | 決め事 | `ui.md` / `deploy.md` / `workflow.md` |
-| `docs/screenshots/` | 説明用スクショ17枚 | `features.md` から参照 |
+| `docs/screenshots/` | 説明用スクショ18枚 | `features.md` から参照 |
 | `functions/` | Cloud Functions（通知・ポイント・アーカイブ） | `README.md` → `index.js` |
 | `tests/` | スモーク＋回帰スイート＋ドキュメント検査 | `run-all.mjs` / `docs-check.mjs` |
-| `tests/regression/` | 回帰テスト12本 | `harness.mjs` から始まる |
+| `tests/regression/` | 回帰テスト22本 | `harness.mjs` から始まる |
 | `.github/workflows/` | CI 定義 | `check.yml` |
 
 **HTML の入口**

@@ -1,6 +1,6 @@
-// ページ内タブ（お買い物/よく買うもの/ストック/設定）を左右スワイプで切り替えられることの検証。
-// ミッションはコア機能ではないため下部ナビから外し、トップバーのサイドボタン
-// （名前と？の間）に移した。スワイプの対象にも含めない。
+// ページ内タブ（お買い物/よく買うもの/支出・家計/ストック/設定）を左右スワイプで
+// 切り替えられることの検証。ミッションはコア機能ではないため下部ナビから外し、
+// トップバーのサイドボタン（名前と？の間）に移した。スワイプの対象にも含めない。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
@@ -58,11 +58,15 @@ check("ミッションのサイドボタンのタップ領域が44px以上",
 await page.click('[data-tab="requests"]');
 await sleep(500);
 
-// --- 左スワイプで次のタブへ（お買い物→よく買うもの→ストック→設定） ---
+// --- 左スワイプで次のタブへ（お買い物→よく買うもの→支出・家計→ストック→設定） ---
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
 check("左スワイプでよく買うものタブへ", (await activeTab()) === "tab-shortcuts");
 check("下部ナビの選択状態も連動する", (await activeNavBtn()) === "shortcuts");
+
+await t.swipeLeft(400, 320, 40);
+await sleep(400);
+check("左スワイプで支出タブへ", (await activeTab()) === "tab-expenses");
 
 await t.swipeLeft(400, 320, 40);
 await sleep(400);
@@ -94,6 +98,10 @@ check("最後のタブでさらに左スワイプしても何も起きない", (
 await t.swipeRight(400, 40, 320);
 await sleep(400);
 check("右スワイプでストックタブへ戻る", (await activeTab()) === "tab-stock");
+
+await t.swipeRight(400, 40, 320);
+await sleep(400);
+check("右スワイプで支出タブへ戻る", (await activeTab()) === "tab-expenses");
 
 await t.swipeRight(400, 40, 320);
 await sleep(400);

@@ -55,13 +55,11 @@ await page.screenshot({path:`${OUT}/f4-cost.png`});
 await page.click("#btn-history-close");
 await sleep(400);
 
-// 月間サマリーが実支出ベースに（左上のプレイヤー情報に入っている）
-await page.click("#btn-player-profile");
+// 月間サマリーが実支出ベースに（「💴 支出・家計」タブ）
+await page.click('[data-tab="expenses"]');
 await sleep(600);
 const monthly = await page.locator("#monthly-summary").innerText();
 check("月間サマリーが実支出表示", monthly.includes("実際の支出"), monthly.replace(/\n/g," ").slice(0,60));
-await page.click("#btn-player-sheet-close");
-await sleep(400);
 
 // ダークモード
 await page.click('[data-tab="settings"]');
