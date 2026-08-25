@@ -23,6 +23,13 @@ check("初回: バナーは出ていない", await page.locator("#update-banner"
 const build1 = await page.evaluate(()=>self.__BUILD);
 check("初回のビルド識別子", build1==="OLD", build1);
 
+// このテストは「バナーをタップして手動で更新する」導線を見るためのもの。
+// 何も操作していない状態だと、検知後すぐに自動適用（安全なタイミングの自動更新）が
+// 先に走ってリロードされてしまうため、シートを開いて「操作中」の状態を作っておく
+// （自動適用は保留され、バナーの手動タップだけが効く状態になる）。
+await page.click("#btn-add-float");
+await sleep(500);
+
 // --- 新バージョンをデプロイ ---
 SW_VERSION = "v30"; APP_MARKER = "NEW";
 // アプリに戻ったときの更新チェックを発火（visibilitychange）

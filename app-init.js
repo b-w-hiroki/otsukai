@@ -561,26 +561,56 @@ function initPullToRefresh() {
 // PWA は app-*.js / styles.css をキャッシュ優先で配信するため、放置すると
 // 古いバージョンのまま固定されてしまう。そこで
 //   1. 新バージョンを検知したら画面上部にバナーを出し、タップで即切り替え
+//   1.5. さらに、入力や操作の邪魔にならない安全なタイミングを見て自動でも適用する
 //   2. 起動時・アプリに戻ったとき・1時間ごとに更新チェック
 //   3. それでも直らないとき用に設定タブから「アプリを更新」（全キャッシュ破棄）
 // の3段構えにする。
 let swRegistration = null;
 let reloadingForUpdate = false;
 let updateRequested = false; // ユーザーが「更新する」を押したか
+let autoApplyPending = false;
 
 function showUpdateBanner() {
+  scheduleAutoApply();
   if (document.getElementById("update-banner")) return;
   const bar = document.createElement("div");
   bar.id = "update-banner";
   bar.className = "update-banner";
   bar.innerHTML = `
-    <span class="update-banner-text">🆕 新しいバージョンがあります</span>
-    <button class="update-banner-btn" id="btn-apply-update">更新する</button>
+    <span class="update-banner-text">🆕 新しいバージョンがあります（自動で更新されます）</span>
+    <button class="update-banner-btn" id="btn-apply-update">今すぐ更新</button>
     <button class="update-banner-close" id="btn-dismiss-update" aria-label="あとで">✕</button>`;
   document.body.appendChild(bar);
   requestAnimationFrame(() => bar.classList.add("open"));
   document.getElementById("btn-apply-update").addEventListener("click", applyUpdate);
   document.getElementById("btn-dismiss-update").addEventListener("click", () => bar.remove());
+}
+
+// 入力中や何かのシート/モーダルを開いている最中に更新すると操作が飛んでしまうため、
+// 「何も開いておらず、入力欄にフォーカスも無く、画面が見えている」ときだけ自動適用する。
+// シート/モーダルが開いているかの判定は tabSwipeBlocked() と同じ考え方（スワイプ抑止と同条件）。
+// skipWaiting() をSW側のinstallで即呼ばないのと同じ理由（CLAUDE.md 参照）。
+function isSafeToAutoUpdate() {
+  if (document.hidden || tabSwipeBlocked()) return false;
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return false;
+  return true;
+}
+// 安全なタイミングになるまで数秒おきに見に行き、条件がそろったら自動で適用する。
+// ユーザーが先にバナーの「今すぐ更新」を押した場合はそちらに任せて止める。
+function scheduleAutoApply() {
+  if (autoApplyPending) return;
+  autoApplyPending = true;
+  const tryNow = () => {
+    if (!autoApplyPending || updateRequested) { autoApplyPending = false; return; }
+    if (isSafeToAutoUpdate()) {
+      autoApplyPending = false;
+      applyUpdate();
+    } else {
+      setTimeout(tryNow, 8000);
+    }
+  };
+  tryNow();
 }
 
 // 待機中の新バージョンを有効化し、切り替わったら1回だけ再読み込みする
