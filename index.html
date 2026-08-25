@@ -409,20 +409,9 @@
 
     <nav class="bottom-nav">
       <!-- アクティブなタブの位置に合わせてスライドする背景（タップでもスワイプでも動く）。
-           実際の位置は JS（positionNavIndicator, app-init.js）がボタンの実測位置から計算する。 -->
+           実際の位置は JS（positionNavIndicator, app-init.js）がボタンの実測位置から計算する。
+           お買い物（中央の丸ボタン）は対象外（missionsと同じ「対応ボタン無し」扱い）。 -->
       <span class="bottom-nav-indicator" aria-hidden="true"></span>
-      <!-- お買い物: ショッピングバッグ -->
-      <button data-tab="requests" class="active">
-        <span class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <path d="M16 10a4 4 0 01-8 0"/>
-          </svg>
-        </span>
-        <span class="nav-label">お買い物</span>
-        <span id="badge-requests" class="nav-badge" style="display:none;">0</span>
-      </button>
       <!-- よく買うもの: 稲妻 -->
       <button data-tab="shortcuts">
         <span class="nav-icon">
@@ -443,11 +432,17 @@
         </span>
         <span class="nav-label">支出</span>
       </button>
-      <button id="fab-add" class="fab" aria-label="追加">
-        <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:23px;height:23px;display:block;">
-          <line x1="12" y1="4" x2="12" y2="20"/>
-          <line x1="4" y1="12" x2="20" y2="12"/>
-        </svg>
+      <!-- お買い物: 中央の目立つ丸ボタン（旧＋の位置）。ショッピングバッグ -->
+      <button data-tab="requests" class="active bottom-nav-home">
+        <span class="nav-icon-raised">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <path d="M16 10a4 4 0 01-8 0"/>
+          </svg>
+          <span id="badge-requests" class="nav-badge" style="display:none;">0</span>
+        </span>
+        <span class="nav-label">お買い物</span>
       </button>
       <!-- ストック: パッケージ箱 -->
       <button data-tab="stock">
@@ -472,6 +467,16 @@
         <span class="nav-label">設定</span>
       </button>
     </nav>
+
+    <!-- 追加ボタン。以前は下部ナビ中央だったが、そこに「お買い物」を置いたため、
+         右下に浮かせる独立ボタンにした。押したときの動作は引き続きタブごとに変わる
+         （wireGlobalEventsのfab-addクリック処理を参照）。 -->
+    <button id="fab-add" class="floating-add-btn" aria-label="追加">
+      <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:23px;height:23px;display:block;">
+        <line x1="12" y1="4" x2="12" y2="20"/>
+        <line x1="4" y1="12" x2="20" y2="12"/>
+      </svg>
+    </button>
 
     <!-- Shortcut float button (fixed above footer, requests tab only) -->
     <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">

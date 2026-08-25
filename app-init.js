@@ -12,9 +12,11 @@ function positionNavIndicator(tabName, animate) {
   const indicator = document.querySelector(".bottom-nav-indicator");
   if (!nav || !indicator) return;
   indicator.classList.toggle("dragging", !animate);
-  if (!btn) {
+  if (!btn || tabName === "requests") {
     // 下部ナビに対応するボタンが無いタブ（ミッションはトップバー側の
-    // サイドボタンに移した）を表示中は、背景を畳んで何も選ばれていない状態にする
+    // サイドボタンに移した）を表示中は、背景を畳んで何も選ばれていない状態にする。
+    // お買い物（中央の丸ボタン）は独立した見た目なので、スライドする背景の
+    // 対象にしない（同じく畳んだ状態にする）
     indicator.style.width = "0px";
     return;
   }
@@ -86,6 +88,12 @@ function updateNavIndicatorDrag(dx) {
   const targetIdx = dx < 0 ? idx + 1 : idx - 1;
   if (targetIdx < 0 || targetIdx >= SWIPE_TAB_ORDER.length) {
     positionNavIndicator(state.activeTab, false); // 端では動かさない
+    return;
+  }
+  if (state.activeTab === "requests" || SWIPE_TAB_ORDER[targetIdx] === "requests") {
+    // お買い物（中央の丸ボタン）が絡むスワイプは、独立した見た目なので
+    // スライドする背景を追従させない（畳んだまま）
+    positionNavIndicator(state.activeTab, false);
     return;
   }
   const homeBtn = document.querySelector('.bottom-nav button[data-tab="' + state.activeTab + '"]');

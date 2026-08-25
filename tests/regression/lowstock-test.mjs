@@ -14,8 +14,10 @@ const txt = await page.locator(".lowstock-card").innerText();
 check("ストック切れ(ラップ)が含まれる", txt.includes("ラップ"), "");
 check("ストック少ない(米)が含まれる", txt.includes("米"), "");
 check("周期予測(こめ5kg)が含まれる", txt.includes("こめ5kg"), "");
-check("残量の説明が出る", txt.includes("切れてる")||txt.includes("残り少ない"), "");
-check("周期の説明が出る", /約\d+日ごと/.test(txt), (txt.match(/約\d+日ごと[^\n]*/)||[""])[0]);
+// 補足テキストは廃止し、名前だけのシンプルな表示にした（タップで追加するボタンなので、
+// 理由の説明は無くても迷わない）
+check("残量の補足は出ない（名前だけ）", !txt.includes("切れてる") && !txt.includes("残り少ない"), "");
+check("周期の補足も出ない（名前だけ）", !/約\d+日ごと/.test(txt), (txt.match(/約\d+日ごと[^\n]*/)||[""])[0]);
 check("切れている件数の警告", txt.includes("もう切れています"), "");
 await page.screenshot({path:`${OUT}/g-lowstock.png`});
 

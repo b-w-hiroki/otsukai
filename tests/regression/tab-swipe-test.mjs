@@ -32,7 +32,8 @@ const indicatorAligned = async (tabName) => {
 
 await t.ready();
 check("最初はお買い物タブ", (await activeTab()) === "tab-requests");
-check("初期表示で下部ナビの背景が「お買い物」の位置に揃っている", await indicatorAligned("requests"));
+// お買い物は中央の丸ボタン（独立した見た目）なので、スライドする背景の対象にせず畳んだままにする
+check("初期表示では下部ナビの背景が畳まれている（お買い物は独立ボタンのため）", (await indicatorState()).width === 0);
 
 // --- touch-action: pan-y が付いている ---
 // 「特定のタブ以外でスワイプが効かない」不具合の実体は、縦にスクロールできる
@@ -161,7 +162,8 @@ check("タップ後、背景がストックの位置に揃う", await indicatorA
 check("タップ後はドラッグ中扱いではない（アニメーション付きで動く）", !(await indicatorState()).dragging);
 
 // --- スワイプ中は指の動きに合わせて背景が今のタブと隣のタブの間を追従する ---
-await page.click('[data-tab="requests"]');
+// （お買い物が絡むドラッグは対象外。まずはお買い物以外の2タブ間で確認する）
+await page.click('[data-tab="shortcuts"]');
 await sleep(500);
 const cdp2 = await t.ctx.newCDPSession(t.page);
 const send2 = (type, x, y) => cdp2.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
@@ -169,8 +171,8 @@ await send2("touchStart", 320, 400);
 await send2("touchMove", 300, 400); // dx=-20（閾値60の一部だけ動いた状態）
 await sleep(100);
 const midDrag = await indicatorState();
-const homeOffset = await btnOffset("requests");
-const targetOffset = await btnOffset("shortcuts");
+const homeOffset = await btnOffset("shortcuts");
+const targetOffset = await btnOffset("expenses");
 check("ドラッグ中はアニメーションを止めて指に追従する", midDrag.dragging);
 check("閾値未満の途中では、背景が今のタブと隣のタブの間にある（まだどちらにも揃っていない）",
   midDrag.x > Math.min(homeOffset.x, targetOffset.x) && midDrag.x < Math.max(homeOffset.x, targetOffset.x),
@@ -180,8 +182,23 @@ check("閾値未満の途中では、背景が今のタブと隣のタブの間�
 await send2("touchEnd");
 await cdp2.detach();
 await sleep(500);
-check("閾値未満で離すとタブは変わらない", (await activeTab()) === "tab-requests");
-check("背景も元の位置（お買い物）へ戻る", await indicatorAligned("requests"));
+check("閾値未満で離すとタブは変わらない", (await activeTab()) === "tab-shortcuts");
+check("背景も元の位置（よく買うもの）へ戻る", await indicatorAligned("shortcuts"));
 check("戻った後はドラッグ中扱いが解除される", !(await indicatorState()).dragging);
+
+// --- お買い物が絡むドラッグでは、背景は畳んだまま追従しない ---
+await page.click('[data-tab="requests"]');
+await sleep(500);
+const cdp3 = await t.ctx.newCDPSession(t.page);
+const send3 = (type, x, y) => cdp3.send("Input.dispatchTouchEvent", { type, touchPoints: type === "touchEnd" ? [] : [{ x, y }] });
+await send3("touchStart", 320, 400);
+await send3("touchMove", 280, 400); // dx=-40（閾値未満。タブは切り替わらない）
+await sleep(100);
+check("お買い物が絡むドラッグ中は背景が畳まれたまま", (await indicatorState()).width === 0);
+await send3("touchEnd");
+await cdp3.detach();
+await sleep(500);
+check("お買い物が絡むドラッグの後も背景は畳まれたまま", (await indicatorState()).width === 0);
+check("お買い物が絡むドラッグの後もタブは変わらない", (await activeTab()) === "tab-requests");
 
 await t.finish();

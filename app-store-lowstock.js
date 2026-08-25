@@ -202,7 +202,6 @@ function computeRunningLow() {
       kind: "stock",
       out: s.level === "out",
       urgent: s.level === "out",
-      note: s.level === "out" ? "切れてる" : "残り少ない",
       order: s.level === "out" ? 0 : 1,
       budget: s.budget, memo: s.memo,
     });
@@ -213,16 +212,11 @@ function computeRunningLow() {
     if (active.has(name) || already.has(name)) return;
     if (c.daysLeft > lead) return;                    // 設定した予告日数より先なら出さない
     if (dismissed[name] && dismissed[name] >= c.last) return; // この周期で案内済み
-    // 手入力の間隔は「約」ではなく言い切る（家族が決めた値なので）
-    const every = c.source === "manual" ? `${c.avgDays}日ごと` : `約${c.avgDays}日ごと`;
     items.push({
       name,
       kind: "cycle",
       overdue: c.daysLeft <= 0,
       urgent: c.daysLeft <= 0,
-      note: c.daysLeft < 0 ? `${every}・${-c.daysLeft}日超過`
-        : c.daysLeft === 0 ? `${every}・今日が買い時`
-        : `${every}・あと${c.daysLeft}日`,
       order: c.daysLeft <= 0 ? 0.5 : 2,
     });
   });
@@ -255,10 +249,7 @@ function renderSuggestions() {
         ${list.map((i) => `
           <button class="lowstock-item${i.urgent ? " urgent" : ""}" data-suggest="${escapeHtml(i.name)}">
             <span class="lowstock-icon">${i.kind === "stock" ? (i.urgent ? "🔴" : "🟡") : "🔄"}</span>
-            <span class="lowstock-body">
-              <span class="lowstock-name">${escapeHtml(i.name)}</span>
-              <span class="lowstock-note">${escapeHtml(i.note)}</span>
-            </span>
+            <span class="lowstock-name">${escapeHtml(i.name)}</span>
             <span class="lowstock-add">＋</span>
             <span class="lowstock-x" data-suggest-x="${escapeHtml(i.name)}" role="button" aria-label="このお知らせを消す">×</span>
           </button>`).join("")}
