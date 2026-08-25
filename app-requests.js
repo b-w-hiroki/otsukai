@@ -165,7 +165,8 @@ async function addRequest() {
     if (assignedTo) req.assignedTo = assignedTo;
     if (selectedCategory) req.category = selectedCategory;
     if (pendingReqPhoto) {
-      const url = await uploadRequestPhoto(pendingReqPhoto, id);
+      // File なら実写真としてアップロード、文字列なら選んだイラストのパスをそのまま使う
+      const url = pendingReqPhoto instanceof File ? await uploadRequestPhoto(pendingReqPhoto, id) : pendingReqPhoto;
       if (url) req.photoUrl = url;
     }
     if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
@@ -222,7 +223,7 @@ async function updateRequest() {
   updates.assignedTo = assignedTo || null;
   updates.category = selectedCategory || null;
   if (pendingReqPhoto) {
-    const url = await uploadRequestPhoto(pendingReqPhoto, editingRequestId);
+    const url = pendingReqPhoto instanceof File ? await uploadRequestPhoto(pendingReqPhoto, editingRequestId) : pendingReqPhoto;
     if (url) updates.photoUrl = url;
   } else if (pendingReqPhoto === "" && existingReqPhotoUrl) {
     updates.photoUrl = null; // 「写真を外す」を押した
@@ -346,7 +347,7 @@ async function addShortcutFromSheet() {
   if (selectedCategory) entry.category = selectedCategory;
   const ref = familyRef().child("shortcuts").push();
   if (pendingReqPhoto) {
-    const url = await uploadShortcutPhoto(pendingReqPhoto, ref.key);
+    const url = pendingReqPhoto instanceof File ? await uploadShortcutPhoto(pendingReqPhoto, ref.key) : pendingReqPhoto;
     if (url) entry.photoUrl = url;
   }
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
@@ -373,6 +374,13 @@ async function replaceShortcutPhoto(shortcutId, file) {
   if (!url) return;
   if (!(await dbOp(familyRef().child("shortcuts/" + shortcutId + "/photoUrl").set(url), "写真を更新できませんでした"))) return;
   showToast(`📷 「${s.name}」の写真を変更しました`, { sound: false });
+}
+// 「イラストから選ぶ」で選んだパスをそのまま photoUrl に入れる（アップロード不要）
+async function setShortcutIllustration(shortcutId, path) {
+  const s = state.shortcuts[shortcutId];
+  if (!s) return;
+  if (!(await dbOp(familyRef().child("shortcuts/" + shortcutId + "/photoUrl").set(path), "写真を更新できませんでした"))) return;
+  showToast(`🎨 「${s.name}」の写真を変更しました`, { sound: false });
 }
 // 誤操作防止: 削除×・写真の差し替えは「✏️ 編集」モードの中だけに表示する
 let shortcutsEditMode = false;
@@ -415,6 +423,76 @@ function matchShortcutIcon(name) {
   if (!name) return null;
   const hit = SHORTCUT_ICON_MATCH.find((e) => e.keywords.some((k) => name.includes(k)));
   return hit ? `./shortcut-icons/${hit.file}.svg` : null;
+}
+
+// ===== イラストから選ぶピッカー（よく買うもの/ストック/おつかいの写真欄で共通利用） =====
+// 品名からの自動判定（matchShortcutIcon）とは別に、利用者が能動的に選べるようにしたもの。
+// 選ぶと photoUrl にイラストのパスをそのまま入れる（本物の写真と同じ扱い。アップロード不要）。
+const ICON_LIBRARY = [
+  { file: "apple", label: "りんご" },
+  { file: "avocado", label: "アボカド" },
+  { file: "banana", label: "バナナ" },
+  { file: "beef", label: "牛肉" },
+  { file: "bread", label: "パン" },
+  { file: "broccoli", label: "ブロッコリー" },
+  { file: "cabbage", label: "キャベツ" },
+  { file: "carrot", label: "にんじん" },
+  { file: "chicken", label: "鶏肉" },
+  { file: "cucumber", label: "きゅうり" },
+  { file: "egg", label: "卵" },
+  { file: "fish", label: "魚" },
+  { file: "milk", label: "牛乳" },
+  { file: "onion", label: "たまねぎ" },
+  { file: "pork", label: "豚肉" },
+  { file: "potato", label: "じゃがいも" },
+  { file: "rice", label: "米" },
+  { file: "salmon", label: "サケ" },
+  { file: "spinach", label: "ほうれん草" },
+  { file: "tomato", label: "トマト" },
+];
+let iconPickerOnSelect = null; // (path) => void
+let iconPickerOnCamera = null; // () => void（渡した時だけ「写真を撮る・選ぶ」タイルを先頭に出す）
+function openIconPicker({ onSelect, onCamera } = {}) {
+  iconPickerOnSelect = onSelect || null;
+  iconPickerOnCamera = onCamera || null;
+  renderIconPickerGrid();
+  $("icon-picker-sheet").classList.add("open");
+  $("sheet-backdrop").classList.add("open");
+}
+function closeIconPicker() {
+  $("icon-picker-sheet").classList.remove("open");
+  $("sheet-backdrop").classList.remove("open");
+  iconPickerOnSelect = null;
+  iconPickerOnCamera = null;
+}
+function renderIconPickerGrid() {
+  const grid = $("icon-picker-grid");
+  if (!grid) return;
+  const cameraTile = iconPickerOnCamera
+    ? `<button type="button" class="icon-picker-tile" data-action="camera">
+        <span class="icon-picker-camera-icon">📷</span>
+        <span class="icon-picker-tile-label">写真を撮る・選ぶ</span>
+      </button>`
+    : "";
+  grid.innerHTML = cameraTile + ICON_LIBRARY.map((it) => `
+    <button type="button" class="icon-picker-tile" data-file="${it.file}">
+      <img src="./shortcut-icons/${it.file}.svg" alt="" />
+      <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
+    </button>`).join("");
+  grid.querySelectorAll(".icon-picker-tile").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (btn.dataset.action === "camera") {
+        const cb = iconPickerOnCamera;
+        closeIconPicker();
+        if (cb) cb();
+        return;
+      }
+      const path = `./shortcut-icons/${btn.dataset.file}.svg`;
+      const cb = iconPickerOnSelect;
+      closeIconPicker();
+      if (cb) cb(path);
+    });
+  });
 }
 function renderShortcuts() {
   const chips = $("shortcut-chips");
@@ -504,8 +582,11 @@ function renderShortcuts() {
   chips.querySelectorAll("[data-photo-edit]").forEach(photo => {
     photo.addEventListener("click", (e) => {
       e.stopPropagation();
-      shortcutPhotoTargetId = photo.dataset.photoEdit;
-      $("shortcut-photo-replace-input").click();
+      const id = photo.dataset.photoEdit;
+      openIconPicker({
+        onCamera: () => { shortcutPhotoTargetId = id; $("shortcut-photo-replace-input").click(); },
+        onSelect: (path) => setShortcutIllustration(id, path),
+      });
     });
   });
 }

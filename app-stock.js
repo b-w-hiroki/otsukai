@@ -10,6 +10,10 @@ const STOCK_LEVEL = {
 };
 const STOCK_NEXT = { ok: "low", low: "out", out: "ok" };
 let stockAddLevel = "ok";
+// 登録シートの写真。File（実写真をアップロード）／文字列（選んだイラストのパスをそのまま使う）／null
+let pendingStockPhoto = null;
+// 詳細シートで「写真を撮る・選ぶ」を選んだとき、どのストックが対象かを覚えておく
+let stockPhotoTargetId = null;
 
 function openStockSheet() {
   stockAddLevel = "ok";
@@ -19,6 +23,7 @@ function openStockSheet() {
   $("stock-budget").value = "";
   $("stock-cycle").value = "";
   $("stock-photo-input").value = "";
+  pendingStockPhoto = null;
   $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
   $("stock-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
@@ -35,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("stock-photo-input").addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    pendingStockPhoto = file;
     const reader = new FileReader();
     reader.onload = (ev) => {
       $("stock-photo-preview-wrap").innerHTML = `<img class="stock-photo-preview" src="${ev.target.result}" alt="プレビュー" />`;
@@ -75,13 +81,32 @@ async function uploadPhoto(file, path) {
 async function uploadStockPhoto(file, stockId) {
   return uploadPhoto(file, `families/${state.familyId}/stocks/${stockId}`);
 }
+// ストック詳細シートから、登録済みの品の写真だけを差し替える
+async function replaceStockPhoto(stockId, file) {
+  const s = state.stocks[stockId];
+  if (!s) return;
+  showToast("写真をアップロード中...", { sound: false });
+  let url;
+  try { url = await uploadStockPhoto(file, stockId); }
+  catch (e) { showToast("写真のアップロードに失敗しました"); return; }
+  if (!(await dbOp(familyRef().child("stocks/" + stockId + "/photoUrl").set(url), "写真を更新できませんでした"))) return;
+  showToast(`📷 「${s.name}」の写真を変更しました`, { sound: false });
+  openStockDetail(stockId); // 詳細シートの表示も更新する
+}
+// 「イラストから選ぶ」で選んだパスをそのまま photoUrl に入れる（アップロード不要）
+async function setStockIllustration(stockId, path) {
+  const s = state.stocks[stockId];
+  if (!s) return;
+  if (!(await dbOp(familyRef().child("stocks/" + stockId + "/photoUrl").set(path), "写真を更新できませんでした"))) return;
+  showToast(`🎨 「${s.name}」の写真を変更しました`, { sound: false });
+  openStockDetail(stockId);
+}
 async function addStock() {
   const name = $("stock-name").value.trim();
   if (!name) return showToast("商品名を入力してください");
   const memo = $("stock-memo").value.trim();
   const budget = parseInt($("stock-budget").value, 10);
   const cycleDays = parseInt($("stock-cycle").value, 10);
-  const photoFile = $("stock-photo-input").files[0];
   const addBtn = $("btn-add-stock");
   if (addBtn && addBtn.disabled) return; // アップロード中の二度押し防止
   if (addBtn) addBtn.disabled = true;
@@ -95,13 +120,15 @@ async function addStock() {
       // 「たっぷり」で登録＝いま補充した、とみなして周期の起点にする
       if (stockAddLevel === "ok") item.lastFilledAt = now();
     }
-    if (photoFile) {
+    if (pendingStockPhoto instanceof File) {
       showToast("写真をアップロード中...", { sound: false });
       try {
-        item.photoUrl = await uploadStockPhoto(photoFile, id);
+        item.photoUrl = await uploadStockPhoto(pendingStockPhoto, id);
       } catch (e) {
         showToast("写真のアップロードに失敗しました");
       }
+    } else if (typeof pendingStockPhoto === "string" && pendingStockPhoto) {
+      item.photoUrl = pendingStockPhoto; // 選んだイラストのパスをそのまま使う
     }
     if (!(await dbOp(familyRef().child("stocks/" + id).set(item), "登録できませんでした"))) return;
     closeStockSheet();
@@ -220,7 +247,10 @@ function openStockDetail(id) {
   const lvl = STOCK_LEVEL[s.level] || STOCK_LEVEL.ok;
   $("stock-detail-title").textContent = s.name;
   $("stock-detail-body").innerHTML = `
-    ${s.photoUrl ? `<img src="${escapeHtml(s.photoUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-md);margin-bottom:16px;" />` : ""}
+    ${s.photoUrl ? `<img src="${escapeHtml(s.photoUrl)}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--r-md);margin-bottom:8px;" />` : ""}
+    <button type="button" id="btn-stock-detail-photo" class="ghost tiny-btn" style="width:100%;margin-bottom:16px;">
+      ${s.photoUrl ? "✏️ 写真を変更" : "📷 写真を追加"}
+    </button>
     <div class="row" style="gap:14px;margin-bottom:14px;align-items:center;">
       <div style="font-size:36px;line-height:1;">${lvl.emoji}</div>
       <div>
@@ -257,6 +287,12 @@ function openStockDetail(id) {
     btn.addEventListener("click", () => {
       updateStockLevel(btn.dataset.sid, btn.dataset.detailLvl);
       $("stock-detail-body").querySelectorAll("[data-detail-lvl]").forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
+  $("btn-stock-detail-photo").addEventListener("click", () => {
+    openIconPicker({
+      onCamera: () => { stockPhotoTargetId = id; $("stock-detail-photo-input").click(); },
+      onSelect: (path) => setStockIllustration(id, path),
     });
   });
   $("btn-stock-detail-cycle").addEventListener("click", async () => {

@@ -137,15 +137,29 @@ await sleep(400);
 check("編集モードで削除×が出る", (await page.locator(".shortcut-card-del").count()) > 0);
 check("編集モードで写真の差し替え目印が出る", (await page.locator(".shortcut-card-photo-hint").count()) > 0);
 
-// --- 編集モードで写真をタップすると差し替わる ---
+// --- 編集モードで写真をタップすると「イラストから選ぶ」ピッカーが開き、
+//     カメラタイルから写真を撮る・選ぶこともできる ---
 const targetCard = page.locator(".shortcut-card").filter({ hasText: "牛乳" }).first();
 await targetCard.locator(".shortcut-card-photo").click();
+await sleep(400);
+check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isVisible());
+check("カメラタイルが先頭にある", (await page.locator('#icon-picker-grid .icon-picker-tile[data-action="camera"]').count()) === 1);
+await page.click('#icon-picker-grid .icon-picker-tile[data-action="camera"]');
 await pickPhoto("#shortcut-photo-replace-input");
 await sleep(800);
 check("差し替え後もカードに写真が表示される（プレースホルダーに戻らない）",
   (await targetCard.locator(".shortcut-card-photo img").count()) === 1);
 const toast = await page.locator("#toasts").innerText().catch(() => "");
 check("差し替えの完了トーストが出る", toast.includes("写真を変更しました"), toast);
+
+// --- イラストから選んでも差し替わる ---
+const targetCard2 = page.locator(".shortcut-card").filter({ hasText: "トイレットペーパー" }).first();
+await targetCard2.locator(".shortcut-card-photo").click();
+await sleep(400);
+await page.click('#icon-picker-grid .icon-picker-tile[data-file="bread"]');
+await sleep(700);
+const icon2 = await targetCard2.locator(".shortcut-card-photo img").getAttribute("src").catch(() => null);
+check("イラストから選んでも差し替わる", icon2 === "./shortcut-icons/bread.svg", icon2);
 
 await page.click("#btn-shortcut-edit");
 await sleep(300);

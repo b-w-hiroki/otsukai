@@ -256,6 +256,11 @@ function wireGlobalEvents() {
     pendingReqPhoto = "";           // 「外す」の意思表示
     setReqPhotoPreview("");
   });
+  $("btn-req-photo-icon").addEventListener("click", (e) => {
+    e.preventDefault();
+    openIconPicker({ onSelect: (path) => { pendingReqPhoto = path; setReqPhotoPreview(path); } });
+  });
+  $("btn-icon-picker-close").addEventListener("click", closeIconPicker);
   // よく買うもの: 編集モードでカードの写真をタップしたときの差し替え
   $("shortcut-photo-replace-input").addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -308,6 +313,24 @@ function wireGlobalEvents() {
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
   $("btn-add-stock").addEventListener("click", addStock);
+  $("btn-stock-photo-icon").addEventListener("click", (e) => {
+    e.preventDefault();
+    openIconPicker({
+      onSelect: (path) => {
+        pendingStockPhoto = path;
+        $("stock-photo-preview-wrap").innerHTML = `<img class="stock-photo-preview" src="${path}" alt="プレビュー" />`;
+        $("stock-photo-input").value = "";
+      },
+    });
+  });
+  // ストック詳細シートで写真を撮る/選ぶを選んだときの共有ファイル入力
+  $("stock-detail-photo-input").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file || !stockPhotoTargetId) return;
+    replaceStockPhoto(stockPhotoTargetId, file);
+    stockPhotoTargetId = null;
+  });
   // 「＋ その他の支出を記録」ボタンはプレイヤー情報シート内にあり、シートを開くたび
   // openPlayerSheet() が innerHTML ごと作り直すため、リスナーもそちらで都度つける
   $("btn-expense-sheet-close").addEventListener("click", closeExpenseSheet);
