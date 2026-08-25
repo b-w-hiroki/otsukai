@@ -319,6 +319,7 @@ function wireGlobalEvents() {
   $("btn-refresh-data").addEventListener("click", doPullRefresh);
   $("btn-force-update").addEventListener("click", forceRefreshApp);
   $("btn-force-signout").addEventListener("click", forceSignOut);
+  $("btn-apply-update").addEventListener("click", applyUpdate);
   initPullToRefresh();
   initTabSwipe();
   showAppVersion();
@@ -560,30 +561,50 @@ function initPullToRefresh() {
 // ===== PWA: Service Worker 登録と更新の検知 =====
 // PWA は app-*.js / styles.css をキャッシュ優先で配信するため、放置すると
 // 古いバージョンのまま固定されてしまう。そこで
-//   1. 新バージョンを検知したら画面上部にバナーを出し、タップで即切り替え
+//   1. 新バージョンを検知したら、安全なタイミング（入力や操作の邪魔にならないとき）で
+//      全画面の更新モーダルを出す。ソシャゲの強制アップデートと同じく閉じるボタンは無く、
+//      「アップデート」を押すまで先に進めない
 //   2. 起動時・アプリに戻ったとき・1時間ごとに更新チェック
 //   3. それでも直らないとき用に設定タブから「アプリを更新」（全キャッシュ破棄）
 // の3段構えにする。
 let swRegistration = null;
 let reloadingForUpdate = false;
-let updateRequested = false; // ユーザーが「更新する」を押したか
+let updateRequested = false; // ユーザーが「アップデート」を押したか
+let forcedUpdatePending = false;
 
-function showUpdateBanner() {
-  if (document.getElementById("update-banner")) return;
-  const bar = document.createElement("div");
-  bar.id = "update-banner";
-  bar.className = "update-banner";
-  bar.innerHTML = `
-    <span class="update-banner-text">🆕 新しいバージョンがあります</span>
-    <button class="update-banner-btn" id="btn-apply-update">更新する</button>
-    <button class="update-banner-close" id="btn-dismiss-update" aria-label="あとで">✕</button>`;
-  document.body.appendChild(bar);
-  requestAnimationFrame(() => bar.classList.add("open"));
-  document.getElementById("btn-apply-update").addEventListener("click", applyUpdate);
-  document.getElementById("btn-dismiss-update").addEventListener("click", () => bar.remove());
+function showUpdateModal() {
+  $("update-modal").classList.add("open");
 }
 
-// 待機中の新バージョンを有効化し、切り替わったら1回だけ再読み込みする
+// 入力中や何かのシート/モーダルを開いている最中に出すと操作が飛んでしまうため、
+// 「何も開いておらず、入力欄にフォーカスも無く、画面が見えている」ときだけ表示する。
+// シート/モーダルが開いているかの判定は tabSwipeBlocked() と同じ考え方（スワイプ抑止と同条件）。
+// skipWaiting() をSW側のinstallで即呼ばないのと同じ理由（CLAUDE.md 参照）。
+function isSafeToAutoUpdate() {
+  if (document.hidden || tabSwipeBlocked()) return false;
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return false;
+  return true;
+}
+// 安全なタイミングになるまで数秒おきに見に行き、条件がそろったら強制アップデートの
+// モーダルを出す（出たあとは背面を操作できなくなるので、以降は確認し直さない）。
+function scheduleForcedUpdate() {
+  if (forcedUpdatePending) return;
+  forcedUpdatePending = true;
+  const tryNow = () => {
+    if (!forcedUpdatePending || updateRequested) { forcedUpdatePending = false; return; }
+    if (isSafeToAutoUpdate()) {
+      forcedUpdatePending = false;
+      showUpdateModal();
+    } else {
+      setTimeout(tryNow, 8000);
+    }
+  };
+  tryNow();
+}
+
+// 「アップデート」を押したときの処理。待機中の新バージョンを有効化し、
+// 切り替わったら1回だけ再読み込みする
 function applyUpdate() {
   updateRequested = true;
   const waiting = swRegistration && swRegistration.waiting;
@@ -641,29 +662,29 @@ if ("serviceWorker" in navigator) {
       swRegistration = reg;
 
       // すでに新バージョンが待機している
-      if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner();
+      if (reg.waiting && navigator.serviceWorker.controller) scheduleForcedUpdate();
 
       // これから入ってくる新バージョンを監視
       reg.addEventListener("updatefound", () => {
         const sw = reg.installing;
         if (!sw) return;
         sw.addEventListener("statechange", () => {
-          if (sw.state === "installed" && navigator.serviceWorker.controller) showUpdateBanner();
+          if (sw.state === "installed" && navigator.serviceWorker.controller) scheduleForcedUpdate();
         });
       });
 
       // 制御する Service Worker が変わったとき。
       // 初回登録でも（未制御 → 制御）発火するため、無条件に再読み込みすると
-      // 入力途中の画面が巻き込まれる。ユーザーが「更新する」を押したときだけ
-      // 再読み込みし、それ以外（他のタブで更新された等）はバナー提示にとどめる。
+      // 入力途中の画面が巻き込まれる。ユーザーが「アップデート」を押したときだけ
+      // 再読み込みし、それ以外（他のタブで更新された等）は強制モーダルの表示にとどめる。
       navigator.serviceWorker.addEventListener("controllerchange", () => {
         if (updateRequested) {
           if (reloadingForUpdate) return;
           reloadingForUpdate = true;
           location.reload();
         } else if (hadControllerAtStart) {
-          // 他のタブなどで新バージョンが有効化された → 案内だけ出す
-          showUpdateBanner();
+          // 他のタブなどで新バージョンが有効化された → 強制アップデートのモーダルを出す
+          scheduleForcedUpdate();
         }
         // 初回登録（起動時に制御なし → 制御された）は何もしない
       });
