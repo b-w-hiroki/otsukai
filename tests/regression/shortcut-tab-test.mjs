@@ -138,13 +138,13 @@ check("編集モードで削除×が出る", (await page.locator(".shortcut-card
 check("編集モードで写真の差し替え目印が出る", (await page.locator(".shortcut-card-photo-hint").count()) > 0);
 
 // --- 編集モードで写真をタップすると「イラストから選ぶ」ピッカーが開き、
-//     カメラタイルから写真を撮る・選ぶこともできる ---
+//     「写真をセットする」から写真を撮る・選ぶこともできる（イラスト一覧とは別枠） ---
 const targetCard = page.locator(".shortcut-card").filter({ hasText: "牛乳" }).first();
 await targetCard.locator(".shortcut-card-photo").click();
 await sleep(400);
 check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isVisible());
-check("カメラタイルが先頭にある", (await page.locator('#icon-picker-grid .icon-picker-tile[data-action="camera"]').count()) === 1);
-await page.click('#icon-picker-grid .icon-picker-tile[data-action="camera"]');
+check("「写真をセットする」ボタンがある", await page.locator("#btn-icon-picker-camera").isVisible());
+await page.click("#btn-icon-picker-camera");
 await pickPhoto("#shortcut-photo-replace-input");
 await sleep(800);
 check("差し替え後もカードに写真が表示される（プレースホルダーに戻らない）",

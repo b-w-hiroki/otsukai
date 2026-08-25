@@ -261,6 +261,11 @@ function wireGlobalEvents() {
     openIconPicker({ onSelect: (path) => { pendingReqPhoto = path; setReqPhotoPreview(path); } });
   });
   $("btn-icon-picker-close").addEventListener("click", closeIconPicker);
+  $("btn-icon-picker-camera").addEventListener("click", () => {
+    const cb = iconPickerOnCamera;
+    closeIconPicker();
+    if (cb) cb();
+  });
   // よく買うもの: 編集モードでカードの写真をタップしたときの差し替え
   $("shortcut-photo-replace-input").addEventListener("change", (e) => {
     const file = e.target.files[0];

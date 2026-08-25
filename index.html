@@ -747,10 +747,14 @@
       <div class="sheet-handle"></div>
       <div class="sheet-content">
         <div class="sheet-header">
-          <div class="sheet-title">🎨 写真を選ぶ</div>
+          <div class="sheet-title">写真を選ぶ</div>
           <button id="btn-icon-picker-close" class="sheet-close">✕</button>
         </div>
-        <p class="muted" style="font-size:12px;margin:0 0 6px;">用意したイラストから選べます。実物の写真ではありません。</p>
+        <!-- 差し替え先（編集モード等）から開いたときだけ表示。「イラストを選ぶ」と
+             「写真をセットする」を別の選択肢として並べる（onCamera 未指定なら非表示のまま）。 -->
+        <button type="button" id="btn-icon-picker-camera" class="ghost tiny-btn" style="width:100%;margin-bottom:14px;display:none;">写真をセットする（撮影・ライブラリから選ぶ）</button>
+        <div id="icon-picker-grid-label" class="muted" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:none;">🎨 イラストを選ぶ</div>
+        <p class="muted" style="font-size:11px;margin:0 0 8px;">用意したイラストです。実物の写真ではありません。</p>
         <div id="icon-picker-grid" class="icon-picker-grid"></div>
       </div>
     </div>

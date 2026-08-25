@@ -451,10 +451,14 @@ const ICON_LIBRARY = [
   { file: "tomato", label: "トマト" },
 ];
 let iconPickerOnSelect = null; // (path) => void
-let iconPickerOnCamera = null; // () => void（渡した時だけ「写真を撮る・選ぶ」タイルを先頭に出す）
+let iconPickerOnCamera = null; // () => void（渡したときだけ「写真をセットする」ボタンをイラスト一覧とは別枠で出す）
 function openIconPicker({ onSelect, onCamera } = {}) {
   iconPickerOnSelect = onSelect || null;
   iconPickerOnCamera = onCamera || null;
+  // 「イラストを選ぶ」と「写真をセットする」を別の選択肢として並べる。
+  // onCamera が無い場面（登録シート）は、写真の欄が既に別にあるのでこのボタンは出さない。
+  $("btn-icon-picker-camera").style.display = iconPickerOnCamera ? "" : "none";
+  $("icon-picker-grid-label").style.display = iconPickerOnCamera ? "" : "none";
   renderIconPickerGrid();
   $("icon-picker-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
@@ -468,25 +472,13 @@ function closeIconPicker() {
 function renderIconPickerGrid() {
   const grid = $("icon-picker-grid");
   if (!grid) return;
-  const cameraTile = iconPickerOnCamera
-    ? `<button type="button" class="icon-picker-tile" data-action="camera">
-        <span class="icon-picker-camera-icon">📷</span>
-        <span class="icon-picker-tile-label">写真を撮る・選ぶ</span>
-      </button>`
-    : "";
-  grid.innerHTML = cameraTile + ICON_LIBRARY.map((it) => `
+  grid.innerHTML = ICON_LIBRARY.map((it) => `
     <button type="button" class="icon-picker-tile" data-file="${it.file}">
       <img src="./shortcut-icons/${it.file}.svg" alt="" />
       <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
     </button>`).join("");
   grid.querySelectorAll(".icon-picker-tile").forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (btn.dataset.action === "camera") {
-        const cb = iconPickerOnCamera;
-        closeIconPicker();
-        if (cb) cb();
-        return;
-      }
       const path = `./shortcut-icons/${btn.dataset.file}.svg`;
       const cb = iconPickerOnSelect;
       closeIconPicker();

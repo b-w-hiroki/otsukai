@@ -23,8 +23,8 @@ check("「イラストから選ぶ」ボタンがある", (await page.locator("#
 await page.click("#btn-req-photo-icon");
 await sleep(500);
 check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isVisible());
-check("カメラタイルは出ない（新規追加時は写真ラベルが既に主導線のため）",
-  (await page.locator('#icon-picker-grid .icon-picker-tile[data-action="camera"]').count()) === 0);
+check("「写真をセットする」ボタンは出ない（新規追加時は写真ラベルが既に主導線のため）",
+  !(await page.locator("#btn-icon-picker-camera").isVisible()));
 check("20種のイラストが並ぶ", (await page.locator('#icon-picker-grid .icon-picker-tile[data-file]').count()) === 20);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="cabbage"]');
 await sleep(400);
@@ -70,8 +70,8 @@ await sleep(500);
 check("詳細シートに写真変更ボタンがある", (await page.locator("#btn-stock-detail-photo").count()) === 1);
 await page.click("#btn-stock-detail-photo");
 await sleep(400);
-check("詳細シートからはカメラタイルが先頭に出る（撮る/選ぶも両方できる）",
-  (await page.locator('#icon-picker-grid .icon-picker-tile[data-action="camera"]').count()) === 1);
+check("詳細シートからは「写真をセットする」ボタンがイラスト一覧とは別枠で出る（撮る/選ぶも両方できる）",
+  await page.locator("#btn-icon-picker-camera").isVisible());
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="bread"]');
 await sleep(700);
 const soyPhoto = await page.evaluate(async () => {
@@ -84,16 +84,16 @@ check("既存ストックの写真をイラストに変更できる", soyPhoto =
 await page.click("#btn-stock-detail-close");
 await sleep(400);
 
-// --- ストック詳細のカメラタイルからは実写真も選べる（アップロード経路） ---
+// --- 「写真をセットする」ボタンからは実写真も選べる（アップロード経路） ---
 await page.locator(".stock-item").filter({ hasText: "米" }).first().click();
 await sleep(500);
 await page.click("#btn-stock-detail-photo");
 await sleep(400);
-await page.click('#icon-picker-grid .icon-picker-tile[data-action="camera"]');
+await page.click("#btn-icon-picker-camera");
 await pickPhoto("#stock-detail-photo-input");
 await sleep(800);
 const toast = await page.locator("#toasts").innerText().catch(() => "");
-check("カメラタイルからは実写真をアップロードできる", toast.includes("写真を変更しました"), toast);
+check("「写真をセットする」からは実写真をアップロードできる", toast.includes("写真を変更しました"), toast);
 await page.click("#btn-stock-detail-close");
 await sleep(400);
 
