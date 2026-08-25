@@ -14,6 +14,7 @@ function switchMissionSubtab(key) {
     btn.classList.toggle("active", on);
     btn.setAttribute("aria-selected", String(on));
   });
+  updateFloatWraps();
 }
 function wireMissionSubtabs() {
   document.querySelectorAll("#tab-missions .seg-btn[data-msub]").forEach((btn) => {
@@ -39,13 +40,11 @@ function openMissionSheet() {
   });
   $("mission-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
-  $("fab-add").classList.add("open");
   setTimeout(() => $("mission-title-input").focus(), 350);
 }
 function closeMissionSheet() {
   $("mission-sheet").classList.remove("open");
   $("sheet-backdrop").classList.remove("open");
-  $("fab-add").classList.remove("open");
 }
 async function saveMyRole(role) {
   if (!state.familyId) return;
@@ -108,6 +107,7 @@ function renderMissions() {
     renderMissionsChild(el, activeMissions);
   }
   wireMissionButtons();
+  updateFloatWraps(); // 役割が変わったときも「＋ 新しいミッション」の表示を追従させる
 }
 
 function renderMissionsParent(el, missions) {

@@ -115,16 +115,6 @@ check("シートも開いたまま", await page.locator("#sheet-add.open").isVis
 await page.click("#btn-sheet-close");
 await sleep(400);
 
-// --- 店内モード中もスワイプでタブが切り替わらない ---
-await page.click("#btn-store-mode");
-await sleep(600);
-await t.swipeLeft(400, 320, 40);
-await sleep(400);
-check("店内モード中はスワイプが効かない", (await activeTab()) === "tab-requests");
-check("店内モードも開いたまま", await page.locator("#store-mode.open").isVisible());
-await page.click("#btn-store-mode-close");
-await sleep(400);
-
 // --- スワイプ後も通常のボタンでのタブ切替は引き続き動く ---
 await page.click('[data-tab="stock"]');
 await sleep(400);

@@ -59,7 +59,11 @@ body {
 /* ======= Layout ======= */
 .app {
   max-width: 680px; margin: 0 auto;
-  padding: 16px 14px calc(var(--nav-height) + 20px);
+  /* 下部の余白は、フローティングボタン列（.shortcut-float-wrap）の上端
+     （bottom: nav-height + 52px、ボタン自体の高さ最低44px）より広く取る。
+     足りないと、リストが短いタブで最後の行がボタンの下に隠れてタップを奪われる
+     （実際に発生した不具合。ストックタブでテストが再現した） */
+  padding: 16px 14px calc(var(--nav-height) + 110px);
   /* 中身が少ないタブ（支出・家計など）だと .app の実高さが画面より短くなり、
      画面下寄りのタッチが .app の外（何もリスナーが無い領域）に当たって
      左右スワイプのタブ切替が反応しなくなる不具合があったため、最低の高さを確保する */
@@ -695,7 +699,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 
 /* ======= お買い物ボタン（下部ナビ中央・丸く浮き出た見た目） =======
    以前この位置にあった＋（追加）ボタンと入れ替え、お買い物を一番目立つ位置にした。
-   ＋は画面右下に浮かせる独立ボタンに移した（.floating-add-btn）。 */
+   ＋（右下フロート）はその後廃止し、各タブの中に「＋ 新しく登録する」を個別に置いた。 */
 .bottom-nav-home {
   grid-column: 2; grid-row: 1;
   z-index: 26;
@@ -731,30 +735,6 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   box-shadow: 0 -3px 10px rgba(30,27,75,0.06);
   pointer-events: none;
 }
-
-/* ======= 追加ボタン（右下フロート） =======
-   お買い物ページ（requests タブ）では下のフロート列の「＋ 追加」が同じ役目のため、
-   JS側（updateShortcutVisibility）でそちらでは display:none にしている。 */
-.floating-add-btn {
-  position: fixed; right: 16px;
-  bottom: calc(var(--nav-height) + 14px);
-  width: 52px; height: 52px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
-  color: #fff; border: none; cursor: pointer; z-index: 28;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 14px rgba(99,102,241,0.42), 0 2px 6px rgba(0,0,0,0.16),
-              inset 0 1px 0 rgba(255,255,255,0.26);
-  transition: transform .25s cubic-bezier(0.34,1.56,0.64,1), box-shadow .25s;
-  font-size: 0;
-}
-.floating-add-btn:hover { transform: scale(1.08) translateY(-2px); box-shadow: 0 10px 22px rgba(99,102,241,0.5); }
-.floating-add-btn:active { transform: scale(0.93); }
-.fab-icon {
-  font-size: 30px; line-height: 1; font-weight: 300;
-  transition: transform .3s cubic-bezier(0.34,1.56,0.64,1);
-  display: block;
-}
-.floating-add-btn.open .fab-icon { transform: rotate(45deg); }
 
 /* ======= Sheet backdrop ======= */
 .sheet-backdrop {
@@ -1072,16 +1052,10 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
 }
 
-/* おつかいの写真: 詳細では大きく、店内モードではサムネイル */
+/* おつかいの写真: 詳細では大きく表示 */
 .req-photo {
   width: 100%; max-height: 140px; object-fit: cover;
   border-radius: var(--r-md); display: block; margin-bottom: 10px; cursor: zoom-in;
-}
-/* 店内モードのサムネイル。行のものより少し大きい（売り場で見分けるため） */
-.photo-thumb.store-thumb { width: 52px; height: 52px; }
-.store-item-thumb {
-  width: 48px; height: 48px; object-fit: cover; border-radius: var(--r-sm);
-  flex-shrink: 0; border: 1.5px solid var(--border); display: block;
 }
 
 /* 写真の拡大表示 */
@@ -1529,68 +1503,20 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 @media (prefers-reduced-motion: reduce) { .confetti-wrap { display: none; } }
 
-/* ======= 店内モード ======= */
-.store-mode {
-  position: fixed; inset: 0; z-index: 55;
-  background: var(--bg);
-  display: none; flex-direction: column;
+/* ======= 横持ち検知（スマホのみ対象） =======
+   デスクトップ・PC幅は横長が前提（rules/ui.md §7）のため対象から外したい。
+   スマホを横に倒すと画面の高さが一気に低くなる（縦持ちの横幅程度まで）のに対し、
+   デスクトップの横長画面は高さも十分あるので、高さでスマホの横持ちだけを狙う。 */
+.rotate-overlay { display: none; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .rotate-overlay {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px;
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--bg); color: var(--ink); text-align: center; padding: 24px;
+  }
 }
-.store-mode.open { display: flex; }
-.store-mode-hdr {
-  display: flex; align-items: center; gap: 10px;
-  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 10px;
-  background: var(--surface); border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.store-mode-title { font-size: 16px; font-weight: 800; flex: 1; min-width: 0; }
-.store-mode-body { flex: 1; overflow-y: auto; padding: 10px 12px 20px; -webkit-overflow-scrolling: touch; }
-.store-progress {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; background: var(--surface);
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.store-progress-bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
-.store-progress-fill { height: 100%; background: linear-gradient(90deg, var(--c-claimed), var(--c-done)); border-radius: 99px; transition: width .3s; }
-.store-progress-txt { font-size: 13px; font-weight: 800; white-space: nowrap; }
-.store-budget { font-size: 12px; font-weight: 700; color: var(--pri-dark); white-space: nowrap; }
-.store-sec-hdr {
-  font-size: 12px; font-weight: 800; color: var(--muted);
-  padding: 14px 4px 6px; letter-spacing: .04em;
-}
-.store-item {
-  display: flex; align-items: center; gap: 14px;
-  width: 100%; text-align: left;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: var(--r-md); padding: 14px 16px; margin-bottom: 8px;
-  cursor: pointer; box-shadow: none; color: var(--ink);
-  transition: background .12s, border-color .12s, opacity .2s;
-}
-.store-item:hover:not(:disabled) { background: var(--surface); border-color: var(--pri); transform: none; box-shadow: none; color: var(--ink); }
-.store-item-box {
-  width: 34px; height: 34px; flex-shrink: 0;
-  border: 3px solid var(--pri-mid); border-radius: 10px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: 20px; line-height: 1;
-}
-.store-item-name { flex: 1; min-width: 0; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
-.store-item-sub { font-size: 12px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-.store-item.checked { opacity: .5; }
-.store-item.checked .store-item-name { text-decoration: line-through; color: var(--muted); }
-.store-item.checked .store-item-box { border-color: var(--c-done); background: var(--c-done); color: #fff; }
-.store-item.urgent { border-color: var(--c-urgent); }
-
-/* ======= 定期購入の提案 ======= */
-.suggest-wrap { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.suggest-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--c-claimed-soft); color: var(--ink);
-  border: 1.5px solid var(--c-claimed); border-radius: var(--r-full);
-  padding: 7px 14px; font-size: 13px; font-weight: 700;
-  cursor: pointer; box-shadow: none;
-}
-.suggest-chip:hover:not(:disabled) { background: var(--c-claimed-soft); color: var(--ink); border-color: var(--c-claimed); transform: none; box-shadow: none; }
-.suggest-label { font-size: 11px; font-weight: 800; color: var(--muted); margin-bottom: 6px; letter-spacing: .04em; }
-.suggest-dismiss { font-size: 15px; opacity: .55; margin-left: 2px; }
+.rotate-overlay-icon { font-size: 48px; transform: rotate(90deg); }
 
 /* ======= ストリーク / 称号 ======= */
 .streak-row { display: flex; align-items: center; gap: 12px; }
@@ -1601,22 +1527,13 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   background: var(--pri-soft); color: var(--pri-dark);
   border-radius: var(--r-full); padding: 3px 10px;
 }
-.shortcut-float-btn.store {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-  box-shadow: 0 4px 18px rgba(14,165,233,0.40), 0 2px 6px rgba(0,0,0,0.12);
-}
-.shortcut-float-btn.store:hover:not(:disabled) { box-shadow: 0 6px 22px rgba(14,165,233,0.52), 0 2px 8px rgba(0,0,0,0.14); }
 .shortcut-float-wrap { flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 20px); }
 /* 実支出の記録ボタン */
 .cost-btn { font-size: 11px; font-weight: 700; padding: 3px 9px; }
 .cost-btn.has-cost { border-color: var(--c-done); background: var(--c-done-soft); color: var(--c-done); }
 
 /* ===== 表示崩れの補正 ===== */
-/* 店内モード: サブ情報（予算/メモ）は名前の下に折り返す */
-.store-item-name { display: block; }
-.store-item-sub { display: block; }
-
-/* フロートボタンが3つになったので、横1列に収まるよう詰める（折り返し禁止） */
+/* フロートボタン列は横1列に収まるよう詰める（折り返し禁止） */
 .shortcut-float-wrap { flex-wrap: nowrap; gap: 7px; }
 .shortcut-float-btn { padding: 11px 15px; font-size: 14px; }
 @media (max-width: 380px) {
@@ -1647,16 +1564,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .check-done-btn.other { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); }
 @media (max-width: 380px) { .check-done-btn { padding: 8px 11px; font-size: 12px; } }
 
-/* 店内モードの終了ボタン: 開始ボタンと同じく画面下部（親指の届く位置）に配置 */
-.store-mode-hdr { justify-content: center; }
-.store-mode-title { flex: 0 1 auto; text-align: center; }
-.store-mode-footer {
-  flex-shrink: 0;
-  padding: 10px 14px calc(12px + var(--safe-bottom));
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
-}
+/* シート/全画面の下部・閉じるボタン共通（例: 履歴シートの✕閉じる）。
+   親指が届く画面下部に置くための共通クラス（元は店内モードの終了ボタン用に作った名残） */
 .store-mode-close-btn {
   width: 100%;
   background: var(--surface-2); color: var(--ink);
@@ -1670,7 +1579,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .store-mode-close-btn:active { transform: scale(0.985); }
 
-/* シート下部の固定フッター（閉じるボタン用・店内モードと同じ位置感） */
+/* シート下部の固定フッター（閉じるボタン用） */
 .sheet-footer {
   flex-shrink: 0;
   padding: 10px 20px 4px;
@@ -1770,13 +1679,15 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .lowstock-lead { font-size: 11px; color: var(--muted); margin: 5px 0 10px; }
 .lowstock-lead b { color: var(--c-urgent); }
-.lowstock-items { display: flex; flex-direction: column; gap: 6px; }
+/* 品目ごとに文字数どおりの幅を持つ小さなボタンにし、横に並べて
+   幅いっぱいになったら折り返す（チップ表示）。以前は全幅1列だった */
+.lowstock-items { display: flex; flex-wrap: wrap; gap: 8px; }
 .lowstock-item {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; text-align: left;
+  display: inline-flex; align-items: center; gap: 6px;
+  text-align: left;
   background: var(--surface-2); color: var(--ink);
-  border: 1.5px solid var(--border); border-radius: var(--r-md);
-  padding: 9px 10px 9px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--r-full);
+  padding: 6px 6px 6px 12px;
   cursor: pointer; box-shadow: none;
   transition: background .12s, border-color .12s;
 }
@@ -1786,15 +1697,15 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .lowstock-item:active { transform: scale(0.99); }
 .lowstock-item.urgent { border-color: var(--c-urgent); background: var(--c-urgent-soft); }
-.lowstock-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
-.lowstock-name { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+.lowstock-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.lowstock-name { font-size: 13px; font-weight: 700; white-space: nowrap; }
 .lowstock-add {
-  flex-shrink: 0; width: 26px; height: 26px;
+  flex-shrink: 0; width: 22px; height: 22px;
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 50%; background: var(--pri); color: #fff;
-  font-size: 16px; font-weight: 800; line-height: 1;
+  font-size: 14px; font-weight: 800; line-height: 1;
 }
-.lowstock-x { flex-shrink: 0; color: var(--muted); font-size: 15px; font-weight: 800; padding: 0 2px; }
+.lowstock-x { flex-shrink: 0; color: var(--muted); font-size: 14px; font-weight: 800; padding: 0 2px; }
 
 /* ======= PC幅（広いビューポート）向けの調整 =======
    このアプリは元々スマホ専用に作っており、.app の中身は max-width:680px で

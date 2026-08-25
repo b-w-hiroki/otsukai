@@ -1,4 +1,4 @@
-// おつかいに写真を添付できることの検証（追加・表示・拡大・外す・店内モード）
+// おつかいに写真を添付できることの検証（追加・表示・拡大・外す）
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep, OUT } = t;
@@ -106,29 +106,5 @@ check("履歴のカードにもサムネイルが出る",
 await t.shot("photo-6-history");
 await page.click("#btn-history-close");
 await sleep(500);
-
-// --- 店内モードにサムネイルが出る ---
-await page.click("#btn-add-float");
-await sleep(600);
-await page.fill("#new-name", "からあげ粉");
-await pick("#req-photo-input");
-await sleep(400);
-await page.click("#btn-add-request");
-await sleep(1200);
-
-await page.click("#btn-store-mode");
-await sleep(900);
-const storeRow = page.locator(".store-item").filter({ hasText: "からあげ粉" }).first();
-check("店内モードにサムネイルが出る", (await storeRow.locator(".store-item-thumb").count()) === 1);
-await t.shot("photo-5-store");
-
-// サムネイルを押しても「買った」ことにならない（拡大だけ）
-await storeRow.locator(".store-item-thumb").click();
-await sleep(500);
-check("サムネイルのタップで拡大が開く", await page.locator("#photo-viewer.open").isVisible());
-await page.click("#btn-photo-viewer-close");
-await sleep(400);
-check("サムネイルのタップで完了にならない",
-  (await page.locator(".store-item.checked").filter({ hasText: "からあげ粉" }).count()) === 0);
 
 await t.finish();

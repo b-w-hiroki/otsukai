@@ -16,6 +16,8 @@ check("ウィークリーの中身が見えている", await page.locator("#week
 check("ごほうびは隠れている", !(await page.locator("#rewards-section").isVisible()));
 check("ミッションは隠れている", !(await page.locator("#missions-content").isVisible()));
 check("🔥ストリークは常に見えている（サブタブの外）", await page.locator("#streak-section .rank-badge").isVisible());
+check("「＋ 新しいミッション」はウィークリー表示中は出ない（文脈が合わないため）",
+  !(await page.locator("#mission-float-wrap").isVisible()));
 
 // タップ領域（rules/ui.md: 44px以上）
 const box = await page.locator('.seg-btn[data-msub="rewards"]').boundingBox();
@@ -36,6 +38,7 @@ check("ウィークリーのボタンは非選択になる",
 // ごほうび交換が実際に操作できる（隠れていた要素が操作可能になっているか）
 const rewardRow = page.locator(".reward-row").filter({ hasText: "アイス" }).first();
 check("ごほうび一覧が操作できる状態", (await rewardRow.count()) === 1);
+check("「＋ 新しいミッション」はごほうび表示中も出ない", !(await page.locator("#mission-float-wrap").isVisible()));
 await t.shot("mission-rewards");
 
 // --- 🎯ミッションに切り替え ---
@@ -44,6 +47,14 @@ await sleep(400);
 check("ミッションが見える", await page.locator("#missions-content").isVisible());
 check("ごほうびは隠れる", !(await page.locator("#rewards-section").isVisible()));
 await t.shot("mission-admin");
+
+// --- 右下フロートの＋を廃止したため、保護者にはここに登録の入り口がある ---
+check("「＋ 新しいミッション」ボタンがある（保護者）", (await page.locator("#btn-mission-register").count()) === 1);
+await page.click("#btn-mission-register");
+await sleep(500);
+check("タップでミッション作成シートが開く", await page.locator("#mission-sheet.open").isVisible());
+await page.click("#btn-mission-sheet-close");
+await sleep(400);
 
 // --- 他のタブへ行って戻っても、選択していたサブタブが保持される ---
 await page.click('[data-tab="requests"]');

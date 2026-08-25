@@ -1,4 +1,4 @@
-// 新機能の実ブラウザ検証（店内モード・ダークモード・提案・ストリーク・実支出・紙吹雪）
+// 新機能の実ブラウザ検証（ダークモード・提案・ストリーク・実支出・紙吹雪）
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ dialogAnswer: "480" });
 const { url, browser, ctx, page, errs, sleep, OUT } = t;
@@ -8,31 +8,9 @@ await page.goto(url,{waitUntil:"domcontentloaded"});
 await page.waitForSelector("#screen-main",{state:"visible",timeout:20000});
 await sleep(900);
 
-// 定期購入の提案（同名3回以上の履歴がある品）
-const suggests = await page.locator(".suggest-chip").count();
-check("定期購入の提案が表示", suggests >= 0, suggests+"件");
-
-// 店内モード
-await page.click("#btn-store-mode");
-await sleep(600);
-check("店内モードが開く", await page.locator("#store-mode.open").count()===1);
-const storeItems = await page.locator(".store-item").count();
-check("店内モードに未完了アイテム", storeItems>0, storeItems+"件");
-await page.screenshot({path:`${OUT}/f1-store-mode.png`});
-// 1件チェック
-await page.locator(".store-item").first().click();
-await sleep(700);
-check("タップでチェック済みに", await page.locator(".store-item.checked").count()>=1);
-const prog = await page.locator("#store-progress-txt").textContent();
-check("進捗が更新", /^[1-9]/.test(prog.trim()), prog);
-await page.screenshot({path:`${OUT}/f2-store-checked.png`});
-// もう一度タップで戻せる
-await page.locator(".store-item.checked").first().click();
-await sleep(700);
-check("再タップで戻せる", await page.locator(".store-item.checked").count()===0);
-await page.click("#btn-store-mode-close");
-await sleep(400);
-check("店内モードを閉じられる", await page.locator("#store-mode.open").count()===0);
+// 定期購入の提案（同名3回以上の履歴がある品。⏳そろそろ切れるかもに出る）
+const suggests = await page.locator(".lowstock-item").count();
+check("定期購入の提案が表示", suggests > 0, suggests+"件");
 
 // ストリーク/称号
 await page.click('[data-tab="missions"]');
