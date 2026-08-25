@@ -106,14 +106,12 @@ function openSheet() {
   populateAssigneeSelect();
   $("sheet-add").classList.add("open");
   $("sheet-backdrop").classList.add("open");
-  $("fab-add").classList.add("open");
   $("btn-add-float").classList.add("open");
   setTimeout(() => $("new-name").focus(), 350);
 }
 function closeSheet() {
   $("sheet-add").classList.remove("open");
   $("sheet-backdrop").classList.remove("open");
-  $("fab-add").classList.remove("open");
   $("btn-add-float").classList.remove("open");
   resetSheetToAddMode();
 }
@@ -205,7 +203,6 @@ function openEditSheet(r) {
   $("btn-add-request").textContent = "更新する";
   $("sheet-add").classList.add("open");
   $("sheet-backdrop").classList.add("open");
-  $("fab-add").classList.add("open");
   $("btn-add-float").classList.add("open");
   setTimeout(() => $("new-name").focus(), 350);
 }
@@ -306,14 +303,6 @@ async function addFromShortcut(s) {
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」を追加しました`);
 }
-function updateShortcutVisibility() {
-  const wrap = $("shortcut-float-wrap");
-  if (!wrap) return;
-  const onRequests = state.activeTab === "requests";
-  wrap.style.display = onRequests ? "flex" : "none";
-  // お買い物ページではフロート列の「＋ 追加」が同じ役目なので、右下の fab-add は隠す
-  $("fab-add").style.display = onRequests ? "none" : "";
-}
 function openShortcutRegisterSheet() {
   // resetSheetToAddMode() で写真プレビュー等も含めて確実にクリーンな状態にしてから、
   // ショートカット登録モードに上書きする（他のモードで選んだ写真が紛れ込むのを防ぐ）
@@ -327,7 +316,6 @@ function openShortcutRegisterSheet() {
   $("btn-add-request").textContent = "登録する";
   $("sheet-add").classList.add("open");
   $("sheet-backdrop").classList.add("open");
-  $("fab-add").classList.add("open");
   setTimeout(() => $("new-name").focus(), 350);
 }
 async function addShortcutFromSheet() {
@@ -629,7 +617,7 @@ function renderShortcuts() {
   const chips = $("shortcut-sheet-chips");
   if (!chips) return;
   const entries = Object.entries(state.shortcuts);
-  updateShortcutVisibility();
+  updateFloatWraps();
   const count = entries.length;
   const editBtn = $("btn-shortcut-edit");
   if (editBtn) {

@@ -18,25 +18,15 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <!-- 横持ち検知（スマホの横持ちのみ対象）。manifest.json の orientation:portrait は
+       インストール済みPWAにしか効かないため、ブラウザのタブで開いた場合の保険。 -->
+  <div id="rotate-overlay" class="rotate-overlay" aria-hidden="true">
+    <div class="rotate-overlay-icon">📱</div>
+    <p>このアプリは<b>縦向き</b>でご利用ください</p>
+  </div>
+
   <!-- Toasts (global) -->
   <div id="toasts" class="toast-wrap"></div>
-
-  <!-- 店内モード（買い物中の全画面チェックリスト） -->
-  <div id="store-mode" class="store-mode">
-    <div class="store-mode-hdr">
-      <span class="store-mode-title">🏪 店内モード</span>
-    </div>
-    <div class="store-progress">
-      <span class="store-progress-txt" id="store-progress-txt">0 / 0</span>
-      <div class="store-progress-bar"><div class="store-progress-fill" id="store-progress-fill" style="width:0%"></div></div>
-      <span class="store-budget" id="store-budget"></span>
-    </div>
-    <div class="store-mode-body" id="store-mode-body"></div>
-    <!-- 終了ボタンは開始した「🏪 店内」ボタンと同じく画面下部（親指が届く位置）に置く -->
-    <div class="store-mode-footer">
-      <button id="btn-store-mode-close" class="store-mode-close-btn">✕ 店内モードを終了</button>
-    </div>
-  </div>
 
   <!-- Screen: Loading -->
   <div id="screen-loading" class="screen active">
@@ -251,7 +241,7 @@
         <div id="stock-empty" class="empty" style="display:none;">
           <div class="empty-icon">📦</div>
           <b>ストックがまだありません</b><br>
-          ＋ をタップして登録しましょう
+          ＋ 新しく登録する、から追加しましょう
         </div>
       </section>
 
@@ -423,27 +413,23 @@
       </button>
     </nav>
 
-    <!-- 追加ボタン。お買い物ページ（requests タブ）では下のフロート列の「＋ 追加」が
-         同じ役目を持つため、そちらでは隠す（updateShortcutVisibility 参照）。
-         ストック/よく買うもの/支出・家計/ミッションタブでは引き続きこれを使う。
-         押したときの動作はタブごとに変わる（wireGlobalEventsのfab-addクリック処理を参照）。 -->
-    <button id="fab-add" class="floating-add-btn" aria-label="追加">
-      <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:23px;height:23px;display:block;">
-        <line x1="12" y1="4" x2="12" y2="20"/>
-        <line x1="4" y1="12" x2="20" y2="12"/>
-      </svg>
-    </button>
-
-    <!-- Shortcut float button (fixed above footer, requests tab only) -->
-    <div id="shortcut-float-wrap" class="shortcut-float-wrap" style="display:none;">
-      <!-- 下部タブの「よく買う」に気づきにくいという声を受けて、買い物ページからも
-           同じ内容をシートで開けるようにした（下部タブ自体は残す） -->
+    <!-- タブごとのフローティングボタン列（[data-tab] に一致するタブを表示中だけ出す。
+         updateFloatWraps() 参照）。右下の＋（旧fab-add）を廃止し、代わりにここへ
+         集約した。お買い物ページから開始。 -->
+    <div id="shortcut-float-wrap" class="shortcut-float-wrap" data-tab="requests" style="display:none;">
+      <!-- 「よく買うもの」は下部タブを廃止し、ここから開くシート（#shortcut-sheet）に一本化した -->
       <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買う</button>
-      <!-- 履歴は右下フロートの＋と並ぶと窮屈だったため、この列からは外した。
-           プレイヤー情報シート（アバターをタップ）の「🛒買い物履歴」から引き続き開ける。
-           空いた枠には「＋ 追加」を置き、右下フロートの＋（fab-add）はここでは隠す -->
+      <!-- 履歴はこの列からは外した。プレイヤー情報シート（アバターをタップ）の
+           「🛒買い物履歴」から開ける。空いた枠は追加ボタンにした -->
       <button id="btn-add-float" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 追加</button>
-      <button id="btn-store-mode" class="shortcut-float-btn store" aria-label="店内モードを開く"><span style="font-size:17px;line-height:1;">🏪</span> 店内</button>
+    </div>
+    <!-- ストックタブ: 新規登録の入り口 -->
+    <div id="stock-float-wrap" class="shortcut-float-wrap" data-tab="stock" style="display:none;">
+      <button id="btn-stock-register" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 新しく登録する</button>
+    </div>
+    <!-- ミッションタブ: 新規作成の入り口（保護者のみ。updateFloatWraps() で判定） -->
+    <div id="mission-float-wrap" class="shortcut-float-wrap" data-tab="missions" style="display:none;">
+      <button id="btn-mission-register" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 新しいミッション</button>
     </div>
 
     <!-- How-to modal -->
@@ -710,7 +696,7 @@
         </div>
         <div id="history-list" style="padding-bottom:8px;"></div>
       </div>
-      <!-- 閉じるボタンは店内モードと同じく画面下部（親指が届く位置）に置く -->
+      <!-- 閉じるボタンは画面下部（親指が届く位置）に置く -->
       <div class="sheet-footer">
         <button id="btn-history-close" class="store-mode-close-btn">✕ 閉じる</button>
       </div>
@@ -801,7 +787,7 @@
   <script src="./app-mission-admin.js"></script>
   <script src="./app-render.js"></script>
   <script src="./app-notify.js"></script>
-  <script src="./app-store-lowstock.js"></script>
+  <script src="./app-lowstock.js"></script>
   <script src="./app-history.js"></script>
   <script src="./app-init.js"></script>
 </body>

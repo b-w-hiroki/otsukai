@@ -1,4 +1,4 @@
-// 履歴の閉じるボタンが下部（店内モードと同じ位置感）にあり機能するか
+// 履歴の閉じるボタンが下部（親指の届く位置）にあり機能するか
 import { startHarness } from "../harness.mjs";
 const t = await startHarness();
 const { url, browser, ctx, page, errs, sleep, OUT } = t;
@@ -8,19 +8,12 @@ await page.goto(url,{waitUntil:"domcontentloaded"});
 await page.waitForSelector("#screen-main",{state:"visible",timeout:20000});
 await sleep(900);
 
-// 店内モードの終了ボタン位置を基準として取得
-await page.click("#btn-store-mode"); await sleep(700);
-const storeBtn = await page.locator("#btn-store-mode-close").boundingBox();
-await page.click("#btn-store-mode-close"); await sleep(500);
-
 // 履歴を開く
 await t.openHistory(); await sleep(800);
 check("履歴が開く", await page.locator("#history-sheet.open").count()===1);
 const histBtn = await page.locator("#btn-history-close").boundingBox();
 check("閉じるボタンが画面内", histBtn.y+histBtn.height <= 844, `y=${Math.round(histBtn.y)}`);
 check("画面下部にある", histBtn.y > 844*0.6, `y=${Math.round(histBtn.y)} / 844`);
-check("店内モードの終了と同じ位置感（縦差40px以内）", Math.abs(histBtn.y-storeBtn.y) < 40,
-  `履歴y=${Math.round(histBtn.y)} 店内y=${Math.round(storeBtn.y)} 差=${Math.round(Math.abs(histBtn.y-storeBtn.y))}`);
 check("ヘッダーに旧✕が無い", await page.locator(".sheet-header #btn-history-close").count()===0);
 check("タップ領域44px以上", histBtn.height>=44, Math.round(histBtn.height)+"px");
 await page.screenshot({path:`${OUT}/h1-hist-footer.png`});

@@ -27,13 +27,11 @@ function openStockSheet() {
   $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
   $("stock-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
-  $("fab-add").classList.add("open");
   setTimeout(() => $("stock-name").focus(), 350);
 }
 function closeStockSheet() {
   $("stock-sheet").classList.remove("open");
   $("sheet-backdrop").classList.remove("open");
-  $("fab-add").classList.remove("open");
 }
 // 写真プレビュー
 document.addEventListener("DOMContentLoaded", () => {

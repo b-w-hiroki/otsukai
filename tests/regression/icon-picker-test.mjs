@@ -44,7 +44,7 @@ check("DBにイラストのパスがそのまま保存される（アップロ�
 // --- ストック登録シート: 同じピッカーで選べる ---
 await page.click('[data-tab="stock"]');
 await sleep(500);
-await page.click("#fab-add");
+await page.click("#btn-stock-register");
 await sleep(500);
 await page.fill("#stock-name", "サラダ油");
 await page.click("#btn-stock-photo-icon");

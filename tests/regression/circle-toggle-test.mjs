@@ -48,12 +48,6 @@ await page.locator(".check-row",{hasText:"食パン"}).first().locator(".check-d
 await sleep(800);
 check("他人の宣言も確認後に完了できる", (await page.locator("#list-open .check-row",{hasText:"食パン"}).count())===0, t.lastDialog().slice(0,28));
 
-// 店内モードは1タップ完了のまま
-await page.click("#btn-store-mode"); await sleep(700);
-await page.locator(".store-item").first().click(); await sleep(700);
-check("店内モードは1タップで完了のまま", (await page.locator(".store-item.checked").count())>=1);
-await page.click("#btn-store-mode-close");
-
 if(errs.length)fail++;
 
 await t.finish();

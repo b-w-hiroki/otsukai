@@ -3,7 +3,7 @@
 // ・Firebase SDK（gstatic.com）や設定・アイコンなどの静的アセットはプリキャッシュし、
 //   キャッシュ優先で返す（圏外でもアプリが起動できるように）。
 // アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
-const CACHE = "otsukai-v66";
+const CACHE = "otsukai-v68";
 
 const PRECACHE = [
   "./index.html",
@@ -18,7 +18,7 @@ const PRECACHE = [
   "./app-mission-admin.js",
   "./app-render.js",
   "./app-notify.js",
-  "./app-store-lowstock.js",
+  "./app-lowstock.js",
   "./app-history.js",
   "./app-init.js",
   "./firebase-config.js",

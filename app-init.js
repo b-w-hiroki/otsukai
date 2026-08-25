@@ -26,6 +26,20 @@ function positionNavIndicator(tabName, animate) {
   indicator.style.width = btnRect.width + "px";
 }
 
+// タブごとのフローティングボタン列（[data-tab] を持つ .shortcut-float-wrap）は、
+// 対応するタブを表示中だけ出す。ミッションはさらに保護者かつ「🎯ミッション」
+// サブタブ表示中に限る（子どもは作れない・他のサブタブでは文脈と合わないため）。
+function updateFloatWraps() {
+  document.querySelectorAll(".shortcut-float-wrap[data-tab]").forEach((wrap) => {
+    const tab = wrap.dataset.tab;
+    let show = state.activeTab === tab;
+    if (tab === "missions") {
+      const subtab = document.querySelector("#tab-missions .mission-subtab.active")?.dataset.msub;
+      show = show && isParent() && subtab === "admin";
+    }
+    wrap.style.display = show ? "flex" : "none";
+  });
+}
 // ボタンクリックとスワイプ（下の initTabSwipe）の両方から呼ぶ共通処理。
 function switchTab(t) {
   document.querySelectorAll(".bottom-nav button[data-tab]").forEach((b) => b.classList.toggle("active", b.dataset.tab === t));
@@ -38,7 +52,7 @@ function switchTab(t) {
   closeMissionSheet();
   closeExpenseSheet();
   closeShortcutSheet();
-  updateShortcutVisibility();
+  updateFloatWraps();
   renderBadge();
   renderStockBadge();
   renderMissionBadge();
@@ -72,11 +86,10 @@ function wireTabs() {
 // 端まで来たら折り返さない（そこで指を離しても何も起きない）。
 const SWIPE_TAB_ORDER = ["stock", "requests", "settings"];
 const TAB_SWIPE_THRESHOLD = 60;
-// シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
+// シート/写真拡大/使い方モーダルが開いている間は、そちらの操作を
 // 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。
 function tabSwipeBlocked() {
   return !!document.querySelector(".sheet.open") ||
-    (document.getElementById("store-mode") || {}).classList?.contains("open") ||
     (document.getElementById("howto-modal") || {}).classList?.contains("open") ||
     (document.getElementById("photo-viewer") || {}).classList?.contains("open") ||
     !document.getElementById("screen-main").classList.contains("active");
@@ -206,12 +219,8 @@ function wireGlobalEvents() {
   $("howto-modal-backdrop").addEventListener("click", closeHowto);
   // Stock detail sheet
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
-  $("fab-add").addEventListener("click", () => {
-    if (state.activeTab === "stock") openStockSheet();
-    else if (state.activeTab === "missions" && isParent()) openMissionSheet();
-    else if (state.activeTab === "missions") { /* child: nothing */ }
-    else openSheet();
-  });
+  $("btn-stock-register").addEventListener("click", openStockSheet);
+  $("btn-mission-register").addEventListener("click", openMissionSheet);
   $("btn-sheet-close").addEventListener("click", closeSheet);
   $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeExpenseSheet(); closeShortcutSheet(); });
   $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
@@ -262,9 +271,6 @@ function wireGlobalEvents() {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if ((localStorage.getItem("theme") || "auto") === "auto") applyTheme("auto");
   });
-  // 店内モード
-  $("btn-store-mode").addEventListener("click", openStoreMode);
-  $("btn-store-mode-close").addEventListener("click", closeStoreMode);
   // 写真: 選ぶ / 外す / 拡大して見る
   $("req-photo-input").addEventListener("change", (e) => {
     const file = e.target.files[0];
@@ -338,7 +344,6 @@ function wireGlobalEvents() {
     closeHistorySheet();
     closeExpenseSheet();
     closeShortcutSheet();
-    if (storeModeOpen) closeStoreMode();
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
   $("btn-add-stock").addEventListener("click", addStock);
@@ -485,10 +490,9 @@ let ptrStartY = null, ptrPulling = false, ptrRefreshing = false;
 function atPageTop() {
   return (window.scrollY || document.documentElement.scrollTop || 0) <= 0;
 }
-// シートや店内モードが開いている間は無効（そちらのスクロールを邪魔しないため）
+// シートが開いている間は無効（そちらのスクロールを邪魔しないため）
 function ptrBlocked() {
   return !!document.querySelector(".sheet.open") ||
-    (document.getElementById("store-mode") || {}).classList?.contains("open") ||
     !document.getElementById("screen-main").classList.contains("active");
 }
 

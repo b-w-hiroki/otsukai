@@ -513,7 +513,6 @@ function attachFamilyListeners() {
         renderMonthlySummary();
         renderSuggestions();
         renderStreak();
-        renderStoreMode();
       }
     }
   }, handleFamilyAccessLost);

@@ -36,13 +36,6 @@ await page.locator(".check-row",{hasText:"トイレットペーパー"}).first()
 await sleep(600); await shot("05-detail");
 await page.locator(".check-row",{hasText:"トイレットペーパー"}).first().locator(".check-main").click(); await sleep(400);
 
-// 店内モード
-await page.click("#btn-store-mode"); await sleep(800); await shot("06-store-mode");
-await page.locator(".store-item").first().click(); await sleep(700); await shot("07-store-checked");
-await page.click("#btn-store-mode-close"); await sleep(500);
-// 「✅完了！」トースト（2.4秒で消える）が次のスクショに写り込まないよう待つ
-await sleep(1500);
-
 // よく買うもの（下部タブを廃止し、買い物ページのフローティングボタンから開くシートに一本化した。
 // 既定はリスト形式だが、写真が見えるカード形式のほうが説明用として分かりやすいので切り替えて撮る）
 await page.click("#btn-shortcut-toggle"); await sleep(700);
@@ -76,7 +69,7 @@ await page.click("#sheet-backdrop").catch(()=>{}); await sleep(500);
 await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]'); await sleep(400);
 await page.locator("#opt-low-lead").scrollIntoViewIfNeeded(); await sleep(300);
 // 固定のボトムナビ/FAB がカードに重なるので、この1枚だけ隠して撮る
-await page.addStyleTag({content:".bottom-nav,#fab-add,.float-btns{visibility:hidden !important;}"});
+await page.addStyleTag({content:".bottom-nav,.float-btns{visibility:hidden !important;}"});
 await sleep(200);
 await page.locator("#opt-low-lead").locator("xpath=ancestor::div[contains(@class,'settings-acc')][1]")
   .screenshot({path:`${OUT}/17-lowlead-setting.png`}); console.log("  ✓ 17-lowlead-setting");
