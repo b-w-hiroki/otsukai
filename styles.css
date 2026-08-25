@@ -730,7 +730,9 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   pointer-events: none;
 }
 
-/* ======= 追加ボタン（右下フロート） ======= */
+/* ======= 追加ボタン（右下フロート） =======
+   お買い物ページ（requests タブ）では下のフロート列の「＋ 追加」が同じ役目のため、
+   JS側（updateShortcutVisibility）でそちらでは display:none にしている。 */
 .floating-add-btn {
   position: fixed; right: 16px;
   bottom: calc(var(--nav-height) + 14px);
@@ -1131,11 +1133,11 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   z-index: 29;
   display: flex; align-items: center; gap: 10px;
 }
-.shortcut-float-btn.history {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b5ef4 100%);
-  box-shadow: 0 4px 18px rgba(124,58,237,0.40), 0 2px 6px rgba(0,0,0,0.12);
+.shortcut-float-btn.add {
+  background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
+  box-shadow: 0 4px 18px rgba(99,102,241,0.40), 0 2px 6px rgba(0,0,0,0.12);
 }
-.shortcut-float-btn.history:hover:not(:disabled) { box-shadow: 0 6px 22px rgba(124,58,237,0.52), 0 2px 8px rgba(0,0,0,0.14); }
+.shortcut-float-btn.add:hover:not(:disabled) { box-shadow: 0 6px 22px rgba(99,102,241,0.52), 0 2px 8px rgba(0,0,0,0.14); }
 .shortcut-float-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; box-sizing: border-box;

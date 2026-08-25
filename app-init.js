@@ -224,7 +224,9 @@ function wireGlobalEvents() {
   $("btn-shortcut-toggle").addEventListener("click", openShortcutSheet);
   $("btn-shortcut-sheet-close").addEventListener("click", closeShortcutSheet);
   wireShortcutViewToggles();
-  $("btn-history-float").addEventListener("click", openHistorySheet);
+  // 履歴は買い物ページのフロート列から外した（プレイヤー情報シートの
+  // 「🛒買い物履歴」から引き続き開ける）。空いた枠は追加ボタンにした
+  $("btn-add-float").addEventListener("click", openSheet);
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
   $("btn-open-expense-sheet").addEventListener("click", openExpenseSheet);

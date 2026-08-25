@@ -179,6 +179,19 @@ export async function startHarness(opts = {}) {
       await sleep(wait);
     },
     async shot(name) { await page.screenshot({ path: join(shots, name + ".png") }); },
+    /**
+     * 履歴シートを開く。買い物ページのフロート列から「履歴」を外したため、
+     * プレイヤー情報シート（アバター）経由になった。裏に残る player-sheet の
+     * "open" だけを外す（closePlayerSheet() だと sheet-backdrop の "open" も
+     * 一緒に外れてしまい、直後に開いた history-sheet 側の背景が効かなくなる
+     * ため使わない。sheet-backdrop は複数シートで共有している）。
+     */
+    async openHistory() {
+      await page.click("#btn-player-profile");
+      await sleep(300);
+      await page.click("#ps-btn-history");
+      await page.evaluate(() => document.getElementById("player-sheet").classList.remove("open"));
+    },
     /** 結果を出して後始末。未捕捉エラーがあれば失敗扱い */
     async finish({ failOnPageError = true } = {}) {
       console.log("\n未捕捉エラー: " + errs.length);

@@ -84,7 +84,7 @@ check("在庫レベルは書き換わらない（🟡残り少ないのまま）
 // --- リストの☆から登録した場合は、買う間隔なしでストックだけ自動作成される ---
 await page.click('[data-tab="requests"]');
 await sleep(500);
-await page.click("#fab-add");
+await page.click("#btn-add-float");
 await sleep(700);
 await page.fill("#new-name", "換気扇フィルター");
 await page.click("#btn-add-request");

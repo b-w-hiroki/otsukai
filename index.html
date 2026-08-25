@@ -468,9 +468,10 @@
       </button>
     </nav>
 
-    <!-- 追加ボタン。以前は下部ナビ中央だったが、そこに「お買い物」を置いたため、
-         右下に浮かせる独立ボタンにした。押したときの動作は引き続きタブごとに変わる
-         （wireGlobalEventsのfab-addクリック処理を参照）。 -->
+    <!-- 追加ボタン。お買い物ページ（requests タブ）では下のフロート列の「＋ 追加」が
+         同じ役目を持つため、そちらでは隠す（updateShortcutVisibility 参照）。
+         ストック/よく買うもの/支出・家計/ミッションタブでは引き続きこれを使う。
+         押したときの動作はタブごとに変わる（wireGlobalEventsのfab-addクリック処理を参照）。 -->
     <button id="fab-add" class="floating-add-btn" aria-label="追加">
       <svg class="fab-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" style="width:23px;height:23px;display:block;">
         <line x1="12" y1="4" x2="12" y2="20"/>
@@ -483,7 +484,10 @@
       <!-- 下部タブの「よく買う」に気づきにくいという声を受けて、買い物ページからも
            同じ内容をシートで開けるようにした（下部タブ自体は残す） -->
       <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買う</button>
-      <button id="btn-history-float" class="shortcut-float-btn history"><span style="font-size:17px;line-height:1;">🧾</span> 履歴</button>
+      <!-- 履歴は右下フロートの＋と並ぶと窮屈だったため、この列からは外した。
+           プレイヤー情報シート（アバターをタップ）の「🛒買い物履歴」から引き続き開ける。
+           空いた枠には「＋ 追加」を置き、右下フロートの＋（fab-add）はここでは隠す -->
+      <button id="btn-add-float" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 追加</button>
       <button id="btn-store-mode" class="shortcut-float-btn store" aria-label="店内モードを開く"><span style="font-size:17px;line-height:1;">🏪</span> 店内</button>
     </div>
 
