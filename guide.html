@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>使い方ガイド — おうちのおつかい</title>
+  <meta name="description" content="おうちのおつかい（家族向けおつかい共有アプリ）の使い方ガイド。基本の流れから、そろそろ切れるかも・よく買うもの・ミッションまで。" />
+  <meta name="theme-color" content="#6366f1" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <style>
+    :root { --ink:#1c1917; --ink-2:#44403c; --muted:#78716c; --border:#e7e5e1; --pri:#6366f1; --pri-soft:#eeecfb; --bg:#faf9f7; --surface:#fff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink:#f5f4f2; --ink-2:#d6d3cd; --muted:#a8a29e; --border:#35323f; --pri:#a5b4fc; --pri-soft:#262244; --bg:#14131a; --surface:#1e1d26; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0 20px 60px;
+      font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif;
+      color: var(--ink); background: var(--bg); line-height: 1.9;
+      -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; height: auto; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    header { padding: 40px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+    h1 { font-size: 24px; margin: 0 0 8px; letter-spacing: -0.4px; }
+    h2 { font-size: 19px; margin: 44px 0 8px; letter-spacing: -0.2px; scroll-margin-top: 16px; }
+    h3 { font-size: 15px; margin: 20px 0 6px; }
+    p, li { font-size: 15px; }
+    ul, ol { padding-left: 22px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    a { color: var(--pri); }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+    th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--surface); font-weight: 700; }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 16px 0; }
+    .shot { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 14px 0; max-width: 300px; }
+    .shot img { display: block; }
+    footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+    /* きほんの流れ */
+    .flow { display: flex; flex-direction: column; gap: 10px; margin: 18px 0; }
+    .flow-step { display: flex; gap: 14px; align-items: flex-start; }
+    .flow-num {
+      flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--pri-soft); color: var(--pri);
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+    }
+    .flow-text { padding-top: 4px; }
+    .flow-text b { font-weight: 700; }
+
+    /* 目次 */
+    nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 20px; margin: 20px 0; }
+    nav.toc p { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; color: var(--muted); text-transform: uppercase; }
+    nav.toc ol { margin: 0; padding-left: 20px; columns: 2; font-size: 13.5px; }
+    nav.toc li { margin: 3px 0; break-inside: avoid; }
+    @media (max-width: 480px) { nav.toc ol { columns: 1; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🧺 おうちのおつかい — 使い方ガイド</h1>
+      <p class="muted">最終更新日: 2026年8月25日</p>
+    </header>
+
+    <p>
+      「おうちのおつかい」は、家族で買い物リストを共有するアプリです。
+      「あれ買ってきて」を家族みんなのリストにまとめて、誰が何を買うかを迷わず決められます。
+      このページでは、主な機能の使い方をまとめています。
+    </p>
+    <p class="muted">
+      📱 アプリ本体はこちら → <a href="./">おうちのおつかいを開く</a><br>
+      Safari / Chrome で開いて「ホーム画面に追加」すると、アプリのように使えます。
+    </p>
+
+    <nav class="toc" aria-label="目次">
+      <p>目次</p>
+      <ol>
+        <li><a href="#flow">きほんの流れ</a></li>
+        <li><a href="#lowstock">⏳ そろそろ切れるかも</a></li>
+        <li><a href="#shortcuts">⚡ よく買うもの</a></li>
+        <li><a href="#stock">📦 ストック</a></li>
+        <li><a href="#missions">🎯 ミッション・ごほうび</a></li>
+        <li><a href="#expenses">💴 支出・家計</a></li>
+        <li><a href="#photos">📷 写真の使い方</a></li>
+        <li><a href="#family">👨‍👩‍👧‍👦 家族の招待・やくわり</a></li>
+        <li><a href="#notify">🔔 通知</a></li>
+        <li><a href="#trouble">困ったときは</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="flow">きほんの流れ</h2>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-num">1</div><div class="flow-text"><b>＋ 追加</b> — 買ってほしいものをリストに入れる（誰でもOK）</div></div>
+      <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><b>◯ をタップして「買うよ」宣言</b> — 買いに行く人が押す</div></div>
+      <div class="flow-step"><div class="flow-num">3</div><div class="flow-text"><b>✅ 買ったよ</b> — 完了。履歴に残り、ポイントがもらえる</div></div>
+    </div>
+    <p>
+      それだけです。下部の「ストック / お買い物 / 設定」タブはボタンでも左右スワイプでも切り替えられます。
+      よく買うもの・支出・家計・ミッションはタブではなく、それぞれ専用のボタンから開くシートです（詳しくは各章）。
+    </p>
+    <div class="shot"><img src="docs/screenshots/01-home.png" alt="ホーム画面" loading="lazy" /></div>
+
+    <h2 id="lowstock">⏳ そろそろ切れるかも</h2>
+    <p><b>いちばんおすすめの機能です。</b> 買い忘れそうなものを、アプリが先回りして教えてくれます。お買い物タブの一番上に出て、タップするだけで買い物リストに追加できます（× で消せます）。</p>
+    <div class="shot"><img src="docs/screenshots/02-lowstock.png" alt="そろそろ切れるかも" loading="lazy" /></div>
+    <table>
+      <tr><th>表示</th><th>根拠</th></tr>
+      <tr><td>🔴 切れてる / 🟡 残り少ない</td><td>ストックタブでの記録</td></tr>
+      <tr><td>🔄 約7日ごと・2日超過 など</td><td>買い物履歴からの自動学習（同じ品を3回以上買うと働き始めます）</td></tr>
+    </table>
+    <p>いつから知らせるかは、ストックタブ上部の「知らせる時期」で変えられます（家族共通の設定）。品ごとに「買う間隔」を手で指定すると、学習より優先されます。</p>
+
+    <h2 id="shortcuts">⚡ よく買うもの</h2>
+    <p>お買い物ページのフローティングボタン「⚡よく買う」から開きます。定番品を登録しておくと、タップして確認するだけでリストに追加できます。「🖼️カード」「☰リスト」の2種類の見た目から選べます。</p>
+    <div class="shot"><img src="docs/screenshots/08-shortcuts.png" alt="よく買うもの" loading="lazy" /></div>
+    <p>登録すると、同じ名前のストックが無ければ自動で作られます。買い物や履歴のカードにある☆をタップして登録することもできます。</p>
+
+    <h2 id="stock">📦 ストック</h2>
+    <p>家にある物の残量を記録しておく場所です。丸をタップするたびに 🟢たっぷり → 🟡少ない → 🔴切れてる と切り替わります。🟡🔴にすると「⏳そろそろ切れるかも」に自動で出ます。</p>
+    <div class="shot"><img src="docs/screenshots/11-stock.png" alt="ストックタブ" loading="lazy" /></div>
+
+    <h2 id="missions">🎯 ミッション・ごほうび</h2>
+    <p>右上（名前と？の間）の🏆ボタンから開きます。おつかい完了を続けると連続記録が伸び、称号が上がります（🌱見習い → 🚶配達員 → 🛒上手 → ⭐マスター → 👑達人）。</p>
+    <div class="shot"><img src="docs/screenshots/10-missions.png" alt="ミッションタブ" loading="lazy" /></div>
+    <table>
+      <tr><th>サブタブ</th><th>内容</th></tr>
+      <tr><td>⚡ ウィークリー</td><td>毎週月曜リセット。ふだんの行動で自動的に進みます</td></tr>
+      <tr><td>🎁 ごほうび</td><td>おつかい完了で貯まったポイントを、保護者が登録したごほうびと交換</td></tr>
+      <tr><td>🎯 ミッション</td><td>保護者が子どもに個別のミッションを出せます（例: 「〇〇を3回やったら300円」）</td></tr>
+    </table>
+
+    <h2 id="expenses">💴 支出・家計</h2>
+    <p>左上のアバター（プレイヤー情報）から開きます。買い物にかかった金額を集計できるほか、「＋その他の支出を記録」からレシート以外の立て替えも記録できます。</p>
+    <div class="shot"><img src="docs/screenshots/19-expenses.png" alt="支出・家計" loading="lazy" /></div>
+    <p class="muted">レシート写真を選ぶと端末内で金額を読み取りますが、写真自体は保存・送信されません。読み取り結果は保存前に必ず確認してください。</p>
+
+    <h2 id="photos">📷 写真の使い方</h2>
+    <p>おつかい・ストック・よく買うもののどれにも写真を付けられます。「実際に撮る・ライブラリから選ぶ」以外に、🎨「イラストから選ぶ」で用意した20種のイラストを選ぶこともできます。写真を付けると、同じ商品でも型番違いや詰め替え用などを一目で見分けられます。</p>
+    <div class="box">
+      写真がある品は一覧に小さなサムネイルが出て、タップすると拡大表示されます。行そのものをタップすると詳細が開きます。
+    </div>
+
+    <h2 id="family">👨‍👩‍👧‍👦 家族の招待・やくわり</h2>
+    <p>設定タブの「家族招待」に表示される招待コード（6文字）を家族に共有すると、参加してもらえます。参加した人は最初「こども」になり、保護者が役割を変更できます。</p>
+    <table>
+      <tr><th></th><th>保護者</th><th>副保護者</th><th>こども</th></tr>
+      <tr><td>買い物の追加・宣言・完了</td><td>◯</td><td>◯</td><td>◯</td></tr>
+      <tr><td>ごほうびの登録・削除</td><td>◯</td><td>—</td><td>—</td></tr>
+      <tr><td>ミッションを出す</td><td>◯</td><td>◯</td><td>—</td></tr>
+      <tr><td>役割の変更・メンバー管理</td><td>◯</td><td>—</td><td>—</td></tr>
+    </table>
+
+    <h2 id="notify">🔔 通知</h2>
+    <p>設定 → 通知 →「通知をオンにする」で有効化できます。新しい依頼の追加、買ってきたお知らせ、ありがとう、ミッション達成のほか、毎日決まった時刻の未受け取りリマインドと、毎週日曜20時の週まとめ通知（そろそろ切れそうな品も含む）が届きます。通知が要らない人は、その端末だけで「通知をオフにする」で止められます。</p>
+
+    <h2 id="trouble">困ったときは</h2>
+    <table>
+      <tr><th>症状</th><th>対処</th></tr>
+      <tr><td>新機能が出ていない</td><td>設定 → 🔧メンテナンス → ⬇️アプリを最新版に更新</td></tr>
+      <tr><td>表示が最新でない気がする</td><td>ホーム画面を下に引っ張る、または🔄データを再読み込み</td></tr>
+      <tr><td>通知が来ない</td><td>設定 → 通知の状態を確認。iPhoneはホーム画面に追加したアプリから開く必要があります</td></tr>
+      <tr><td>家族に入れない</td><td>招待コードは6文字（英大文字と数字）。保護者に再確認を</td></tr>
+      <tr><td>そろそろ切れるかもの予告が早い・遅い</td><td>ストック → ⏳そろそろ切れるかも → 知らせる時期を変更</td></tr>
+    </table>
+    <p class="muted">より詳しい機能仕様は <a href="https://github.com/b-w-hiroki/otsukai/blob/main/docs/features.md" target="_blank" rel="noopener">機能ガイド（GitHub）</a> にもまとまっています。</p>
+
+    <footer>
+      <p class="muted">
+        <a href="./">← おうちのおつかいに戻る</a> ・
+        <a href="./terms.html">利用規約</a> ・
+        <a href="./privacy.html">プライバシーポリシー</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

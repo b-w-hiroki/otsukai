@@ -6,6 +6,9 @@
 📱 **アプリ**: https://b-w-hiroki.github.io/otsukai/
 （Safari / Chrome で開いて「ホーム画面に追加」するとアプリとして使えます）
 
+> このページは開発者向けの機能仕様（全12章・スクショ付き）です。
+> もっと読みやすい利用者向けページは [使い方ガイド](https://b-w-hiroki.github.io/otsukai/guide.html) にあります。
+
 ---
 
 ## 目次
