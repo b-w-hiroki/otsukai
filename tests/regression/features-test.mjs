@@ -44,7 +44,7 @@ await page.screenshot({path:`${OUT}/f3-streak.png`});
 // 実支出の記録（履歴の💴）
 await page.click('[data-tab="requests"]');
 await sleep(400);
-await page.click("#btn-history-float");
+await t.openHistory();
 await sleep(700);
 const costBtn = page.locator("#history-list .cost-btn").first();
 check("履歴に💴金額ボタン", await costBtn.count()===1);

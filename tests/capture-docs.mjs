@@ -20,8 +20,8 @@ await shot("01-home");                                    // ホーム（そろ�
 await page.locator(".lowstock-card").scrollIntoViewIfNeeded(); await sleep(300);
 await page.locator(".lowstock-card").screenshot({path:`${OUT}/02-lowstock.png`}); console.log("  ✓ 02-lowstock");
 
-// 追加シート
-await page.click("#fab-add"); await sleep(700);
+// 追加シート（お買い物ページでは右下フロートの＋の代わりに、フロート列の「＋ 追加」を使う）
+await page.click("#btn-add-float"); await sleep(700);
 await page.fill("#new-name","りんご");
 await page.click('#new-category .cat-chip[data-cat="food"]'); await sleep(300);
 await shot("03-add-sheet");
@@ -54,8 +54,8 @@ await page.click("#btn-sheet-close"); await sleep(400);
 await page.click('[data-tab="expenses"]'); await sleep(700); await shot("19-expenses");
 await page.click('[data-tab="requests"]'); await sleep(500);
 
-// 履歴
-await page.click("#btn-history-float"); await sleep(900); await shot("09-history");
+// 履歴（プレイヤー情報シート経由。買い物ページのフロート列からは外した）
+await t.openHistory(); await sleep(900); await shot("09-history");
 await page.click("#btn-history-close"); await sleep(500);
 
 // ミッション（ウィークリー・ストリーク・ごほうび）
@@ -73,7 +73,7 @@ await page.click("#sheet-backdrop").catch(()=>{}); await sleep(500);
 await page.click('.settings-acc[data-acc="lowlead"] [data-acc-toggle]'); await sleep(400);
 await page.locator("#opt-low-lead").scrollIntoViewIfNeeded(); await sleep(300);
 // 固定のボトムナビ/FAB がカードに重なるので、この1枚だけ隠して撮る
-await page.addStyleTag({content:".bottom-nav,#fab-add,.float-btns,#btn-history-float{visibility:hidden !important;}"});
+await page.addStyleTag({content:".bottom-nav,#fab-add,.float-btns{visibility:hidden !important;}"});
 await sleep(200);
 await page.locator("#opt-low-lead").locator("xpath=ancestor::div[contains(@class,'settings-acc')][1]")
   .screenshot({path:`${OUT}/17-lowlead-setting.png`}); console.log("  ✓ 17-lowlead-setting");

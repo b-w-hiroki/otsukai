@@ -16,7 +16,7 @@ const pickPhoto = (sel) => page.setInputFiles(sel, { name: "photo.png", mimeType
 await t.ready();
 
 // --- おつかい追加シート: 「🎨 イラストから選ぶ」でピッカーが開き、選ぶとプレビューに反映される ---
-await page.click("#fab-add");
+await page.click("#btn-add-float");
 await sleep(500);
 await page.fill("#new-name", "キャベツ大玉");
 check("「イラストから選ぶ」ボタンがある", (await page.locator("#btn-req-photo-icon").count()) === 1);

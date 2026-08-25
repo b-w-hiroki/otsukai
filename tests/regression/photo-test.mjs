@@ -14,7 +14,7 @@ const pick = (sel) => page.setInputFiles(sel, { name: "shampoo.png", mimeType: "
 await t.ready();
 
 // --- 追加シートに写真の入力がある ---
-await page.click("#fab-add");
+await page.click("#btn-add-float");
 await sleep(700);
 check("追加シートに写真の入力がある", (await page.locator("#req-photo-input").count()) === 1);
 check("「写真を外す」は最初は隠れている", !(await page.locator("#btn-req-photo-clear").isVisible()));
@@ -86,7 +86,7 @@ const row2 = page.locator(".check-row").filter({ hasText: "詰め替えシャン
 check("外すとサムネイルが消える", (await row2.locator(".photo-thumb").count()) === 0);
 
 // --- 履歴にもサムネイルが出る ---
-await page.click("#fab-add");
+await page.click("#btn-add-float");
 await sleep(600);
 await page.fill("#new-name", "ホットケーキミックス");
 await pick("#req-photo-input");
@@ -98,7 +98,7 @@ await hRow.locator(".check-circle").click();  // 買うよ
 await sleep(700);
 await hRow.locator(".check-done-btn").click(); // 買ったよ → 履歴へ
 await sleep(1000);
-await page.click("#btn-history-float");
+await t.openHistory();
 await sleep(900);
 check("履歴のカードにもサムネイルが出る",
   (await page.locator("#history-list .req-row").filter({ hasText: "ホットケーキミックス" })
@@ -108,7 +108,7 @@ await page.click("#btn-history-close");
 await sleep(500);
 
 // --- 店内モードにサムネイルが出る ---
-await page.click("#fab-add");
+await page.click("#btn-add-float");
 await sleep(600);
 await page.fill("#new-name", "からあげ粉");
 await pick("#req-photo-input");

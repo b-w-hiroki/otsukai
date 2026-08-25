@@ -14,7 +14,7 @@ const storeBtn = await page.locator("#btn-store-mode-close").boundingBox();
 await page.click("#btn-store-mode-close"); await sleep(500);
 
 // 履歴を開く
-await page.click("#btn-history-float"); await sleep(800);
+await t.openHistory(); await sleep(800);
 check("履歴が開く", await page.locator("#history-sheet.open").count()===1);
 const histBtn = await page.locator("#btn-history-close").boundingBox();
 check("閉じるボタンが画面内", histBtn.y+histBtn.height <= 844, `y=${Math.round(histBtn.y)}`);
@@ -40,7 +40,7 @@ await page.locator("#btn-history-close").tap();
 await sleep(600);
 check("タップで閉じられる", await page.locator("#history-sheet.open").count()===0);
 // 背景タップでも閉じられる
-await page.click("#btn-history-float"); await sleep(700);
+await t.openHistory(); await sleep(700);
 await page.locator("#sheet-backdrop").tap({position:{x:195,y:40}});
 await sleep(600);
 check("背景タップでも閉じられる", await page.locator("#history-sheet.open").count()===0);

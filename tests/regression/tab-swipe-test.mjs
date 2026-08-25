@@ -132,7 +132,7 @@ await sleep(400);
 check("縦優位のドラッグではタブが切り替わらない", (await activeTab()) === "tab-requests");
 
 // --- シートが開いている間はスワイプでタブが切り替わらない ---
-await page.click("#fab-add");
+await page.click("#btn-add-float");
 await sleep(500);
 await t.swipeLeft(400, 320, 40);
 await sleep(400);

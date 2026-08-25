@@ -9,7 +9,7 @@ await page.waitForSelector("#screen-main", { state: "visible", timeout: 20000 })
 await sleep(800);
 
 // 履歴を開く（完了28件＝かなり長い）
-await page.click("#btn-history-float");
+await t.openHistory();
 await sleep(800);
 check("履歴シートが開く", await page.locator("#history-sheet.open").count() === 1);
 const rows = await page.locator("#history-list .req-row").count();
@@ -33,14 +33,14 @@ check("✕タップで閉じる", await page.locator("#history-sheet.open").coun
 check("背景も消える", await page.locator("#sheet-backdrop.open").count() === 0);
 
 // 背景タップでも閉じられるか
-await page.click("#btn-history-float");
+await t.openHistory();
 await sleep(700);
 await page.locator("#sheet-backdrop").click({ position: { x: 195, y: 40 } });
 await sleep(600);
 check("背景タップで閉じる", await page.locator("#history-sheet.open").count() === 0);
 
 // 履歴内スクロール後もヘッダーが残るか（sticky）
-await page.click("#btn-history-float");
+await t.openHistory();
 await sleep(700);
 await page.locator("#history-sheet .sheet-content").evaluate(el => el.scrollTop = 600);
 await sleep(400);
