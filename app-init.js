@@ -433,9 +433,15 @@ function initAdSlots() {
 }
 
 function init() {
-  wireGlobalEvents();
-  wireTabs();
-  initAdSlots();
+  // PWAはHTMLをネットワーク優先・JSをキャッシュ優先で配信するため、デプロイ直後は
+  // 「新しいHTML＋更新前の古いJS」という食い違いが一時的に起こりうる（SWが新しい
+  // バージョンに切り替わるまでの数十分〜1時間）。その間に古いJSが新HTMLに無い要素を
+  // $(id) で参照すると例外になり、ここで丸ごと落ちると画面が真っ白のまま進まなくなる
+  // （実際に発生した障害）。1つの配線が失敗しても残りが動くよう個別に守る。
+  const safely = (fn, label) => { try { fn(); } catch (e) { console.error(`[init] ${label} failed:`, e); } };
+  safely(wireGlobalEvents, "wireGlobalEvents");
+  safely(wireTabs, "wireTabs");
+  safely(initAdSlots, "initAdSlots");
   if (!isConfigured) {
     showScreen("config");
     return;

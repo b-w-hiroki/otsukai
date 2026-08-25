@@ -120,6 +120,11 @@ PWA は `app-*.js` / `styles.css` をキャッシュ優先で配信するため�
 - `install` で `skipWaiting()` を**呼ばない**。呼ぶと入力中に勝手にリロードされる
 - `cache.addAll` は1つ失敗すると全体が失敗し SW ごと入らない → **個別に `cache.add` + try/catch**
 - `controllerchange` は初回インストールでも発火する → `updateRequested` と `hadControllerAtStart` で守る
+- HTMLはネットワーク優先・JSはキャッシュ優先なので、デプロイ直後は「新HTML＋更新前の古いJS」
+  が一時的に混在する（SWが切り替わるまで数十分〜1時間）。この間に古いJSが新HTMLに無い要素を
+  `$(id)` で参照すると例外になり、`init()` がそこで丸ごと止まって**画面が真っ白のまま進まなく
+  なる**（実際に発生した障害。`wireGlobalEvents()` 等はこのため個別に try/catch で守っている）。
+  HTML側の要素IDを消す・変えるときは、この移行期間があることを踏まえる
 
 ---
 
