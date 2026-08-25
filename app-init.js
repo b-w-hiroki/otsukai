@@ -66,10 +66,11 @@ function wireTabs() {
 }
 
 // ===== ページ内タブ: 左右スワイプで切り替え =====
-// 下部ナビと同じ並び順（お買い物→よく買うもの→支出・家計→ストック→設定）でスワイプする。
-// ミッションはトップバーのサイドボタン経由のみで、スワイプの対象には含めない。
+// 下部ナビと同じ並び順（ストック→お買い物→設定）でスワイプする。
+// よく買うもの・支出はタブを廃止した（買い物ページのシート／プレイヤー情報シートに
+// 一本化）ため対象外。ミッションもトップバーのサイドボタン経由のみで対象外。
 // 端まで来たら折り返さない（そこで指を離しても何も起きない）。
-const SWIPE_TAB_ORDER = ["requests", "shortcuts", "expenses", "stock", "settings"];
+const SWIPE_TAB_ORDER = ["stock", "requests", "settings"];
 const TAB_SWIPE_THRESHOLD = 60;
 // シート/店内モード/写真拡大/使い方モーダルが開いている間は、そちらの操作を
 // 邪魔しないようスワイプでのタブ切替を止める（引っ張って更新の ptrBlocked と同じ考え方）。
@@ -207,8 +208,6 @@ function wireGlobalEvents() {
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
   $("fab-add").addEventListener("click", () => {
     if (state.activeTab === "stock") openStockSheet();
-    else if (state.activeTab === "shortcuts") openShortcutRegisterSheet();
-    else if (state.activeTab === "expenses") openExpenseSheet();
     else if (state.activeTab === "missions" && isParent()) openMissionSheet();
     else if (state.activeTab === "missions") { /* child: nothing */ }
     else openSheet();
@@ -220,16 +219,23 @@ function wireGlobalEvents() {
     shortcutsEditMode = !shortcutsEditMode;
     renderShortcuts();
   });
-  // 買い物ページから「よく買うもの」を開く導線（下部タブが分かりにくいという声を受けて追加）
+  // 買い物ページから「よく買うもの」を開く導線（下部タブを廃止し、ここに一本化した）
   $("btn-shortcut-toggle").addEventListener("click", openShortcutSheet);
   $("btn-shortcut-sheet-close").addEventListener("click", closeShortcutSheet);
+  // シートを閉じてから登録シートを開く（DOM順で sheet-add がこのシートより手前にあり、
+  // 開いたままだと登録シートが背面に隠れて操作できないため）
+  $("btn-shortcut-register").addEventListener("click", () => {
+    closeShortcutSheet();
+    openShortcutRegisterSheet();
+  });
   wireShortcutViewToggles();
   // 履歴は買い物ページのフロート列から外した（プレイヤー情報シートの
   // 「🛒買い物履歴」から引き続き開ける）。空いた枠は追加ボタンにした
   $("btn-add-float").addEventListener("click", openSheet);
   $("btn-update-profile").addEventListener("click", updateProfileFromSettings);
   $("btn-logout").addEventListener("click", signOut);
-  $("btn-open-expense-sheet").addEventListener("click", openExpenseSheet);
+  // btn-open-expense-sheet はプレイヤー情報シートの中身として毎回作り直されるため、
+  // ここでは配線しない（openPlayerSheet() 側で都度配線する）
   wireCategoryChips();
   wireMissionSubtabs();
   wireSettingsAccordion();

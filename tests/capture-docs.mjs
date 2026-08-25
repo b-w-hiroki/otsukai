@@ -43,16 +43,19 @@ await page.click("#btn-store-mode-close"); await sleep(500);
 // 「✅完了！」トースト（2.4秒で消える）が次のスクショに写り込まないよう待つ
 await sleep(1500);
 
-// よく買うもの（下部ナビの独立タブ。登録は他のタブと同じくFABから）
-await page.click('[data-tab="shortcuts"]'); await sleep(700); await shot("08-shortcuts");
-await page.click("#fab-add"); await sleep(700);
+// よく買うもの（下部タブを廃止し、買い物ページのフローティングボタンから開くシートに一本化した。
+// 既定はリスト形式だが、写真が見えるカード形式のほうが説明用として分かりやすいので切り替えて撮る）
+await page.click("#btn-shortcut-toggle"); await sleep(700);
+await page.click('#shortcut-sheet .shortcut-viewmode-btn[data-viewmode="card"]'); await sleep(400);
+await shot("08-shortcuts");
+await page.click("#btn-shortcut-register"); await sleep(700);
 await page.fill("#new-name", "柔軟剤"); await page.fill("#new-cycle-days", "25");
 await shot("18-shortcut-cycle"); // 買う間隔（任意）欄
 await page.click("#btn-sheet-close"); await sleep(400);
 
-// 支出・家計
-await page.click('[data-tab="expenses"]'); await sleep(700); await shot("19-expenses");
-await page.click('[data-tab="requests"]'); await sleep(500);
+// 支出・家計（下部タブを廃止し、プレイヤー情報シート（アバター）に一本化した）
+await page.click("#btn-player-profile"); await sleep(700); await shot("19-expenses");
+await page.evaluate(() => closePlayerSheet()); await sleep(400);
 
 // 履歴（プレイヤー情報シート経由。買い物ページのフロート列からは外した）
 await t.openHistory(); await sleep(900); await shot("09-history");

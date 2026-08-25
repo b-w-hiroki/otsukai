@@ -496,7 +496,7 @@ function renderIconPickerGrid() {
 // カードは写真中心で見やすく、リストは1行が小さく詰まった分いちどに多く見渡せる
 // （「よく買うものタブが分かりにくい」というフィードバックを受けて、旧リスト形式を復活）。
 // 端末ごとに覚え、買い物ページから開く簡易シート（#shortcut-sheet）とも共通の設定。
-let shortcutViewMode = localStorage.getItem("shortcutViewMode") === "list" ? "list" : "card";
+let shortcutViewMode = localStorage.getItem("shortcutViewMode") === "card" ? "card" : "list";
 function setShortcutViewMode(mode) {
   if (mode !== "card" && mode !== "list") return;
   shortcutViewMode = mode;
@@ -624,7 +624,9 @@ function renderShortcutsInto(container, entries, editMode) {
   wireShortcutsContainer(container, editMode);
 }
 function renderShortcuts() {
-  const chips = $("shortcut-chips");
+  // 下部タブを廃止し、買い物ページのフローティングボタンから開くシート（#shortcut-sheet）に
+  // 一本化した。追加・編集（削除・写真差し替え）ともこのシートだけで行う
+  const chips = $("shortcut-sheet-chips");
   if (!chips) return;
   const entries = Object.entries(state.shortcuts);
   updateShortcutVisibility();
@@ -640,13 +642,6 @@ function renderShortcuts() {
   if (!count) shortcutsEditMode = false;
   renderShortcutsInto(chips, entries, shortcutsEditMode);
   updateShortcutViewToggles();
-  // 買い物ページから開ける簡易シートが今開いていれば、そちらも同じ内容で更新する
-  // （編集モードは無く、常に追加専用として描画する）
-  const sheet = $("shortcut-sheet");
-  const sheetChips = $("shortcut-sheet-chips");
-  if (sheet && sheetChips && sheet.classList.contains("open")) {
-    renderShortcutsInto(sheetChips, entries, false);
-  }
 }
 function openShortcutSheet() {
   $("shortcut-sheet").classList.add("open");
