@@ -517,7 +517,10 @@
                 <span class="photo-placeholder">📷 タップして写真を選ぶ</span>
               </span>
             </label>
-            <button type="button" id="btn-req-photo-clear" class="ghost tiny-btn" style="margin-top:6px;display:none;">✕ 写真を外す</button>
+            <div class="row" style="gap:8px;margin-top:6px;">
+              <button type="button" id="btn-req-photo-icon" class="ghost tiny-btn">🎨 イラストから選ぶ</button>
+              <button type="button" id="btn-req-photo-clear" class="ghost tiny-btn" style="display:none;">✕ 写真を外す</button>
+            </div>
           </div>
           <div>
             <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">カテゴリ（任意・もう一度タップで解除）</label>
@@ -599,6 +602,7 @@
                 <span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>
               </span>
             </label>
+            <button type="button" id="btn-stock-photo-icon" class="ghost tiny-btn" style="margin-top:6px;">🎨 イラストから選ぶ</button>
           </div>
           <div class="stock-level-picker">
             <button class="slp-btn active" data-lvl="ok">🟢 たっぷり</button>
@@ -609,6 +613,9 @@
         </div>
       </div>
     </div>
+
+    <!-- ストック詳細シートで写真を撮る/選ぶを選んだときの共有ファイル入力 -->
+    <input type="file" id="stock-detail-photo-input" accept="image/*" style="display:none;" />
 
     <!-- Player profile sheet -->
     <div id="player-sheet" class="sheet">
@@ -729,6 +736,22 @@
           <p class="muted" style="font-size:11px;margin-top:-4px;">※ クリア回数達成でおこづかいが発生します</p>
           <button id="btn-add-mission">ミッションを作成する</button>
         </div>
+      </div>
+    </div>
+
+    <!-- 「イラストから選ぶ」ピッカー。よく買うもの/ストック/おつかいの写真欄から共通で開く。
+         対象（差し替え先）は openIconPicker() に渡すコールバックで都度切り替える。
+         他のどのシートの上にも重ねて開けるよう、.sheet の中でいちばん最後（DOM順）に置く
+         （.sheet はどれも同じスタッキング文脈なので、後ろにある方が上に乗る）。 -->
+    <div id="icon-picker-sheet" class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-content">
+        <div class="sheet-header">
+          <div class="sheet-title">🎨 写真を選ぶ</div>
+          <button id="btn-icon-picker-close" class="sheet-close">✕</button>
+        </div>
+        <p class="muted" style="font-size:12px;margin:0 0 6px;">用意したイラストから選べます。実物の写真ではありません。</p>
+        <div id="icon-picker-grid" class="icon-picker-grid"></div>
       </div>
     </div>
   </div>

@@ -468,6 +468,31 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 #btn-shortcut-edit.open { border-color: var(--c-claimed); background: var(--c-claimed-soft); color: var(--ink); }
 
+/* 「イラストから選ぶ」ピッカーのグリッド（#icon-picker-sheet） */
+.icon-picker-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin: 8px 0 4px;
+}
+.icon-picker-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 4px; border-radius: var(--r-md);
+  border: 1.5px solid var(--border); background: var(--surface-2); color: var(--ink);
+  box-shadow: none;
+}
+.icon-picker-tile:hover:not(:disabled) { background: var(--pri-soft); box-shadow: none; transform: none; }
+.icon-picker-tile:active { transform: scale(0.96); }
+.icon-picker-tile img { width: 40px; height: 40px; border-radius: 50%; display: block; }
+.icon-picker-camera-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--pri-soft); font-size: 19px;
+}
+.icon-picker-tile-label {
+  font-size: 10px; font-weight: 600; color: var(--ink-2);
+  line-height: 1.2; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+
 /* ======= Bottom nav (floating) ======= */
 .bottom-nav {
   position: fixed; left: 12px; right: 12px;
