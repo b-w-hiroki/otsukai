@@ -257,8 +257,10 @@ function checkDetail(r) {
     actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
   }
 
+  // イラストは行のサムネイル（photo-thumb）で十分伝わり、この横長の大きな枠に
+  // object-fit:cover で入れると正方形基準のSVGが歪むため、実写真のときだけ出す
   return `<div class="check-detail">
-    ${r.photoUrl ? `<img class="req-photo" src="${escapeHtml(r.photoUrl)}" alt="${escapeHtml(r.name)}の写真" data-photo="${escapeHtml(r.photoUrl)}" loading="lazy" />` : ""}
+    ${r.photoUrl && !isIllustrationPhoto(r.photoUrl) ? `<img class="req-photo" src="${escapeHtml(r.photoUrl)}" alt="${escapeHtml(r.name)}の写真" data-photo="${escapeHtml(r.photoUrl)}" loading="lazy" />` : ""}
     ${hintParts.length ? `<div class="req-row-hints">${hintParts.map(p => `<span class="req-row-hint">${p}</span>`).join("")}</div>` : ""}
     <div class="check-detail-meta">${meta}</div>
     <div class="check-detail-actions">${actHtml}</div>
