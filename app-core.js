@@ -70,6 +70,9 @@ let existingReqPhotoUrl = "";
 const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+// 実写真か、用意したイラスト（shortcut-icons/）かを区別する。
+// イラストは正方形基準のSVGなので、横長の写真枠に object-fit:cover で引き伸ばすと歪む。
+const isIllustrationPhoto = (url) => !!url && url.startsWith("./shortcut-icons/");
 
 // ===== Firebase init =====
 let auth, db;
