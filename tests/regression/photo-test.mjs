@@ -36,6 +36,7 @@ check("プレースホルダに戻る", (await page.locator(".photo-placeholder"
 await page.fill("#new-name", "詰め替えシャンプー");
 await pick("#req-photo-input");
 await sleep(400);
+await page.click('#new-category .cat-chip[data-cat="daily"]');
 await page.click("#btn-add-request");
 await sleep(1200);
 
@@ -91,6 +92,7 @@ await sleep(600);
 await page.fill("#new-name", "ホットケーキミックス");
 await pick("#req-photo-input");
 await sleep(400);
+await page.click('#new-category .cat-chip[data-cat="food"]');
 await page.click("#btn-add-request");
 await sleep(1200);
 const hRow = page.locator(".check-row").filter({ hasText: "ホットケーキミックス" }).first();

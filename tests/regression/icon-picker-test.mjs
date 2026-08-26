@@ -31,6 +31,7 @@ await sleep(400);
 check("ピッカーが閉じる", !(await page.locator("#icon-picker-sheet.open").count()));
 const previewSrc = await page.locator("#req-photo-preview-wrap img").getAttribute("src").catch(() => null);
 check("プレビューにイラストが反映される", previewSrc === "./shortcut-icons/cabbage.svg", previewSrc);
+await page.click('#new-category .cat-chip[data-cat="food"]');
 await page.click("#btn-add-request");
 await sleep(700);
 const savedReqPhoto = await page.evaluate(async () => {

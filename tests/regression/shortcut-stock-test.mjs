@@ -34,6 +34,7 @@ check("既存ショートカット「牛乳」はまだストックに無い", (
 await openShortcutRegister();
 check("登録シートに「買う間隔」欄が出る", await page.locator("#new-cycle-wrap").isVisible());
 await page.fill("#new-name", "柔軟剤");
+await page.click('#new-category .cat-chip[data-cat="daily"]');
 await page.click("#btn-add-request");
 await sleep(1000);
 
@@ -51,6 +52,7 @@ check("買う間隔を空欄にしたら cycleDays は付かない", created && 
 await openShortcutRegister();
 await page.fill("#new-name", "洗濯洗剤");
 await page.fill("#new-cycle-days", "20");
+await page.click('#new-category .cat-chip[data-cat="daily"]');
 await page.click("#btn-add-request");
 await sleep(1000);
 const withCycle = await stockNamed("洗濯洗剤");
@@ -61,6 +63,7 @@ check("起点(lastFilledAt)も一緒に入る", withCycle && withCycle.lastFille
 await openShortcutRegister();
 await page.fill("#new-name", "重複チェック用");
 await page.fill("#new-cycle-days", "9999");
+await page.click('#new-category .cat-chip[data-cat="other"]');
 await page.click("#btn-add-request");
 await sleep(600);
 check("範囲外の買う間隔はエラーで弾かれる（登録されない）",
@@ -75,6 +78,7 @@ await sleep(400);
 await openShortcutRegister();
 await page.fill("#new-name", "米"); // fb-stub の既存ストック(st1, level:low, cycleDaysなし)と同名
 await page.fill("#new-cycle-days", "14");
+await page.click('#new-category .cat-chip[data-cat="food"]');
 await page.click("#btn-add-request");
 await sleep(1000);
 check("同名ストックが重複作成されない", (await stockCountNamed("米")) === 1);
@@ -88,6 +92,7 @@ await sleep(500);
 await page.click("#btn-add-float");
 await sleep(700);
 await page.fill("#new-name", "換気扇フィルター");
+await page.click('#new-category .cat-chip[data-cat="daily"]');
 await page.click("#btn-add-request");
 await sleep(1000);
 const row = page.locator(".check-row").filter({ hasText: "換気扇フィルター" }).first();

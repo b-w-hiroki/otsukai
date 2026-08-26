@@ -29,7 +29,7 @@ CI（`.github/workflows/check.yml`）は2ジョブ:
 
 CI は**最低限**しか見ない。UI を触ったら**手元の回帰スイート**も通す。
 
-### 回帰スイート（`tests/regression/` の22本）
+### 回帰スイート（`tests/regression/` の24本）
 
 インメモリの Firebase スタブ（`tests/fb-stub.js`）で家族データを再現して動かす。
 本物の Firebase には一切つながないので、オフラインでも走る。
@@ -54,6 +54,8 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `icon-picker-test` | 🎨 イラストから選ぶピッカー（おつかい/よく買うもの/ストックの写真欄で共通） |
 | `expense-log-test` | 💴 支出・家計（プレイヤー情報シート）での記録・削除・レシートOCR（読み取り成功/失敗の両方） |
 | `mission-subtabs-test` | ミッションタブ内サブタブ（⚡ウィークリー/🎁ごほうび/🎯ミッション）の切り替え・保護者向け新規登録ボタン |
+| `category-required-test` | カテゴリ選択の必須化（未選択だとブロック・📎未分類の明示選択・編集時の選択済み表示） |
+| `badge-seen-test` | お買い物タブの赤バッジ（既読で消える・新着依頼だけ数える・見た依頼は再表示されない） |
 | `features-test` | 主要導線の通し |
 
 **共通処理は `tests/harness.mjs` に集約**している。各テストは3行で始まる:

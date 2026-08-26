@@ -99,6 +99,7 @@ check("タイトルがよく買うもの登録になっている", (await page.l
 await page.fill("#new-name", "写真つきテスト品");
 await pickPhoto("#req-photo-input");
 await sleep(400);
+await page.click('#new-category .cat-chip[data-cat="food"]');
 await page.click("#btn-add-request");
 await sleep(1500);
 // 登録すると sheet-add は閉じる（shortcut-sheet はその前に自動で閉じている）ので、開き直して確認する

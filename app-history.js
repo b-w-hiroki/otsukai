@@ -247,8 +247,21 @@ function renderEmojiPicker(elId, stateKey) {
   });
 }
 
+// お買い物タブの赤バッジ「既読」時刻（端末ローカル）。
+// この時刻より後に頼まれたものだけを数える。お買い物タブを開くたびに今の時刻へ進める。
+function seenRequestsKey() { return `seenRequestsAt_${state.familyId}`; }
+function getSeenRequestsAt() {
+  const v = Number(localStorage.getItem(seenRequestsKey()));
+  return Number.isFinite(v) ? v : 0;
+}
+function markRequestsSeen() {
+  localStorage.setItem(seenRequestsKey(), String(now()));
+}
 function renderBadge() {
-  const openCount = Object.values(state.requests).filter((r) => r.status === "open" && r.requestedBy !== state.uid).length;
+  const seenAt = getSeenRequestsAt();
+  const openCount = Object.values(state.requests).filter((r) =>
+    r.status === "open" && r.requestedBy !== state.uid && r.requestedAt > seenAt
+  ).length;
   const badge = $("badge-requests");
   if (openCount > 0 && state.activeTab !== "requests") {
     badge.textContent = openCount;
@@ -257,6 +270,8 @@ function renderBadge() {
     badge.style.display = "none";
   }
   document.title = (openCount > 0 ? `(${openCount}) ` : "") + "🧺 おうちのおつかい";
+  // お買い物タブを見ている間は、その時点までの依頼をすべて既読にする
+  if (state.activeTab === "requests") markRequestsSeen();
 }
 
 // ===== History sheet =====

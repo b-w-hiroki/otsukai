@@ -3,17 +3,19 @@
 // （クラシックスクリプトなのでグローバルスコープを共有。type="module" にはしていない）。
 
 // ===== Category =====
-// 固定3種のカテゴリ。任意入力（未選択 = 分類なし）。
+// 固定3種のカテゴリ + 「未分類」。追加・編集シートでは4つ目のチップとして
+// 「📎 未分類」も選べるが、いずれか1つを必ずタップしないと保存できない
+// （選ばずに保存して意図せず未分類になる、を防ぐため）。
 const CATEGORY = {
   food:  { emoji: "🍎", label: "食品",   order: 0 },
   daily: { emoji: "🧻", label: "日用品", order: 1 },
   other: { emoji: "📦", label: "その他", order: 2 },
 };
-const CATEGORY_NONE_ORDER = 3; // 未分類はカテゴリ付きの後ろに並べる
+const CATEGORY_NONE_ORDER = 3; // 未分類（"none" またはカテゴリ未設定）はカテゴリ付きの後ろに並べる
 let selectedCategory = null;
 
 function setSelectedCategory(cat) {
-  selectedCategory = cat && CATEGORY[cat] ? cat : null;
+  selectedCategory = cat === "none" || (cat && CATEGORY[cat]) ? cat : null;
   document.querySelectorAll("#new-category .cat-chip").forEach((b) => {
     b.classList.toggle("selected", b.dataset.cat === selectedCategory);
   });
@@ -147,6 +149,7 @@ let addingRequest = false; // 二度押し防止
 async function addRequest() {
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
+  if (!selectedCategory) return showToast("カテゴリを選んでください（未分類でもOK）");
   if (addingRequest) return;
   addingRequest = true;
   try {
@@ -163,7 +166,7 @@ async function addRequest() {
     if (budget > 0) req.budget = budget;
     if (brand) req.brand = brand;
     if (assignedTo) req.assignedTo = assignedTo;
-    if (selectedCategory) req.category = selectedCategory;
+    req.category = selectedCategory;
     if (pendingReqPhoto) {
       // File なら実写真としてアップロード、文字列なら選んだイラストのパスをそのまま使う
       const url = pendingReqPhoto instanceof File ? await uploadRequestPhoto(pendingReqPhoto, id) : pendingReqPhoto;
@@ -210,6 +213,7 @@ async function updateRequest() {
   if (!editingRequestId) return;
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
+  if (!selectedCategory) return showToast("カテゴリを選んでください（未分類でもOK）");
   const diff = $("new-diff").value;
   const urgent = $("new-urgent").checked;
   const memo = $("new-memo").value.trim();
@@ -221,7 +225,7 @@ async function updateRequest() {
   updates.budget = budget > 0 ? budget : null;
   updates.brand = brand || null;
   updates.assignedTo = assignedTo || null;
-  updates.category = selectedCategory || null;
+  updates.category = selectedCategory;
   if (pendingReqPhoto) {
     const url = pendingReqPhoto instanceof File ? await uploadRequestPhoto(pendingReqPhoto, editingRequestId) : pendingReqPhoto;
     if (url) updates.photoUrl = url;
@@ -321,6 +325,7 @@ function openShortcutRegisterSheet() {
 async function addShortcutFromSheet() {
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
+  if (!selectedCategory) return showToast("カテゴリを選んでください（未分類でもOK）");
   const diff = $("new-diff").value;
   const urgent = $("new-urgent").checked;
   const memo = $("new-memo").value.trim();
@@ -338,7 +343,7 @@ async function addShortcutFromSheet() {
   if (budget > 0) entry.budget = budget;
   if (brand) entry.brand = brand;
   if (assignedTo) entry.assignedTo = assignedTo;
-  if (selectedCategory) entry.category = selectedCategory;
+  entry.category = selectedCategory;
   const ref = familyRef().child("shortcuts").push();
   if (pendingReqPhoto) {
     const url = pendingReqPhoto instanceof File ? await uploadShortcutPhoto(pendingReqPhoto, ref.key) : pendingReqPhoto;
