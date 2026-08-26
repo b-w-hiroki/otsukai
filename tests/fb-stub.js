@@ -83,15 +83,15 @@
     app: () => ({ functions: () => ({ httpsCallable: () => async () => { throw new Error("functions未デプロイ（スタブ）"); } }) }),
   };
 
-  // ===== シードデータ（親ひろき視点） =====
+  // ===== シードデータ（親じろう視点） =====
   const now = Date.now();
   const H = 36e5, D = 864e5;
-  store.users = { "uid-parent": { name: "ひろき", emoji: "😎", familyId: "fam1" } };
+  store.users = { "uid-parent": { name: "じろう", emoji: "😎", familyId: "fam1" } };
   store.families = {
     fam1: {
-      meta: { name: "ひろき家", inviteCode: "ABC123", createdAt: now - 90 * D, createdBy: "uid-parent" },
+      meta: { name: "じろう家", inviteCode: "ABC123", createdAt: now - 90 * D, createdBy: "uid-parent" },
       members: {
-        "uid-parent": { name: "ひろき", emoji: "😎", memberRole: "parent", role: "admin", joinedAt: now - 90 * D },
+        "uid-parent": { name: "じろう", emoji: "😎", memberRole: "parent", role: "admin", joinedAt: now - 90 * D },
         "uid-mom": { name: "はな", emoji: "🌸", memberRole: "sub-parent", role: "member", joinedAt: now - 85 * D },
         "uid-child": { name: "たろう", emoji: "🦊", memberRole: "child", role: "member", joinedAt: now - 80 * D },
       },
