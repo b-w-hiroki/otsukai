@@ -1,6 +1,7 @@
 // カテゴリ選択の必須化を検証する。
 // 意図せず「未分類」になってしまうのを防ぐため、追加/編集シート・よく買うもの登録シートの
-// どちらも 🍎食品/🧻日用品/📦その他/📎未分類 のいずれかを明示的にタップしないと保存できない。
+// どちらも 🍎食品/🧻日用品/📦その他 のいずれかを明示的にタップしないと保存できない
+// （当てはまるものが無ければ「📦その他」を選ぶ想定で、「未分類」という選択肢は無い）。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
@@ -27,21 +28,21 @@ check("カテゴリ未選択だとトーストで案内される", toast1.includ
 check("追加されていない", (await page.locator(".check-row").count()) === beforeCount);
 check("シートは開いたまま", await page.locator("#sheet-add.open").isVisible());
 
-// --- 「📎 未分類」を明示的に選べば、意図した未分類として保存できる ---
-await page.click('#new-category .cat-chip[data-cat="none"]');
+// --- 当てはまるものが無ければ「📦その他」を選んで保存する ---
+await page.click('#new-category .cat-chip[data-cat="other"]');
 await page.click("#btn-add-request");
 await sleep(1000);
-check("未分類を選ぶと追加できる", (await page.locator(".check-row").count()) === beforeCount + 1);
-check("category が \"none\" として明示的に保存される", (await categoryOf("洗濯ネット")) === "none");
+check("その他を選ぶと追加できる", (await page.locator(".check-row").count()) === beforeCount + 1);
+check("category が \"other\" として保存される", (await categoryOf("洗濯ネット")) === "other");
 
-// --- 未分類のまま編集を開くと、チップがすでに選択されている（再選択を強制しない） ---
+// --- 編集を開くと、選んだカテゴリのチップがすでに選択されている（再選択を強制しない） ---
 const row = page.locator(".check-row").filter({ hasText: "洗濯ネット" }).first();
 await row.locator(".check-main").click();
 await sleep(500);
 await page.locator(".check-detail [data-edit-btn]").first().click();
 await sleep(500);
-check("編集シートで「📎未分類」が選択済みになっている",
-  await page.locator('#new-category .cat-chip[data-cat="none"]').evaluate((el) => el.classList.contains("selected")));
+check("編集シートで「📦その他」が選択済みになっている",
+  await page.locator('#new-category .cat-chip[data-cat="other"]').evaluate((el) => el.classList.contains("selected")));
 await page.click("#btn-sheet-close");
 await sleep(400);
 

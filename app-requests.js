@@ -3,9 +3,9 @@
 // （クラシックスクリプトなのでグローバルスコープを共有。type="module" にはしていない）。
 
 // ===== Category =====
-// 固定3種のカテゴリ + 「未分類」。追加・編集シートでは4つ目のチップとして
-// 「📎 未分類」も選べるが、いずれか1つを必ずタップしないと保存できない
-// （選ばずに保存して意図せず未分類になる、を防ぐため）。
+// 固定3種のカテゴリ。追加・編集シートではいずれか1つを必ずタップしないと保存できない
+// （選ばずに保存して意図せず未分類になる、を防ぐため。当てはまるものが無ければ
+// 「📦 その他」を選ぶ。「未分類」という選択肢は別途用意しない）。
 const CATEGORY = {
   food:  { emoji: "🍎", label: "食品",   order: 0 },
   daily: { emoji: "🧻", label: "日用品", order: 1 },
@@ -15,7 +15,7 @@ const CATEGORY_NONE_ORDER = 3; // 未分類（"none" またはカテゴリ未設
 let selectedCategory = null;
 
 function setSelectedCategory(cat) {
-  selectedCategory = cat === "none" || (cat && CATEGORY[cat]) ? cat : null;
+  selectedCategory = cat && CATEGORY[cat] ? cat : null;
   document.querySelectorAll("#new-category .cat-chip").forEach((b) => {
     b.classList.toggle("selected", b.dataset.cat === selectedCategory);
   });
@@ -149,7 +149,7 @@ let addingRequest = false; // 二度押し防止
 async function addRequest() {
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
-  if (!selectedCategory) return showToast("カテゴリを選んでください（未分類でもOK）");
+  if (!selectedCategory) return showToast("カテゴリを選んでください");
   if (addingRequest) return;
   addingRequest = true;
   try {
@@ -213,7 +213,7 @@ async function updateRequest() {
   if (!editingRequestId) return;
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
-  if (!selectedCategory) return showToast("カテゴリを選んでください（未分類でもOK）");
+  if (!selectedCategory) return showToast("カテゴリを選んでください");
   const diff = $("new-diff").value;
   const urgent = $("new-urgent").checked;
   const memo = $("new-memo").value.trim();
@@ -325,7 +325,7 @@ function openShortcutRegisterSheet() {
 async function addShortcutFromSheet() {
   const name = $("new-name").value.trim();
   if (!name) return showToast("品名を入力してください");
-  if (!selectedCategory) return showToast("カテゴリを選んでください（未分類でもOK）");
+  if (!selectedCategory) return showToast("カテゴリを選んでください");
   const diff = $("new-diff").value;
   const urgent = $("new-urgent").checked;
   const memo = $("new-memo").value.trim();

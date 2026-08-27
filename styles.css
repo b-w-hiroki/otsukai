@@ -802,6 +802,37 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   padding: 8px 0 28px;
   animation: reqIn .4s cubic-bezier(0.34,1.2,0.64,1) both;
 }
+/* 何も登録が無いときの、キャラクターが話しかけてくるような案内 */
+.empty-hero {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 22px;
+}
+.empty-hero-char {
+  flex-shrink: 0;
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri-soft) 0%, var(--pri-mid) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  box-shadow: var(--shadow-card);
+  animation: howtoBob 2.6s ease-in-out infinite;
+}
+.empty-hero-bubble {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 18px;
+  font-size: 14.5px; font-weight: 700; color: var(--ink);
+  line-height: 1.5;
+  box-shadow: var(--shadow-card);
+}
+@keyframes howtoBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .empty-hero-char { animation: none; }
+}
 .howto-title {
   text-align: center; font-size: 13px; font-weight: 700;
   letter-spacing: 0.5px; color: var(--muted);
@@ -1230,6 +1261,9 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .comment-dot.unread { background: #ef4444; }
 .comment-dot.seen { background: var(--muted); }
 .rc-comment-btn.open { background: var(--pri-soft); color: var(--pri); border-color: var(--pri-mid); }
+/* 詳細の×削除だけは色で区別しつつ、形は他のアイコンボタンと揃える（浮いて見えないように） */
+.rc-comment-btn.rc-danger-btn { color: #ef4444; margin-left: auto; }
+.rc-comment-btn.rc-danger-btn:hover:not(:disabled) { background: #fef1f1; color: #dc2626; border-color: #fca5a5; }
 .req-row-comment-body {
   padding: 8px 12px 10px 14px;
   border-top: 1px solid var(--border);
@@ -1423,7 +1457,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 .check-detail .req-row-hints { margin: 2px 0 6px; }
 .check-detail-meta { font-size: 11px; color: var(--muted); margin: 2px 0 8px; }
-.check-detail-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.check-detail-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 /* ======= ウィークリーミッション ======= */
 .weekly-mission { padding: 8px 0; border-bottom: 1px solid var(--border); }
@@ -1476,7 +1510,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   :root:not([data-theme="light"]) .check-detail { background: var(--surface-2); }
   :root:not([data-theme="light"]) .rc-star-btn.starred { background: #3a2f14; border-color: #7a6420; }
   :root:not([data-theme="light"]) .shortcut-card-del,
-  :root:not([data-theme="light"]) .shortcut-row-del { background: #40232a; color: #fca5a5; }
+  :root:not([data-theme="light"]) .shortcut-row-del,
+  :root:not([data-theme="light"]) .rc-comment-btn.rc-danger-btn:hover:not(:disabled) { background: #40232a; color: #fca5a5; }
 }
 :root[data-theme="dark"] .topbar { background: rgba(20,19,26,0.92); }
 :root[data-theme="dark"] .cat-chips .cat-chip.selected,
@@ -1488,7 +1523,8 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 :root[data-theme="dark"] .check-detail { background: var(--surface-2); }
 :root[data-theme="dark"] .rc-star-btn.starred { background: #3a2f14; border-color: #7a6420; }
 :root[data-theme="dark"] .shortcut-card-del,
-:root[data-theme="dark"] .shortcut-row-del { background: #40232a; color: #fca5a5; }
+:root[data-theme="dark"] .shortcut-row-del,
+:root[data-theme="dark"] .rc-comment-btn.rc-danger-btn:hover:not(:disabled) { background: #40232a; color: #fca5a5; }
 
 /* ======= 完了時の紙吹雪 ======= */
 .confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }

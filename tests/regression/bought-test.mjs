@@ -31,13 +31,19 @@ await sleep(800);
 check("他人の宣言では確認が出る", t.lastDialog().includes("たろう") && t.lastDialog().includes("買ったこと"), t.lastDialog().replace(/\n/g," ").slice(0,50));
 check("承認すると完了になる", await page.locator("#list-open .check-row",{hasText:"食パン"}).count()===0);
 
-// --- 詳細内にも「買ったよ」があるか（新たに宣言して確認） ---
+// --- 詳細を開いても「買ったよ」は行のボタンだけ（詳細内に重複させない） ---
 const egg = page.locator(".check-row",{hasText:"卵"}).first();
 await egg.locator(".check-circle").click();
 await sleep(700);
-await page.locator(".check-row",{hasText:"卵"}).first().locator(".check-main").click();
+const eggRow = page.locator(".check-row",{hasText:"卵"}).first();
+await eggRow.locator(".check-main").click();
 await sleep(500);
-check("詳細内にも「買ったよ」", await page.locator(".check-detail [data-complete]").count()>=1);
+check("詳細を開いても行の「買ったよ」はそのまま押せる", await eggRow.locator(".check-done-btn").count()===1);
+check("詳細内には「買ったよ」を重複させない", await page.locator(".check-detail [data-complete]").count()===0);
+check("詳細には💬とよく買うもの登録は出る", await page.locator(".check-detail-actions .rc-comment-btn").count()===2);
+await eggRow.locator(".check-done-btn").click();
+await sleep(800);
+check("行から「買ったよ」を押すと完了になる", await page.locator("#list-open .check-row",{hasText:"卵"}).count()===0);
 await page.screenshot({path:`${OUT}/b3-detail-done.png`});
 
 if(errs.length)fail++;
