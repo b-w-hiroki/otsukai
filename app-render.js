@@ -232,9 +232,7 @@ function checkRow(r) {
 }
 
 function checkDetail(r) {
-  const mine = r.claimedBy === state.uid;
   const own = r.requestedBy === state.uid;
-  const isClaimed = r.status === "claimed";
   const expanded = state.expandedItems.has(r.id);
   const commentList = Object.entries(state.comments[r.id] || {}).map(([cid, c]) => ({ id: cid, ...c }));
   const starred = isShortcutRegistered(r.name);
@@ -247,14 +245,14 @@ function checkDetail(r) {
   if (r.assignedTo) hintParts.push(`📌 ${memberEmoji(r.assignedTo)} ${escapeHtml(memberName(r.assignedTo))}に指名`);
   const meta = `${memberEmoji(r.requestedBy)} ${escapeHtml(memberName(r.requestedBy))}さんが追加 ・ ${timeAgo(r.requestedAt)}`;
 
+  // ✅買ったよ/↩️やめるは行自体（◯タップ・check-done-btn）ですでに操作できるため、
+  // ここでは重複させず、行では出せない操作だけを並べる（見た目の詰め込みを防ぐ）。
   let actHtml = "";
-  if (isClaimed) actHtml += `<button class="success rc-btn" data-complete="${r.id}">✅ 買ったよ</button>`;
-  if (isClaimed && mine) actHtml += `<button class="ghost rc-btn" data-act="unclaim" data-id="${r.id}">↩️ やめる</button>`;
   actHtml += `<button class="rc-comment-btn${expanded ? " open" : ""}" data-toggle="${r.id}" aria-label="コメントを開く">💬</button>`;
   actHtml += `<button class="rc-comment-btn rc-star-btn${starred ? " starred" : ""}" data-star="${r.id}" aria-label="${starred ? "よく買うものに登録済み" : "よく買うものに登録"}">${starred ? "⭐" : "☆"}</button>`;
   if (own) {
-    actHtml += `<button class="ghost rc-btn" data-edit-btn="${r.id}" aria-label="編集">✏️</button>`;
-    actHtml += `<button class="danger rc-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
+    actHtml += `<button class="rc-comment-btn" data-edit-btn="${r.id}" aria-label="編集">✏️</button>`;
+    actHtml += `<button class="rc-comment-btn rc-danger-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
   }
 
   // イラストは行のサムネイル（photo-thumb）で十分伝わり、この横長の大きな枠に
@@ -435,6 +433,10 @@ function sectionHtml(title, count, body) {
 function emptyHtml(msg) { return `<div class="empty">${msg}</div>`; }
 function howtoHtml() {
   return `<div class="howto-wrap">
+    <div class="empty-hero">
+      <div class="empty-hero-char" aria-hidden="true">🧺</div>
+      <div class="empty-hero-bubble">お買い物したいものを<br>登録しよう！</div>
+    </div>
     <div class="howto-title">はじめかた</div>
     <div class="howto-steps">
       <div class="howto-step" style="--i:0">
