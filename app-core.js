@@ -63,6 +63,7 @@ const state = {
 const expandedGroups = new Set(["group-open", "group-claimed"]);
 let editingRequestId = null;
 let shortcutMode = false;
+let editingShortcutId = null;
 // 追加/編集シートで選んだ写真。null = 変更なし、"" = 外す
 let pendingReqPhoto = null;
 let existingReqPhotoUrl = "";

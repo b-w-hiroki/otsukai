@@ -36,6 +36,7 @@ function categoryOrder(r) {
 function resetSheetToAddMode() {
   editingRequestId = null;
   shortcutMode = false;
+  editingShortcutId = null;
   document.querySelector("#sheet-add .sheet-title").textContent = "🛍️ おつかいを追加";
   $("btn-add-request").textContent = "追加する";
   $("new-name").value = "";
@@ -354,6 +355,62 @@ async function addShortcutFromSheet() {
   closeSheet();
   showToast(`⭐ 「${name}」をよく買うものに登録しました`);
 }
+// 既存のよく買うものを編集するシートを開く（編集モードでカード本体をタップしたとき）。
+// 名前・カテゴリ・手間などを、カテゴリ必須化より前に登録された項目でも後から直せるようにする。
+// 買う間隔は登録時に一度ストックへ渡すだけの値でショートカット自体には保存していないため、
+// このシートでは出さない（ストックタブ側でいつでも設定できる）。
+function openShortcutEditSheet(id) {
+  const s = state.shortcuts[id];
+  if (!s) return;
+  // シートを閉じてから編集シートを開く（DOM順で sheet-add がこのシートより手前にあり、
+  // 開いたままだと編集シートが背面に隠れて操作できないため。登録シートと同じ理由）
+  closeShortcutSheet();
+  resetSheetToAddMode();
+  editingShortcutId = id;
+  populateAssigneeSelect("");
+  $("new-name").value = s.name || "";
+  $("new-diff").value = s.diff || "normal";
+  $("new-urgent").checked = !!s.urgent;
+  $("new-memo").value = s.memo || "";
+  $("new-budget").value = s.budget > 0 ? s.budget : "";
+  $("new-brand").value = s.brand || "";
+  $("new-assignee").value = s.assignedTo || "";
+  setSelectedCategory(s.category || null);
+  pendingReqPhoto = null;
+  existingReqPhotoUrl = s.photoUrl || "";
+  setReqPhotoPreview(existingReqPhotoUrl);
+  document.querySelector("#sheet-add .sheet-title").textContent = "✏️ よく買うものを編集";
+  $("btn-add-request").textContent = "更新する";
+  $("sheet-add").classList.add("open");
+  $("sheet-backdrop").classList.add("open");
+  setTimeout(() => $("new-name").focus(), 350);
+}
+async function updateShortcut() {
+  if (!editingShortcutId) return;
+  const name = $("new-name").value.trim();
+  if (!name) return showToast("品名を入力してください");
+  if (!selectedCategory) return showToast("カテゴリを選んでください");
+  const diff = $("new-diff").value;
+  const urgent = $("new-urgent").checked;
+  const memo = $("new-memo").value.trim();
+  const budget = parseInt($("new-budget").value, 10);
+  const brand = $("new-brand").value.trim();
+  const assignedTo = $("new-assignee").value;
+  const updates = { name, diff, urgent, category: selectedCategory };
+  updates.memo = memo || null;
+  updates.budget = budget > 0 ? budget : null;
+  updates.brand = brand || null;
+  updates.assignedTo = assignedTo || null;
+  if (pendingReqPhoto) {
+    const url = pendingReqPhoto instanceof File ? await uploadShortcutPhoto(pendingReqPhoto, editingShortcutId) : pendingReqPhoto;
+    if (url) updates.photoUrl = url;
+  } else if (pendingReqPhoto === "" && existingReqPhotoUrl) {
+    updates.photoUrl = null; // 「写真を外す」を押した
+  }
+  if (!(await dbOp(familyRef().child("shortcuts/" + editingShortcutId).update(updates), "更新できませんでした"))) return;
+  closeSheet();
+  showToast("更新しました ✏️");
+}
 async function uploadShortcutPhoto(file, shortcutId) {
   showToast("写真をアップロード中...", { sound: false });
   try {
@@ -580,7 +637,7 @@ function wireShortcutsContainer(container, editMode) {
   container.querySelectorAll(".shortcut-card, .shortcut-row").forEach(item => {
     item.addEventListener("click", (e) => {
       if (e.target.closest(".shortcut-card-del") || e.target.closest(".shortcut-row-del") || e.target.closest("[data-photo-edit]")) return;
-      if (editMode) return; // 編集中の誤タップで追加しない
+      if (editMode) { openShortcutEditSheet(item.dataset.sid); return; }
       const s = state.shortcuts[item.dataset.sid];
       // 項目数が増えると、うっかり隣の項目に触れて追加してしまいやすくなるため、
       // 確認をひとつ挟む（誤タップ防止）

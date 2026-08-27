@@ -223,7 +223,7 @@ function wireGlobalEvents() {
   $("btn-mission-register").addEventListener("click", openMissionSheet);
   $("btn-sheet-close").addEventListener("click", closeSheet);
   $("sheet-backdrop").addEventListener("click", () => { closeSheet(); closeStockSheet(); closeMissionSheet(); closePlayerSheet(); closeStockDetail(); closeHistorySheet(); closeFamilySheet(); closeMissionHistorySheet(); closeExpenseSheet(); closeShortcutSheet(); });
-  $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
+  $("btn-add-request").addEventListener("click", () => { if (editingRequestId) updateRequest(); else if (editingShortcutId) updateShortcut(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); });
   $("btn-shortcut-edit").addEventListener("click", () => {
     shortcutsEditMode = !shortcutsEditMode;
     renderShortcuts();
@@ -333,7 +333,7 @@ function wireGlobalEvents() {
   initPushOnLoad();
   // Enter キーも追加ボタンと同じ分岐（shortcutMode を無視すると⭐登録シートで
   // 本物の依頼が作られてしまうバグがあった）
-  $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); } });
+  $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else if (editingShortcutId) updateShortcut(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); } });
   $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;

@@ -110,7 +110,7 @@
 | `docs/screenshots/` | 説明用スクショ18枚 | `features.md` から参照 |
 | `functions/` | Cloud Functions（通知・ポイント・アーカイブ） | `README.md` → `index.js` |
 | `tests/` | スモーク＋回帰スイート＋ドキュメント検査 | `run-all.mjs` / `docs-check.mjs` |
-| `tests/regression/` | 回帰テスト25本 | `harness.mjs` から始まる |
+| `tests/regression/` | 回帰テスト26本 | `harness.mjs` から始まる |
 | `.github/workflows/` | CI 定義 | `check.yml` |
 
 **HTML の入口**

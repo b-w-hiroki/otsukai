@@ -455,7 +455,7 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   background: #fee2e2; color: #dc2626;
   font-size: 16px; font-weight: 800; cursor: pointer; line-height: 1;
 }
-.shortcut-row.editing { cursor: default; }
+.shortcut-row.editing { cursor: pointer; }
 .shortcut-row.editing:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: none; }
 
 /* カード形式のグリッド。写真を主役にして、タップで追加。
@@ -481,7 +481,7 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
    今回の配色変更で紫と衝突して顕在化した） */
 .shortcut-card:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: 0 3px 10px rgba(245,158,11,0.18); transform: none; color: var(--ink); }
 .shortcut-card:active { transform: scale(0.98); }
-.shortcut-card.editing { cursor: default; }
+.shortcut-card.editing { cursor: pointer; }
 .shortcut-card.editing:hover:not(:disabled) { background: var(--c-claimed-soft); box-shadow: none; }
 .shortcut-card-photo {
   position: relative; width: 100%; aspect-ratio: 1 / 1;

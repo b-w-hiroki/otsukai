@@ -29,7 +29,7 @@ CI（`.github/workflows/check.yml`）は2ジョブ:
 
 CI は**最低限**しか見ない。UI を触ったら**手元の回帰スイート**も通す。
 
-### 回帰スイート（`tests/regression/` の25本）
+### 回帰スイート（`tests/regression/` の26本）
 
 インメモリの Firebase スタブ（`tests/fb-stub.js`）で家族データを再現して動かす。
 本物の Firebase には一切つながないので、オフラインでも走る。
@@ -46,6 +46,7 @@ node tests/regression/bughunt.mjs # 1本だけ
 | `circle-toggle-test` / `bought-test` | ◯ タップの宣言・取り消し・完了 |
 | `history-close-test` / `hist-footer-test` | 履歴シートが閉じる・実タッチでスクロールする |
 | `shortcut-tab-test` | ⚡よく買うものシート（買い物ページのフローティングボタンから開く）・カード/リスト表示切替・新規登録・編集モードでの差し替え・品名からの連想イラスト・大量件数のスクロール |
+| `shortcut-edit-test` | よく買うものの編集シート（編集モードでカードタップ）・カテゴリ未設定項目の後からの選択・既存値の保持 |
 | `shortcut-sheet-test` | お買い物ページのフローティングボタン（⚡よく買う）から開くシート・表示切替の永続化・タップでの追加 |
 | `shortcut-confirm-test` | カードタップ時の確認ダイアログ（品名の表示・キャンセルで未追加） |
 | `tab-swipe-test` | ページ内タブ（ストック/お買い物/設定）の左右スワイプ切替・端での折り返し無し・シート中の抑止・下部ナビの背景が指に追従して滑る／閾値未満なら元へ戻る |
