@@ -283,7 +283,7 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 /* ======= Section headers ======= */
 .section-header { display: flex; align-items: center; gap: 8px; margin: 24px 0 10px 2px; }
 .section-header h2 {
-  margin: 0; font-size: 10px; font-weight: 800;
+  margin: 0; font-size: 13px; font-weight: 800;
   color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
 }
 .section-count {
@@ -1177,7 +1177,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   user-select: none; -webkit-user-select: none;
 }
 .req-group-hdr h2 {
-  margin: 0; font-size: 10px; font-weight: 800;
+  margin: 0; font-size: 13px; font-weight: 800;
   color: var(--muted); text-transform: uppercase; letter-spacing: 1px; flex: 1;
 }
 .req-group-hdr::after { content: ''; flex: none; }
@@ -1391,7 +1391,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   overflow: hidden;
 }
 .check-section-hdr {
-  font-size: 11px; font-weight: 800; color: var(--muted);
+  font-size: 13px; font-weight: 800; color: var(--muted);
   letter-spacing: .05em;
   padding: 8px 14px;
   background: var(--surface-2);
