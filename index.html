@@ -59,6 +59,20 @@
     </div>
   </div>
 
+  <!-- Screen: 読み込み失敗（Firebase SDK が読み込めなかった。広告ブロッカー等が主因）。
+       init() が firebaseInitFailed を見て切り替える（app-core.js / app-init.js）。 -->
+  <div id="screen-load-error" class="screen">
+    <div class="center-pad">
+      <h1>🧺 おうちのおつかい</h1>
+      <div class="banner error">
+        <b>読み込みに失敗しました</b>
+        <p>広告ブロッカーやプライバシー系の拡張機能が、アプリに必要な通信をブロックしている可能性があります。無効にしてから再読み込みしてください。</p>
+        <p>直らない場合は、通信環境（社内ネットワーク等の制限）もご確認ください。</p>
+      </div>
+      <button id="btn-load-error-reload" class="btn-block" style="margin-top:12px;">🔄 再読み込み</button>
+    </div>
+  </div>
+
   <!-- Screen: Auth -->
   <div id="screen-auth" class="screen">
     <div class="auth-hero">

@@ -76,11 +76,22 @@ const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (m) => ({ "&":"&amp;","<
 const isIllustrationPhoto = (url) => !!url && url.startsWith("./shortcut-icons/");
 
 // ===== Firebase init =====
+// gstatic.com から読み込む Firebase SDK が、広告ブロッカーやプライバシー系拡張機能・
+// 社内ネットワークのフィルタなどで読み込めなかった場合（PCのブラウザで起きやすい）、
+// firebase 自体が未定義になり initializeApp が例外を投げる。ここを守らないと
+// 「読み込み中…」のまま無限に固まって画面が真っ白に見える不具合になる（init() 側で
+// firebaseInitFailed を見て案内画面に切り替える）。
 let auth, db;
+let firebaseInitFailed = false;
 if (isConfigured) {
-  firebase.initializeApp(firebaseConfig);
-  auth = firebase.auth();
-  db = firebase.database();
+  try {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.database();
+  } catch (e) {
+    console.error("[init] Firebase SDK の初期化に失敗:", e);
+    firebaseInitFailed = true;
+  }
 }
 
 // ===== PWA インストール導線 =====

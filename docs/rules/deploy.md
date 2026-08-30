@@ -131,6 +131,12 @@ PWA は `app-*.js` / `styles.css` をキャッシュ優先で配信するため�
   `$(id)` で参照すると例外になり、`init()` がそこで丸ごと止まって**画面が真っ白のまま進まなく
   なる**（実際に発生した障害。`wireGlobalEvents()` 等はこのため個別に try/catch で守っている）。
   HTML側の要素IDを消す・変えるときは、この移行期間があることを踏まえる
+- 同じ「真っ白のまま固まる」系統として、**Firebase SDK（`gstatic.com`）自体が読み込めない**
+  ケースもある（広告ブロッカーやプライバシー系拡張機能、社内ネットワークのフィルタなど。
+  PCのブラウザで起きやすい）。`firebase` が未定義だと `firebase.initializeApp()` が例外を投げ、
+  ここを守らないと「読み込み中…」から一生進まなくなる。`app-core.js` の Firebase init を
+  try/catch で囲み、失敗したら `init()`（app-init.js）が `#screen-load-error` に切り替える
+  （原因の案内＋再読み込みボタン）
 
 ---
 
