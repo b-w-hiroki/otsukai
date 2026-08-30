@@ -545,14 +545,17 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 
 /* ======= Bottom nav (floating) ======= */
 .bottom-nav {
-  position: fixed; left: 12px; right: 12px;
-  bottom: calc(10px + var(--safe-bottom));
-  padding: 4px 8px;
+  /* 画面端まで隙間なく塞ぐ（左右・下）。以前は左右12px・下10pxの浮いた
+     ピル型で、隙間からスクロール中のコンテンツが覗いて見える不具合があった
+     （実際に発生した不具合。特に一番下までスクロールしたときの最後のカード）。
+     safe-area分は内側のpaddingで確保し、ナビ自体は物理的な下端まで届かせる。 */
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding: 4px 8px calc(4px + var(--safe-bottom));
   background: rgba(255,255,255,0.97);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-float);
+  border: none; border-top: 1px solid var(--border);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
   /* 3タブ均等割り（DOM順: ストック・お買い物（中央・丸）・設定）。
      お買い物は2列目（中央）に固定で explicit に置く（.bottom-nav-home 参照）。
      よく買うもの・支出はここから外し、それぞれ買い物ページのシート／
