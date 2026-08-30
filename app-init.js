@@ -642,6 +642,17 @@ function injectImobileBanner(slotId, config) {
   const adDiv = document.createElement("div");
   adDiv.id = variant.elementid;
   content.appendChild(adDiv);
+  // マウント先の div を差し込んだ時点ではまだ中身は空（広告SDKが後から非同期に描画する）。
+  // ここで即 .has-ad を付けると、広告がブロックされた／在庫切れのときに
+  // 「広告」ラベルだけの空枠が出てしまう（実際に発生した不具合）。
+  // 実際に広告SDKが中身を描き込んだときだけ枠を表示する。
+  const observer = new MutationObserver(() => {
+    if (adDiv.children.length > 0) {
+      slot.classList.add("has-ad");
+      observer.disconnect();
+    }
+  });
+  observer.observe(adDiv, { childList: true });
   // spot.js は全スポットで共通なので一度だけ読み込む
   if (!document.querySelector('script[data-imobile-loader]')) {
     const loader = document.createElement("script");
@@ -657,7 +668,8 @@ function injectImobileBanner(slotId, config) {
   document.head.appendChild(pushScript);
 }
 
-// 広告枠: スポットタグを注入し、.ad-content に中身があれば .ad-slot を表示する。
+// 広告枠: スポットタグを注入する。実際に表示するかどうか（.has-ad）は
+// injectImobileBanner 内の MutationObserver が、広告SDKが中身を描いた時点で判断する。
 function initAdSlots() {
   // お買い物タブ末尾: i-mobile「トップページ バナー」
   injectImobileBanner("ad-slot-requests", {
@@ -670,12 +682,6 @@ function initAdSlots() {
     pid: 84969,
     sp: { mid: 593257, asid: 1932940, elementid: "im-ff2d5e1043d04affb90900196031d7cc" },
     pc: { mid: 593256, asid: 1932939, elementid: "im-2f7e44594cec42cf857e64398b7496a4" },
-  });
-  document.querySelectorAll(".ad-slot").forEach((slot) => {
-    const content = slot.querySelector(".ad-content");
-    if (content && content.children.length > 0) {
-      slot.classList.add("has-ad");
-    }
   });
 }
 

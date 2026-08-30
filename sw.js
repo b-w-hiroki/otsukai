@@ -3,7 +3,7 @@
 // ・Firebase SDK（gstatic.com）や設定・アイコンなどの静的アセットはプリキャッシュし、
 //   キャッシュ優先で返す（圏外でもアプリが起動できるように）。
 // アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
-const CACHE = "otsukai-v92";
+const CACHE = "otsukai-v94";
 
 const PRECACHE = [
   "./index.html",
@@ -28,6 +28,7 @@ const PRECACHE = [
   "./icon-512.png",
   "./icon-maskable-512.png",
   "./apple-touch-icon.png",
+  "./docs/screenshots/01-home.png",
   "./shortcut-icons/apple.svg",
   "./shortcut-icons/avocado.svg",
   "./shortcut-icons/banana.svg",
