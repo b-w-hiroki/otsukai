@@ -203,8 +203,36 @@ function wireSettingsAccordion() {
 // ===== 初回オンボーディング（使い方＋ホーム画面追加の案内） =====
 // 初めてメイン画面に到達したとき（家族作成・参加の直後、または以後の再ログイン初回）だけ
 // 出す。デバイス単位で管理するため localStorage に見た/見てないを持つ（テーマ等と同じ方式）。
-const ONBOARDING_STEPS = 4;
+//
+// 「ようこそ」「ホーム画面に追加」は対象となる実要素が無いのでカード（画面中央）で説明する。
+// 間の3ステップは、実際のボタン（＋追加・ストックタブ・ミッションボタン）を暗転の中で
+// 光らせて説明する「スポットライト」演出（ソシャゲのチュートリアル風）。本物のボタンを
+// そのままタップしても進む（本物の操作として機能する）し、吹き出しの「次へ」でも進める。
+const ONBOARDING_STEPS = [
+  { mode: "card" }, // 0: ようこそ
+  {
+    mode: "spot",
+    target: () => $("btn-add-float"),
+    title: "＋ 追加でおつかいを頼む",
+    text: "欲しいものをここから追加すると、家族に届きます。◯タップで「買うよ」、✅で「買ったよ」の流れで進みます。",
+  },
+  {
+    mode: "spot",
+    target: () => document.querySelector('.bottom-nav button[data-tab="stock"]'),
+    title: "ストックで切れ忘れ防止",
+    text: "家にある在庫を記録しておくと、「そろそろ切れるかも」を自動でお知らせします。",
+  },
+  {
+    mode: "spot",
+    target: () => $("btn-missions-nav"),
+    title: "ミッションでお手伝い",
+    text: "お手伝いをミッション化。クリアするとポイント＆ごほうびと交換できます。",
+  },
+  { mode: "card" }, // 4: ホーム画面に追加
+];
 let onboardingStep = 0;
+let onboardingTargetCleanup = null; // 直前のスポットライト対象に付けたイベントリスナーの解除
+let onboardingSpotActive = false; // resize/scroll での再計算要否
 
 function isStandalonePwa() {
   return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -218,24 +246,134 @@ function maybeShowOnboarding() {
   if (localStorage.getItem("onboardingSeen")) return;
   renderOnboardingInstallStep();
   showOnboardingStep(0);
-  $("onboarding-backdrop").classList.add("open");
-  $("onboarding-modal").classList.add("open");
 }
 function finishOnboarding() {
   localStorage.setItem("onboardingSeen", "1");
+  hideOnboardingCard();
+  hideOnboardingSpotlight();
+}
+function hideOnboardingCard() {
   $("onboarding-backdrop").classList.remove("open");
   $("onboarding-modal").classList.remove("open");
 }
+function hideOnboardingSpotlight() {
+  onboardingSpotActive = false;
+  $("onboarding-spot-backdrop").classList.remove("open");
+  $("onboarding-spot-ring").classList.remove("open");
+  $("onboarding-spot-tip").classList.remove("open");
+  if (onboardingTargetCleanup) { onboardingTargetCleanup(); onboardingTargetCleanup = null; }
+}
+
+function updateOnboardingDots(i) {
+  document.querySelectorAll(".onboarding-dot").forEach((d) => d.classList.toggle("active", Number(d.dataset.step) === i));
+}
+
 function showOnboardingStep(i) {
   onboardingStep = i;
-  document.querySelectorAll(".onboarding-page").forEach((p) => p.classList.toggle("active", Number(p.dataset.step) === i));
-  document.querySelectorAll(".onboarding-dot").forEach((d) => d.classList.toggle("active", Number(d.dataset.step) === i));
-  $("btn-onboarding-next").textContent = i === ONBOARDING_STEPS - 1 ? "はじめる" : "次へ";
+  updateOnboardingDots(i);
+  const step = ONBOARDING_STEPS[i];
+  const isLast = i === ONBOARDING_STEPS.length - 1;
+
+  if (step.mode === "card") {
+    hideOnboardingSpotlight();
+    document.querySelectorAll(".onboarding-page").forEach((p) => p.classList.toggle("active", Number(p.dataset.step) === i));
+    $("btn-onboarding-next").textContent = isLast ? "はじめる" : "次へ";
+    $("onboarding-backdrop").classList.add("open");
+    $("onboarding-modal").classList.add("open");
+    return;
+  }
+
+  // スポットライトステップ: 対象要素が今のタブ状態で見当たらなければ、そのステップは
+  // スキップして次へ進む（例: 何らかの理由でボタンがDOMに無い古いキャッシュJSとの
+  // 食い違い等）。真っ白固まりと同じ理由で、無ければ静かに読み飛ばす
+  const target = step.target();
+  if (!target) { onboardingNext(); return; }
+  hideOnboardingCard();
+  showSpotlightStep(step, target, isLast);
 }
+
+function showSpotlightStep(step, target, isLast) {
+  onboardingSpotActive = true;
+  $("onboarding-spot-title").textContent = step.title;
+  $("onboarding-spot-text").textContent = step.text;
+  $("btn-onboarding-spot-next").textContent = isLast ? "はじめる" : "次へ";
+  positionSpotlight(target);
+  $("onboarding-spot-backdrop").classList.add("open");
+  $("onboarding-spot-ring").classList.add("open");
+  $("onboarding-spot-tip").classList.add("open");
+
+  if (onboardingTargetCleanup) onboardingTargetCleanup();
+  const onRealTap = () => advanceFromSpotlight();
+  target.addEventListener("click", onRealTap, { once: true });
+  onboardingTargetCleanup = () => target.removeEventListener("click", onRealTap);
+}
+
+// 対象要素の位置に合わせて、暗転の「穴」・ハイライト枠・吹き出しを配置する。
+// clip-path で対象の矩形を除外することで、暗転を突き破って本物のボタンを直接タップできる
+// （切り取られた領域はヒットテスト対象外になるため）。
+function positionSpotlight(target) {
+  const r = target.getBoundingClientRect();
+  const pad = 8;
+  const x = Math.max(0, r.left - pad), y = Math.max(0, r.top - pad);
+  const w = r.width + pad * 2, h = r.height + pad * 2;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  const backdrop = $("onboarding-spot-backdrop");
+  backdrop.style.clipPath =
+    `path(evenodd, "M0,0H${vw}V${vh}H0Z M${x},${y}H${x + w}V${y + h}H${x}Z")`;
+
+  const ring = $("onboarding-spot-ring");
+  ring.style.left = x + "px"; ring.style.top = y + "px";
+  ring.style.width = w + "px"; ring.style.height = h + "px";
+
+  const tip = $("onboarding-spot-tip");
+  const tipWidth = Math.min(340, vw - 40);
+  tip.style.width = tipWidth + "px";
+  const spaceBelow = vh - (y + h);
+  const tipAbove = spaceBelow < 200 && y > 200;
+  tip.classList.toggle("arrow-top", !tipAbove);
+  tip.classList.toggle("arrow-bottom", tipAbove);
+  const tipHeight = tip.getBoundingClientRect().height || 160;
+  const tipTop = tipAbove ? Math.max(12, y - 14 - tipHeight) : Math.min(vh - tipHeight - 12, y + h + 14);
+  const tipLeft = Math.min(Math.max(x, 20), vw - tipWidth - 20);
+  tip.style.top = tipTop + "px";
+  tip.style.left = tipLeft + "px";
+}
+
+// スポットライト対象を実際にタップした（または「次へ」を押した）後の進行。
+// タブ切替やシートの開閉などリアルなUI遷移が起きている可能性があるため、
+// 一旦スポットライトを隠し、開いているシートが閉じる（無ければ即）のを待ってから次を出す。
+function advanceFromSpotlight() {
+  hideOnboardingSpotlight();
+  if (onboardingStep >= ONBOARDING_STEPS.length - 1) { finishOnboarding(); return; }
+  const nextIndex = onboardingStep + 1;
+  const waitForCalm = () => {
+    if (document.querySelector(".sheet.open")) { setTimeout(waitForCalm, 300); return; }
+    setTimeout(() => showOnboardingStep(nextIndex), 250);
+  };
+  waitForCalm();
+}
+
 function onboardingNext() {
-  if (onboardingStep >= ONBOARDING_STEPS - 1) { finishOnboarding(); return; }
+  const step = ONBOARDING_STEPS[onboardingStep];
+  if (step && step.mode === "spot") { advanceFromSpotlight(); return; }
+  if (onboardingStep >= ONBOARDING_STEPS.length - 1) { finishOnboarding(); return; }
   showOnboardingStep(onboardingStep + 1);
 }
+
+// リサイズ・回転・スクロールでボタンの位置がずれるので追従させる
+window.addEventListener("resize", () => {
+  if (!onboardingSpotActive) return;
+  const step = ONBOARDING_STEPS[onboardingStep];
+  const target = step && step.target && step.target();
+  if (target) positionSpotlight(target);
+});
+window.addEventListener("scroll", () => {
+  if (!onboardingSpotActive) return;
+  const step = ONBOARDING_STEPS[onboardingStep];
+  const target = step && step.target && step.target();
+  if (target) positionSpotlight(target);
+}, { passive: true });
 
 // 最後のステップ（ホーム画面に追加）は端末・ブラウザによって出せる導線が違うため出し分ける:
 // ・すでにPWAとして起動中 → 案内不要
@@ -311,6 +449,8 @@ function wireGlobalEvents() {
   $("howto-modal-backdrop").addEventListener("click", closeHowto);
   $("btn-onboarding-next").addEventListener("click", onboardingNext);
   $("btn-onboarding-skip").addEventListener("click", finishOnboarding);
+  $("btn-onboarding-spot-next").addEventListener("click", onboardingNext);
+  $("btn-onboarding-spot-skip").addEventListener("click", finishOnboarding);
   $("btn-load-error-reload").addEventListener("click", () => location.reload());
   // Stock detail sheet
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
