@@ -311,6 +311,7 @@ function wireGlobalEvents() {
   $("howto-modal-backdrop").addEventListener("click", closeHowto);
   $("btn-onboarding-next").addEventListener("click", onboardingNext);
   $("btn-onboarding-skip").addEventListener("click", finishOnboarding);
+  $("btn-load-error-reload").addEventListener("click", () => location.reload());
   // Stock detail sheet
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
   $("btn-stock-register").addEventListener("click", openStockSheet);
@@ -552,7 +553,11 @@ function init() {
     showScreen("config");
     return;
   }
-  initAuthListener();
+  if (firebaseInitFailed) {
+    showScreen("load-error");
+    return;
+  }
+  safely(initAuthListener, "initAuthListener");
 }
 init();
 
