@@ -208,7 +208,12 @@ async function signUpEmail() {
 }
 async function signInGoogle() {
   hideAuthError();
-  try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  // prompt: "select_account" を指定しないと、ブラウザに既にGoogleセッションが
+  // あるとき（家族の他の人が使った端末等）アカウント選択画面が出ず、直前に
+  // ログインしていたアカウントへ無言でサインインしてしまう
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  try { await auth.signInWithPopup(provider); }
   catch (e) { showAuthError(authErrorJa(e)); }
 }
 function authErrorJa(e) {
