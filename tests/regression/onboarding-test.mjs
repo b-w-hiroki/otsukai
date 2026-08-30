@@ -1,19 +1,23 @@
 // 初回オンボーディング（使い方＋ホーム画面追加の案内、app-init.js）を検証。
 // 「ようこそ」「ホーム画面に追加」はカード、間の3ステップ（＋追加／ストック／ミッション）は
 // 実ボタンを暗転の中で光らせるスポットライト演出（ソシャゲのチュートリアル風）。
-// harness.mjs は他の回帰テストが毎回このモーダルにブロックされないよう、既定で
-// localStorage.onboardingSeen = "1"（初期化スクリプトで毎回上書き）にしている。
-// そのため「初回」の再現は、コンテキストレベルの初期化スクリプトでそのフラグを
-// 消してから t.ready() する（reload だと harness の初期化スクリプトが毎回 "1" に
-// 戻してしまうため、通常のテスト中は reload を使わない）。
+//
+// 見た/見てないは端末ではなく**アカウント単位**（users/{uid}/onboardingSeen、RTDB）で
+// 管理している。fb-stub.js の既定データは「見た後」（true）にしてあり（他の回帰テストが
+// 毎回ブロックされないため）、このテストだけ state.onboardingSeen を直接 false に戻して
+// 「初回」を再現する。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
 const check = t.check;
 
-await t.ctx.addInitScript(() => localStorage.removeItem("onboardingSeen"));
 await t.ready();
+check("既定（見た後）ではオンボーディングは出ない",
+  !(await page.locator("#onboarding-modal").evaluate((el) => el.classList.contains("open"))));
 
+// --- 初回を再現 ---
+await page.evaluate(() => { state.onboardingSeen = false; maybeShowOnboarding(); });
+await sleep(200);
 check("初回はカード（ようこそ）が自動で開く",
   await page.locator("#onboarding-modal").evaluate((el) => el.classList.contains("open")));
 check("1ページ目（ようこそ）が表示されている",
@@ -69,8 +73,12 @@ await sleep(300);
 check("「はじめる」で全部閉じる",
   !(await page.locator("#onboarding-modal").evaluate((el) => el.classList.contains("open"))) &&
   !(await page.locator("#onboarding-spot-tip").evaluate((el) => el.classList.contains("open"))));
-check("見た記録が端末（localStorage）に残る",
-  (await page.evaluate(() => localStorage.getItem("onboardingSeen"))) === "1");
+check("見た記録がアカウント（state.onboardingSeen）に残る",
+  await page.evaluate(() => state.onboardingSeen) === true);
+check("見た記録がDB（users/{uid}/onboardingSeen）にも保存される", await page.evaluate(async () => {
+  const snap = await firebase.database().ref("users/uid-parent/onboardingSeen").once("value");
+  return snap.val() === true;
+}));
 
 // もう一度呼んでも（再ログイン・再接続等）、見た後なら再表示されないことを確認
 await page.evaluate(() => maybeShowOnboarding());
@@ -79,7 +87,7 @@ check("見た後は同じセッション内で再度呼んでも開かない",
   !(await page.locator("#onboarding-modal").evaluate((el) => el.classList.contains("open"))));
 
 // --- スキップでも同様に閉じて記録されることを確認（スポットライト中のスキップ） ---
-await page.evaluate(() => { localStorage.removeItem("onboardingSeen"); maybeShowOnboarding(); });
+await page.evaluate(() => { state.onboardingSeen = false; maybeShowOnboarding(); });
 await sleep(200);
 await page.click("#btn-onboarding-next"); // ようこそ → スポットライトへ
 await sleep(400);
@@ -90,6 +98,6 @@ await sleep(200);
 check("スポットライト中のスキップでも閉じる",
   !(await page.locator("#onboarding-spot-tip").evaluate((el) => el.classList.contains("open"))));
 check("スキップでも記録される",
-  (await page.evaluate(() => localStorage.getItem("onboardingSeen"))) === "1");
+  await page.evaluate(() => state.onboardingSeen) === true);
 
 await t.finish();

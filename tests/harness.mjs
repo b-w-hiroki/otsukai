@@ -98,10 +98,9 @@ export async function startHarness(opts = {}) {
     hasTouch: touch,
     isMobile: touch,
   });
-  // 初回オンボーディング（app-init.js）は既定でオフにしておく。回帰テストは定常状態の
-  // 挙動を見るためのもので、初回だけの案内モーダルに毎回ブロックされると全テストが壊れる。
-  // オンボーディング自体を検証するテストだけ、個別に localStorage.removeItem で外す。
-  await ctx.addInitScript(() => localStorage.setItem("onboardingSeen", "1"));
+  // 初回オンボーディング（app-init.js）はアカウント単位（users/{uid}/onboardingSeen）で
+  // 管理している。fb-stub.js の既定データ側で「見た後」にしてあるので、ここでは何もしない
+  // （オンボーディング自体を検証するテストは state.onboardingSeen を個別に false へ戻す）。
   const page = await ctx.newPage();
 
   const errs = [];
