@@ -486,6 +486,84 @@
       </div>
     </div>
 
+    <!-- 初回オンボーディング（使い方＋ホーム画面追加の案内。初回だけ・localStorageで管理。app-init.js） -->
+    <div id="onboarding-backdrop" class="onboarding-backdrop"></div>
+    <div id="onboarding-modal" class="onboarding-modal" role="dialog" aria-modal="true" aria-label="はじめかた">
+      <div class="onboarding-header">
+        <div class="onboarding-dots" id="onboarding-dots">
+          <span class="onboarding-dot" data-step="0"></span>
+          <span class="onboarding-dot" data-step="1"></span>
+          <span class="onboarding-dot" data-step="2"></span>
+          <span class="onboarding-dot" data-step="3"></span>
+        </div>
+        <button id="btn-onboarding-skip" class="onboarding-skip">スキップ</button>
+      </div>
+      <div class="onboarding-pages">
+        <div class="onboarding-page" data-step="0">
+          <div class="onboarding-page-title">ようこそ！</div>
+          <div class="onboarding-hero">
+            <div class="onboarding-hero-char" aria-hidden="true">🧺</div>
+            <div class="onboarding-hero-bubble">「牛乳お願い」がひと言で伝わる<br>家族のおつかいアプリです。<br>使い方をサクッと紹介します！</div>
+          </div>
+        </div>
+        <div class="onboarding-page" data-step="1">
+          <div class="onboarding-page-title">お買い物リストで頼む・買う</div>
+          <div class="howto-steps">
+            <div class="howto-step" style="--i:0">
+              <div class="howto-num">1</div>
+              <div class="howto-text">
+                <strong>＋ をタップして追加</strong>
+                <span>品名・メモ・難易度を入れて送信</span>
+              </div>
+              <div class="howto-emoji">🛒</div>
+            </div>
+            <div class="howto-step" style="--i:1">
+              <div class="howto-num">2</div>
+              <div class="howto-text">
+                <strong>家族が「買ってくる！」と立候補</strong>
+                <span>リアルタイムで誰が動いてるか一目でわかる</span>
+              </div>
+              <div class="howto-emoji">🙋</div>
+            </div>
+            <div class="howto-step" style="--i:2">
+              <div class="howto-num">3</div>
+              <div class="howto-text">
+                <strong>買ったら完了マーク</strong>
+                <span>履歴に記録されて貢献度もわかる</span>
+              </div>
+              <div class="howto-emoji">✅</div>
+            </div>
+          </div>
+        </div>
+        <div class="onboarding-page" data-step="2">
+          <div class="onboarding-page-title">ストック＆ミッションも</div>
+          <div class="howto-steps">
+            <div class="howto-step" style="--i:0">
+              <div class="howto-num">📦</div>
+              <div class="howto-text">
+                <strong>ストックで切れ忘れ防止</strong>
+                <span>「そろそろ切れるかも」を自動でお知らせ</span>
+              </div>
+            </div>
+            <div class="howto-step" style="--i:1">
+              <div class="howto-num">🎯</div>
+              <div class="howto-text">
+                <strong>ミッションでお手伝い</strong>
+                <span>クリアするとポイント＆ごほうびと交換できます</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="onboarding-page" data-step="3">
+          <div class="onboarding-page-title">ホーム画面に追加しよう</div>
+          <div id="onboarding-install-body"></div>
+        </div>
+      </div>
+      <div class="onboarding-footer">
+        <button id="btn-onboarding-next" class="btn-block">次へ</button>
+      </div>
+    </div>
+
     <!-- Sheet backdrop (shared) -->
     <div id="sheet-backdrop" class="sheet-backdrop"></div>
 

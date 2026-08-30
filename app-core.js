@@ -83,6 +83,16 @@ if (isConfigured) {
   db = firebase.database();
 }
 
+// ===== PWA インストール導線 =====
+// ブラウザがネイティブの「ホーム画面に追加」導線を出せるかどうかは beforeinstallprompt の
+// 発火有無でしか分からない（Android/デスクトップ Chrome・Edgeのみ。iOS Safariには無い）。
+// 初回オンボーディングのインストール案内（app-init.js）で使うため、できるだけ早く捕まえておく。
+let deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+});
+
 // ===== 簡易エラーロギング =====
 // 実機で何が起きているか見えるよう、未捕捉エラーを DB の errors/ に記録する
 // （読み取りは Firebase Console から）。1セッション最大10件・ログイン後のみ。
@@ -622,6 +632,7 @@ function attachFamilyListeners() {
     renderWeeklyMissions();
   });
   showScreen("main");
+  maybeShowOnboarding();
 }
 
 // ===== Comments =====
