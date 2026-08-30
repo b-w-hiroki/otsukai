@@ -56,6 +56,16 @@ check("本物のタップで実際にストックタブへ切り替わる",
 // --- ステップ3: ミッションボタンのスポットライト ---
 check("ステップ3（ミッション）へ自動で進む",
   (await page.locator("#onboarding-spot-title").innerText()).includes("ミッション"));
+// ミッションボタンは画面右上にあるため、吹き出しが左右にクランプされる。
+// 矢印が吹き出し内で固定位置だと対象からズレる不具合があったため、常に対象の
+// 中心を指しているか確認する（実際に指摘された不具合）
+check("矢印は光っている本物のボタン（右上のミッションボタン）の中心を指している", await page.evaluate(() => {
+  const arrow = document.getElementById("onboarding-spot-arrow").getBoundingClientRect();
+  const btn = document.getElementById("btn-missions-nav").getBoundingClientRect();
+  const arrowCenter = arrow.left + arrow.width / 2;
+  const btnCenter = btn.left + btn.width / 2;
+  return Math.abs(arrowCenter - btnCenter) < 20;
+}));
 // 今度は本物をタップせず、吹き出しの「次へ」で進める
 await page.click("#btn-onboarding-spot-next");
 await sleep(900);

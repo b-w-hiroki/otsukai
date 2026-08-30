@@ -342,6 +342,13 @@ function positionSpotlight(target) {
   const tipLeft = Math.min(Math.max(x, 20), vw - tipWidth - 20);
   tip.style.top = tipTop + "px";
   tip.style.left = tipLeft + "px";
+
+  // 矢印は常に対象ボタンの中心を指すよう、吹き出し内の左からの位置を毎回計算する
+  // （吹き出し自体は画面端で左右にクランプされるため、矢印を固定位置のままにすると
+  // 対象が端に寄っているときに違う場所を指してしまう。実際に発生した不具合）。
+  const targetCenterX = x + w / 2;
+  const arrowLeft = Math.min(Math.max(targetCenterX - tipLeft, 20), tipWidth - 36);
+  $("onboarding-spot-arrow").style.left = arrowLeft + "px";
 }
 
 // スポットライト対象を実際にタップした（または「次へ」を押した）後の進行。
