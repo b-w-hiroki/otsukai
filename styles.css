@@ -964,6 +964,66 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .onboarding-page-title { font-size: 17px; font-weight: 800; text-align: center; margin: 4px 0 16px; }
 .onboarding-footer { margin-top: 16px; flex-shrink: 0; }
 
+/* ======= オンボーディング: スポットライト演出（ソシャゲ風チュートリアル） =======
+   本物のボタンを暗転の中で光らせて説明する。仕組み:
+   - backdrop は clip-path で対象ボタンの矩形を「穴」として除外している。
+     clip-path で切り取られた領域はヒットテスト対象外になるため、暗転を突き破って
+     本物のボタンを直接タップできる（穴の外をタップしても何も起きない＝誤操作防止）。
+   - ring は穴の位置に重ねる、見た目だけのハイライト枠（pointer-events:none）。
+   - 位置（backdrop の clip-path・ring・tip の left/top）は JS
+     （positionSpotlight()、app-init.js）が対象要素の getBoundingClientRect() から
+     毎回計算して inline style で当てる。*/
+.onboarding-spot-backdrop {
+  position: fixed; inset: 0; z-index: 70;
+  background: rgba(15,12,50,0.62);
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease;
+}
+.onboarding-spot-backdrop.open { opacity: 1; pointer-events: auto; }
+.onboarding-spot-ring {
+  position: fixed; z-index: 71;
+  border-radius: var(--r-lg);
+  box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--pri-vivid);
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease, left .3s cubic-bezier(0.34,1.2,0.64,1), top .3s cubic-bezier(0.34,1.2,0.64,1),
+    width .3s cubic-bezier(0.34,1.2,0.64,1), height .3s cubic-bezier(0.34,1.2,0.64,1);
+  animation: spotPulse 1.6s ease-in-out infinite;
+}
+.onboarding-spot-ring.open { opacity: 1; }
+@keyframes spotPulse {
+  0%, 100% { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--pri-vivid); }
+  50% { box-shadow: 0 0 0 3px #fff, 0 0 0 10px var(--pri-mid); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-spot-ring { animation: none; }
+}
+.onboarding-spot-tip {
+  position: fixed; z-index: 72;
+  width: calc(100% - 40px); max-width: 340px;
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-deep);
+  opacity: 0; pointer-events: none;
+  transform: translateY(6px) scale(0.96);
+  transition: opacity .22s ease, transform .22s cubic-bezier(0.34,1.2,0.64,1), left .3s ease, top .3s ease;
+}
+.onboarding-spot-tip.open { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+.onboarding-spot-tip-arrow {
+  position: absolute; left: 28px;
+  width: 16px; height: 16px;
+  background: var(--surface);
+  transform: rotate(45deg);
+}
+.onboarding-spot-tip.arrow-top .onboarding-spot-tip-arrow { top: -7px; }
+.onboarding-spot-tip.arrow-bottom .onboarding-spot-tip-arrow { bottom: -7px; }
+.onboarding-spot-tip-title { font-size: 15.5px; font-weight: 800; margin: 2px 0 6px; }
+.onboarding-spot-tip-text { font-size: 13px; color: var(--ink-2); line-height: 1.6; margin-bottom: 10px; }
+.onboarding-spot-tip-hint {
+  font-size: 12px; font-weight: 700; color: var(--pri);
+  text-align: center; margin-bottom: 10px;
+}
+
 /* ======= Shortcut area in list ======= */
 .shortcut-area { margin-bottom: 4px; padding: 10px 14px; background: var(--surface); border-radius: var(--r-md); box-shadow: var(--shadow-card); border: 1px solid var(--border); }
 
