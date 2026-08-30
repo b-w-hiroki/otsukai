@@ -348,7 +348,14 @@ async function adminDeleteAccount(targetUid, name) {
     ? "自分のアカウントを削除しますか？\n\nプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。"
     : `${name} さんのアカウントを完全に削除しますか？\n\n本人のプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。`;
   if (!confirm(first)) return;
-  if (!confirm("本当に削除しますか？ この操作は元に戻せません。")) return;
+  // 誤操作防止の最終確認。確認ダイアログの連打だけでは押し間違いを防げないため、
+  // 「delete」と入力させることで一拍置く（取り消せない操作なので）
+  const typed = prompt('本当に削除する場合は、確認のため半角英字で "delete" と入力してください。');
+  if (typed === null) return;
+  if (typed.trim().toLowerCase() !== "delete") {
+    showToast("入力が一致しなかったため、削除を中止しました");
+    return;
+  }
   try {
     await loadFunctionsSdk();
     const fn = firebase.app().functions("asia-northeast1").httpsCallable("deleteMemberAccount");

@@ -3,7 +3,9 @@
 // - 一覧の写真サムネイルは loading="lazy"
 // - 「引っ張って更新」は家族データのリスナーを張り直さない（既にリアルタイム同期済みのため）
 import { startHarness } from "../harness.mjs";
-const t = await startHarness({ noAnimation: true });
+// アカウント削除は誤操作防止のため "delete" と入力させる最終確認（prompt）を挟むので、
+// 自動テストではその入力を用意しておく（確認ダイアログ側は confirm なので影響しない）
+const t = await startHarness({ noAnimation: true, dialogAnswer: "delete" });
 const { page, sleep } = t;
 const check = t.check;
 
