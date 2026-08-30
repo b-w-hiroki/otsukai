@@ -243,14 +243,18 @@ function isIOSDevice() {
 }
 
 function maybeShowOnboarding() {
-  if (localStorage.getItem("onboardingSeen")) return;
+  if (state.onboardingSeen) return;
   renderOnboardingInstallStep();
   showOnboardingStep(0);
 }
 function finishOnboarding() {
-  localStorage.setItem("onboardingSeen", "1");
+  state.onboardingSeen = true;
   hideOnboardingCard();
   hideOnboardingSpotlight();
+  // 端末ではなくアカウントに紐づけて記録する（別の端末でログインしても再表示されないように）。
+  // 低リスクな表示状態フラグなので、失敗してもトースト等では知らせない
+  // （最悪また出るだけで実害が無いため）
+  db.ref("users/" + state.uid + "/onboardingSeen").set(true).catch((e) => console.error("onboardingSeen 保存失敗:", e));
 }
 function hideOnboardingCard() {
   $("onboarding-backdrop").classList.remove("open");

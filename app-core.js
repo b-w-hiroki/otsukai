@@ -57,7 +57,8 @@ const state = {
   rewardLogs: {},
   weekly: {},
   extraExpenses: {},
-  myRole: null
+  myRole: null,
+  onboardingSeen: false
 };
 
 const expandedGroups = new Set(["group-open", "group-claimed"]);
@@ -369,6 +370,7 @@ async function loadUserProfile() {
   }
   state.profile = { name: data.name, emoji: data.emoji || "🙂" };
   state.familyId = data.familyId || null;
+  state.onboardingSeen = !!data.onboardingSeen;
   if (!state.familyId) { showScreen("family"); return; }
   attachFamilyListeners();
 }

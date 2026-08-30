@@ -86,7 +86,9 @@
   // ===== シードデータ（親じろう視点） =====
   const now = Date.now();
   const H = 36e5, D = 864e5;
-  store.users = { "uid-parent": { name: "じろう", emoji: "😎", familyId: "fam1" } };
+  // onboardingSeen: true — 他の回帰テストが毎回オンボーディングにブロックされないよう、
+  // 既定では「見た後」の状態にしておく（onboarding-test.mjs だけ個別に false へ戻す）
+  store.users = { "uid-parent": { name: "じろう", emoji: "😎", familyId: "fam1", onboardingSeen: true } };
   store.families = {
     fam1: {
       meta: { name: "じろう家", inviteCode: "ABC123", createdAt: now - 90 * D, createdBy: "uid-parent" },
