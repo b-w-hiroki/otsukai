@@ -200,6 +200,98 @@ function wireSettingsAccordion() {
   });
 }
 
+// ===== 初回オンボーディング（使い方＋ホーム画面追加の案内） =====
+// 初めてメイン画面に到達したとき（家族作成・参加の直後、または以後の再ログイン初回）だけ
+// 出す。デバイス単位で管理するため localStorage に見た/見てないを持つ（テーマ等と同じ方式）。
+const ONBOARDING_STEPS = 4;
+let onboardingStep = 0;
+
+function isStandalonePwa() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1); // iPadOS はデスクトップUAを名乗る
+}
+
+function maybeShowOnboarding() {
+  if (localStorage.getItem("onboardingSeen")) return;
+  renderOnboardingInstallStep();
+  showOnboardingStep(0);
+  $("onboarding-backdrop").classList.add("open");
+  $("onboarding-modal").classList.add("open");
+}
+function finishOnboarding() {
+  localStorage.setItem("onboardingSeen", "1");
+  $("onboarding-backdrop").classList.remove("open");
+  $("onboarding-modal").classList.remove("open");
+}
+function showOnboardingStep(i) {
+  onboardingStep = i;
+  document.querySelectorAll(".onboarding-page").forEach((p) => p.classList.toggle("active", Number(p.dataset.step) === i));
+  document.querySelectorAll(".onboarding-dot").forEach((d) => d.classList.toggle("active", Number(d.dataset.step) === i));
+  $("btn-onboarding-next").textContent = i === ONBOARDING_STEPS - 1 ? "はじめる" : "次へ";
+}
+function onboardingNext() {
+  if (onboardingStep >= ONBOARDING_STEPS - 1) { finishOnboarding(); return; }
+  showOnboardingStep(onboardingStep + 1);
+}
+
+// 最後のステップ（ホーム画面に追加）は端末・ブラウザによって出せる導線が違うため出し分ける:
+// ・すでにPWAとして起動中 → 案内不要
+// ・beforeinstallprompt が取れている（Android/デスクトップ Chrome・Edge）→ ワンタップで出す
+// ・iOS → ネイティブAPIが無いため共有ボタンからの手順を案内
+// ・それ以外 → ブラウザメニューを探してもらう一般案内
+function renderOnboardingInstallStep() {
+  const el = $("onboarding-install-body");
+  if (!el) return;
+  if (isStandalonePwa()) {
+    el.innerHTML = `<div class="onboarding-hero">
+      <div class="onboarding-hero-char" aria-hidden="true">✅</div>
+      <div class="onboarding-hero-bubble">もうホーム画面から使えています！<br>これで準備は完璧です。</div>
+    </div>`;
+    return;
+  }
+  if (deferredInstallPrompt) {
+    el.innerHTML = `<div class="onboarding-hero">
+        <div class="onboarding-hero-char" aria-hidden="true">📲</div>
+        <div class="onboarding-hero-bubble">ホーム画面に追加すると、アプリのようにサッと開けます。</div>
+      </div>
+      <button id="btn-onboarding-install" class="btn-block">📲 ホーム画面に追加</button>`;
+    $("btn-onboarding-install").addEventListener("click", async () => {
+      const prompt = deferredInstallPrompt;
+      if (!prompt) return;
+      deferredInstallPrompt = null; // 一度きりのプロンプトなので、出した時点で使い切り扱い
+      prompt.prompt();
+      try { await prompt.userChoice; } catch (e) { /* ignore */ }
+      renderOnboardingInstallStep();
+    });
+    return;
+  }
+  if (isIOSDevice()) {
+    el.innerHTML = `<div class="onboarding-hero">
+        <div class="onboarding-hero-char" aria-hidden="true">📲</div>
+        <div class="onboarding-hero-bubble">ホーム画面に追加すると、アプリのようにサッと開けます。</div>
+      </div>
+      <div class="howto-steps">
+        <div class="howto-step" style="--i:0">
+          <div class="howto-num">1</div>
+          <div class="howto-text"><strong>共有ボタン 📤 をタップ</strong><span>画面下（Safari）または上部のメニューから</span></div>
+        </div>
+        <div class="howto-step" style="--i:1">
+          <div class="howto-num">2</div>
+          <div class="howto-text"><strong>「ホーム画面に追加」を選ぶ</strong><span>一覧から探してタップ</span></div>
+        </div>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="onboarding-hero">
+      <div class="onboarding-hero-char" aria-hidden="true">📲</div>
+      <div class="onboarding-hero-bubble">ホーム画面に追加すると、アプリのようにサッと開けます。</div>
+    </div>
+    <p class="muted" style="font-size:12px;text-align:center;">ブラウザのメニュー（⋮ や 共有アイコン）から「ホーム画面に追加」または「インストール」を探してみてください。</p>`;
+}
+
 // ===== Init =====
 function wireGlobalEvents() {
   $("btn-google").addEventListener("click", signInGoogle);
@@ -217,6 +309,8 @@ function wireGlobalEvents() {
   $("btn-howto").addEventListener("click", openHowto);
   $("btn-howto-close").addEventListener("click", closeHowto);
   $("howto-modal-backdrop").addEventListener("click", closeHowto);
+  $("btn-onboarding-next").addEventListener("click", onboardingNext);
+  $("btn-onboarding-skip").addEventListener("click", finishOnboarding);
   // Stock detail sheet
   $("btn-stock-detail-close").addEventListener("click", closeStockDetail);
   $("btn-stock-register").addEventListener("click", openStockSheet);

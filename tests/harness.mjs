@@ -98,6 +98,10 @@ export async function startHarness(opts = {}) {
     hasTouch: touch,
     isMobile: touch,
   });
+  // 初回オンボーディング（app-init.js）は既定でオフにしておく。回帰テストは定常状態の
+  // 挙動を見るためのもので、初回だけの案内モーダルに毎回ブロックされると全テストが壊れる。
+  // オンボーディング自体を検証するテストだけ、個別に localStorage.removeItem で外す。
+  await ctx.addInitScript(() => localStorage.setItem("onboardingSeen", "1"));
   const page = await ctx.newPage();
 
   const errs = [];
