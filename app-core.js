@@ -243,9 +243,11 @@ async function signOut() {
 }
 
 // ===== メンバー管理（保護者専用） =====
-// 誤操作防止のため、アカウント削除は本人のボタンではなく保護者の管理機能として提供する。
+// 他のメンバーの管理（役割変更・家族から外す・アカウント削除）は保護者専用。
+// 自分自身のアカウント削除は設定タブのプロフィールカードから役割を問わず本人が行える
+// （下の adminDeleteAccount 参照）。どちらも誤操作防止のためトグルの内側に隠す。
 // 実際の削除は Cloud Functions の deleteMemberAccount（Admin SDK）で行い、
-// 保護者権限の検証・認証アカウントの削除・データ掃除をサーバー側で完結させる。
+// 権限の検証・認証アカウントの削除・データ掃除をサーバー側で完結させる。
 // 依頼・コメントは家族の記録として残る。
 
 // 誤操作防止: 管理メニュー（アカウント削除等）はトグルで閉じておき、開いた時だけ操作できる
@@ -260,6 +262,22 @@ function updateMemberAdminToggle() {
   btn.innerHTML = memberAdminOpen
     ? '🔧 管理メニューを閉じる <span class="toggle-chevron">▴</span>'
     : '🔧 管理メニューを開く <span class="toggle-chevron">▾</span>';
+}
+
+// 自分のアカウント削除（役割を問わず本人ならいつでも可）。誤操作防止のため
+// こちらもトグルで隠す。実際の削除処理は adminDeleteAccount() を共用する
+// （isSelf=true のときの後始末・確認ダイアログは既にそちらに実装済み）。
+let selfDeleteOpen = false;
+function updateSelfDeleteToggle() {
+  const body = $("self-delete-body");
+  const btn = $("btn-self-delete-toggle");
+  if (!body || !btn) return;
+  body.style.display = selfDeleteOpen ? "" : "none";
+  btn.classList.toggle("open", selfDeleteOpen);
+  btn.setAttribute("aria-expanded", String(selfDeleteOpen));
+  btn.innerHTML = selfDeleteOpen
+    ? '🗑️ アカウント削除メニューを閉じる <span class="toggle-chevron">▴</span>'
+    : '🗑️ アカウント削除メニューを開く <span class="toggle-chevron">▾</span>';
 }
 
 // 設定タブのメンバー管理カードを描画（保護者にだけ表示）
@@ -322,14 +340,22 @@ function loadFunctionsSdk() {
   return functionsSdkPromise;
 }
 
-// アカウント完全削除（Cloud Functions 経由・保護者のみ）
+// アカウント完全削除（Cloud Functions 経由）。他人の削除は保護者のみ、
+// 自分自身の削除は役割を問わず本人ならいつでも可（サーバー側 deleteMemberAccount で検証）。
 async function adminDeleteAccount(targetUid, name) {
   const isSelf = targetUid === state.uid;
   const first = isSelf
     ? "自分のアカウントを削除しますか？\n\nプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。"
     : `${name} さんのアカウントを完全に削除しますか？\n\n本人のプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。`;
   if (!confirm(first)) return;
-  if (!confirm("本当に削除しますか？ この操作は元に戻せません。")) return;
+  // 誤操作防止の最終確認。確認ダイアログの連打だけでは押し間違いを防げないため、
+  // 「delete」と入力させることで一拍置く（取り消せない操作なので）
+  const typed = prompt('本当に削除する場合は、確認のため半角英字で "delete" と入力してください。');
+  if (typed === null) return;
+  if (typed.trim().toLowerCase() !== "delete") {
+    showToast("入力が一致しなかったため、削除を中止しました");
+    return;
+  }
   try {
     await loadFunctionsSdk();
     const fn = firebase.app().functions("asia-northeast1").httpsCallable("deleteMemberAccount");

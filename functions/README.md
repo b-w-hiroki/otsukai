@@ -92,12 +92,13 @@ firebase functions:log --only shoppingReminder
 | `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外へプッシュ＋交換履歴を最新50件にローテーション |
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動＋古い週次ミッションデータの掃除 |
-| `deleteMemberAccount` | callable（保護者のみ） | メンバーのアカウント完全削除。**最後の保護者は削除不可**（家族ロック防止） |
+| `deleteMemberAccount` | callable（他人の削除は保護者のみ、自分自身の削除は役割問わず本人可） | メンバーのアカウント完全削除。**最後の保護者は削除不可**（家族ロック防止） |
 
 `firebase deploy --only functions` でまとめてデプロイされます。
 
 > ⚠️ **デプロイ必須の機能**
-> - アカウント削除（設定 → メンバー管理）は `deleteMemberAccount` のデプロイ後に動作
+> - アカウント削除（設定 → メンバー管理、または設定 → プロフィールの自分自身の削除）は
+>   `deleteMemberAccount` のデプロイ後に動作
 > - **ごほうびポイントの付与は `awardPoints` のデプロイ後に動作**します（子どもによる
 >   ポイント偽造を防ぐため、付与をサーバー側に移しました）。未デプロイの間は
 >   完了してもポイントが増えません（交換は残高があれば動きます）

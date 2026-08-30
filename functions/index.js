@@ -609,8 +609,11 @@ exports.deleteMemberAccount = functions
     const membersSnap = await db.ref(`families/${familyId}/members`).once("value");
     const members = membersSnap.val() || {};
     const caller = members[callerUid];
-    if (!caller || caller.memberRole !== "parent") {
-      throw new functions.https.HttpsError("permission-denied", "保護者のみが実行できます");
+    // 他人のアカウント削除は保護者のみ。自分自身の削除はロールを問わず本人の意思で可能
+    // （役割に関わらず「アカウントを消す権利」は本人にあるべきなので）。
+    const isSelf = callerUid === targetUid;
+    if (!caller || (!isSelf && caller.memberRole !== "parent")) {
+      throw new functions.https.HttpsError("permission-denied", "他のメンバーのアカウント削除は保護者のみが実行できます");
     }
     if (!members[targetUid]) {
       throw new functions.https.HttpsError("not-found", "対象のメンバーが見つかりません");
@@ -631,7 +634,7 @@ exports.deleteMemberAccount = functions
 
     const isLastMember = Object.keys(members).length <= 1;
     if (isLastMember) {
-      // 最後の1人（= 呼び出し元自身）→ 家族ごと削除
+      // 家族に残っているのが対象者1人だけ（＝呼び出し元自身）→ 家族ごと削除
       const codeSnap = await db.ref(`families/${familyId}/meta/inviteCode`).once("value");
       await db.ref(`families/${familyId}`).remove();
       const code = codeSnap.val();
