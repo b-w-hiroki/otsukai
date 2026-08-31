@@ -225,6 +225,12 @@ body {
   padding: 18px; margin-bottom: 14px;
   border: 1px solid var(--border);
 }
+/* 応援(OFUSE)カード: 埋もれがちな設定タブの中で目に留まるよう、
+   既存の warn 系トークン（--c-claimed）で暖色にする */
+.card-support {
+  background: var(--c-claimed-soft);
+  border-color: var(--c-claimed);
+}
 
 /* ======= 設定タブ: カードをアコーディオンに（縦スクロールを短くする） =======
    開閉状態は端末ごとに localStorage で記憶する（テーマ設定と同じ考え方）。 */
@@ -1827,6 +1833,18 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   border-color: var(--pri); transform: none; box-shadow: none;
 }
 .btn-neutral:active:not(:disabled) { transform: scale(0.985); }
+.btn-support {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  border: none; border-radius: var(--r-full);
+  padding: 13px 18px; font-size: 14px; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.25); text-align: center;
+}
+.btn-support:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 4px 16px rgba(245,158,11,0.35);
+}
+.btn-support:active:not(:disabled) { transform: scale(0.985); }
 
 /* ======= そろそろ切れるかも（ストック警告＋購入周期の予測） ======= */
 .lowstock-card {
