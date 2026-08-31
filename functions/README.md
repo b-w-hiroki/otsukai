@@ -92,7 +92,7 @@ firebase functions:log --only shoppingReminder
 | `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外へプッシュ＋交換履歴を最新50件にローテーション |
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動＋古い週次ミッションデータの掃除 |
-| `deleteMemberAccount` | callable（他人の削除は保護者のみ、自分自身の削除は役割問わず本人可） | メンバーのアカウント完全削除。**最後の保護者は削除不可**（家族ロック防止） |
+| `deleteMemberAccount` | callable（**本人のみ**。役割問わず自分自身のアカウントをいつでも削除可） | 自分のアカウント完全削除。他人の指定は permission-denied で拒否。**最後の保護者は削除不可**（家族ロック防止） |
 
 `firebase deploy --only functions` でまとめてデプロイされます。
 
