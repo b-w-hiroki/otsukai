@@ -1504,12 +1504,19 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   transition: border-color .12s, background .12s, transform .08s;
   margin: 4px 0 8px;
 }
-.section-toggle-btn:hover { border-color: var(--pri); }
+/* :hover:not(:disabled) まで含めた形にしているのは、基本の button:hover:not(:disabled)
+   （紫グラデーション）の方が詳細度で勝ってしまい、閉/開どちらの背景色も
+   ホバー中（iOSでは実質「タップ後ずっと」）だけ上書きされて文字と同化する
+   事故が実際に起きたため（.section-toggle-btn:hover だけでは詳細度不足）。 */
+.section-toggle-btn:hover:not(:disabled) { border-color: var(--pri); background: var(--surface); }
 .section-toggle-btn:active { transform: scale(0.985); }
 .section-toggle-btn.open {
   border-color: var(--pri);
   background: #eeecfb;
   color: var(--pri-dark);
+}
+.section-toggle-btn.open:hover:not(:disabled) {
+  border-color: var(--pri); background: #eeecfb; color: var(--pri-dark);
 }
 .toggle-chevron { font-size: 11px; }
 
