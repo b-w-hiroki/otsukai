@@ -605,17 +605,22 @@ exports.deleteMemberAccount = functions
       throw new functions.https.HttpsError("invalid-argument", "familyId と targetUid が必要です");
     }
 
+    // アカウントの完全削除（ログイン情報ごと消える）は本人の意思でしか行えない。
+    // 他のメンバーを家族から締め出したいだけなら removeMemberFromFamily
+    // （クライアント側・app-core.js）を使う。保護者であっても他人の
+    // ログインアカウントそのものは消せない。
+    if (callerUid !== targetUid) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "他のメンバーのアカウントは削除できません。「家族から外す」をご利用ください。"
+      );
+    }
+
     const db = admin.database();
     const membersSnap = await db.ref(`families/${familyId}/members`).once("value");
     const members = membersSnap.val() || {};
     const caller = members[callerUid];
-    // 他人のアカウント削除は保護者のみ。自分自身の削除はロールを問わず本人の意思で可能
-    // （役割に関わらず「アカウントを消す権利」は本人にあるべきなので）。
-    const isSelf = callerUid === targetUid;
-    if (!caller || (!isSelf && caller.memberRole !== "parent")) {
-      throw new functions.https.HttpsError("permission-denied", "他のメンバーのアカウント削除は保護者のみが実行できます");
-    }
-    if (!members[targetUid]) {
+    if (!caller) {
       throw new functions.https.HttpsError("not-found", "対象のメンバーが見つかりません");
     }
 

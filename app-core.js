@@ -243,11 +243,13 @@ async function signOut() {
 }
 
 // ===== メンバー管理（保護者専用） =====
-// 他のメンバーの管理（役割変更・家族から外す・アカウント削除）は保護者専用。
-// 自分自身のアカウント削除は設定タブのプロフィールカードから役割を問わず本人が行える
-// （下の adminDeleteAccount 参照）。どちらも誤操作防止のためトグルの内側に隠す。
+// 他のメンバーの管理（役割変更・家族から外す）は保護者専用。「家族から外す」は
+// メンバー表から締め出すだけで、本人のログインアカウントは残る（removeMemberFromFamily）。
+// ログインアカウントそのものの完全削除は、他人の分は誰にも許可していない。本人が
+// 自分自身を削除する場合のみ可能（設定タブのプロフィールカードから。役割を問わず本人が行える。
+// 下の adminDeleteAccount 参照）。誤操作防止のためどちらもトグルの内側に隠す。
 // 実際の削除は Cloud Functions の deleteMemberAccount（Admin SDK）で行い、
-// 権限の検証・認証アカウントの削除・データ掃除をサーバー側で完結させる。
+// 呼び出し元と削除対象が本人同士であることをサーバー側でも検証する。
 // 依頼・コメントは家族の記録として残る。
 
 // 誤操作防止: 管理メニュー（アカウント削除等）はトグルで閉じておき、開いた時だけ操作できる
@@ -301,15 +303,14 @@ function renderMemberAdmin() {
         <span class="muted" style="font-size:11px;">${ROLE_LABEL[m.memberRole] || "未設定"}</span>
       </span>
       <span style="display:flex;gap:6px;flex-shrink:0;">
-        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : ""}
-        <button class="danger tiny-btn" style="font-size:11px;" data-admin-delete="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">アカウント削除</button>
+        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : `<button class="danger tiny-btn" style="font-size:11px;" data-admin-delete="${uid}">アカウント削除</button>`}
       </span>
     </div>`).join("");
   $("member-admin-list").querySelectorAll("[data-admin-remove]").forEach((btn) => {
     btn.addEventListener("click", () => removeMemberFromFamily(btn.dataset.adminRemove, btn.dataset.name));
   });
   $("member-admin-list").querySelectorAll("[data-admin-delete]").forEach((btn) => {
-    btn.addEventListener("click", () => adminDeleteAccount(btn.dataset.adminDelete, btn.dataset.name));
+    btn.addEventListener("click", () => adminDeleteAccount());
   });
   updateMemberAdminToggle();
 }
@@ -340,14 +341,11 @@ function loadFunctionsSdk() {
   return functionsSdkPromise;
 }
 
-// アカウント完全削除（Cloud Functions 経由）。他人の削除は保護者のみ、
-// 自分自身の削除は役割を問わず本人ならいつでも可（サーバー側 deleteMemberAccount で検証）。
-async function adminDeleteAccount(targetUid, name) {
-  const isSelf = targetUid === state.uid;
-  const first = isSelf
-    ? "自分のアカウントを削除しますか？\n\nプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。"
-    : `${name} さんのアカウントを完全に削除しますか？\n\n本人のプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。`;
-  if (!confirm(first)) return;
+// 自分のアカウントを完全削除する（Cloud Functions 経由）。他人のアカウントは
+// 消せない（他人を締め出したいだけなら removeMemberFromFamily を使う）。
+// サーバー側（deleteMemberAccount）でも本人以外の指定は拒否される。
+async function adminDeleteAccount() {
+  if (!confirm("自分のアカウントを削除しますか？\n\nプロフィール・統計・ログインアカウントが削除されます。\n追加した依頼やコメントは家族の記録に残ります。")) return;
   // 誤操作防止の最終確認。確認ダイアログの連打だけでは押し間違いを防げないため、
   // 「delete」と入力させることで一拍置く（取り消せない操作なので）
   const typed = prompt('本当に削除する場合は、確認のため半角英字で "delete" と入力してください。');
@@ -359,21 +357,17 @@ async function adminDeleteAccount(targetUid, name) {
   try {
     await loadFunctionsSdk();
     const fn = firebase.app().functions("asia-northeast1").httpsCallable("deleteMemberAccount");
-    await fn({ familyId: state.familyId, targetUid });
-    if (isSelf) {
-      // 認証アカウントはサーバー側で削除済み。ローカルもサインアウト状態に揃える
-      detachListeners();
-      localStorage.removeItem("pushToken");
-      state.uid = null; state.profile = null; state.familyId = null; state.family = null;
-      state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
-      state.missions = {}; state.missionLogs = {}; state.myRole = null;
-  state.points = {}; state.rewards = {}; state.rewardLogs = {};
-      showScreen("auth");
-      showToast("アカウントを削除しました");
-      try { await auth.signOut(); } catch (e) {}
-    } else {
-      showToast(`${name} さんのアカウントを削除しました`, { sound: false });
-    }
+    await fn({ familyId: state.familyId, targetUid: state.uid });
+    // 認証アカウントはサーバー側で削除済み。ローカルもサインアウト状態に揃える
+    detachListeners();
+    localStorage.removeItem("pushToken");
+    state.uid = null; state.profile = null; state.familyId = null; state.family = null;
+    state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
+    state.missions = {}; state.missionLogs = {}; state.myRole = null;
+    state.points = {}; state.rewards = {}; state.rewardLogs = {};
+    showScreen("auth");
+    showToast("アカウントを削除しました");
+    try { await auth.signOut(); } catch (e) {}
   } catch (e) {
     console.error("adminDeleteAccount failed", e);
     const msg = (e && e.message) || String(e);

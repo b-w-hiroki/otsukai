@@ -502,7 +502,7 @@ function wireGlobalEvents() {
     selfDeleteOpen = !selfDeleteOpen;
     updateSelfDeleteToggle();
   });
-  $("btn-self-delete").addEventListener("click", () => adminDeleteAccount(state.uid, state.profile.name));
+  $("btn-self-delete").addEventListener("click", () => adminDeleteAccount());
   $("btn-copy-code").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("set-invite-code").value);
