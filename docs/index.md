@@ -135,4 +135,3 @@
 | 2 | `firebase deploy --only functions` | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 3 | `firebase functions:artifacts:setpolicy --location asia-southeast1` | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |
-| 5 | i-mobile 管理画面でアダルト等のカテゴリ除外 | [`monetization-ideas.md`](./monetization-ideas.md) |
