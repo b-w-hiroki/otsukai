@@ -392,7 +392,7 @@ async function adminDeleteAccount() {
   }
   try {
     await loadFunctionsSdk();
-    const fn = firebase.app().functions("asia-northeast1").httpsCallable("deleteMemberAccount");
+    const fn = firebase.app().functions("asia-southeast1").httpsCallable("deleteMemberAccount");
     await fn({ familyId: state.familyId, targetUid: state.uid });
     // 認証アカウントはサーバー側で削除済み。ローカルもサインアウト状態に揃える
     detachListeners();
