@@ -192,6 +192,37 @@ function initAuthListener() {
     await loadUserProfile();
   });
 }
+// ===== ログイン画面: ログイン/新規登録の切り替え =====
+// 新規登録のときだけ利用規約・プライバシーポリシーへの同意チェックを必須にする。
+// Googleは既存ユーザーのサインインにも同じボタンを使う（signInWithPopupは
+// 未登録なら新規作成・登録済みならログインを自動判定する）ため、モードが
+// 「新規登録」のときだけ同意チェックでゲートする（ログインモードでは常に有効）。
+let authMode = "signin";
+function updateAuthAgreeGate() {
+  const isSignup = authMode === "signup";
+  const agreed = !isSignup || $("auth-agree").checked;
+  $("btn-auth-submit").disabled = !agreed;
+  $("btn-google").disabled = !agreed;
+}
+function switchAuthMode(mode) {
+  authMode = mode;
+  const isSignup = mode === "signup";
+  document.querySelectorAll('#screen-auth .seg-btn[data-auth-mode]').forEach((b) => {
+    const active = b.dataset.authMode === mode;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-selected", String(active));
+  });
+  $("auth-agree-row").style.display = isSignup ? "flex" : "none";
+  $("btn-auth-submit").textContent = isSignup ? "新規登録" : "ログイン";
+  $("btn-google-label").textContent = isSignup ? "Googleで新規登録" : "Googleでログイン";
+  $("auth-password").autocomplete = isSignup ? "new-password" : "current-password";
+  if (!isSignup) $("auth-agree").checked = false; // ログインに戻したら同意チェックはリセットしておく
+  hideAuthError();
+  updateAuthAgreeGate();
+}
+function submitAuthForm() {
+  if (authMode === "signup") signUpEmail(); else signInEmail();
+}
 async function signInEmail() {
   const email = $("auth-email").value.trim();
   const pw = $("auth-password").value;
@@ -203,12 +234,17 @@ async function signUpEmail() {
   const email = $("auth-email").value.trim();
   const pw = $("auth-password").value;
   hideAuthError();
+  // ボタンはチェックが無いと押せないが、Enterキー経由でも通す入口なので二重に確認する
+  if (!$("auth-agree").checked) return showAuthError("利用規約とプライバシーポリシーへの同意が必要です");
   if (pw.length < 6) return showAuthError("パスワードは6文字以上で入力してください");
   try { await auth.createUserWithEmailAndPassword(email, pw); }
   catch (e) { showAuthError(authErrorJa(e)); }
 }
 async function signInGoogle() {
   hideAuthError();
+  if (authMode === "signup" && !$("auth-agree").checked) {
+    return showAuthError("利用規約とプライバシーポリシーへの同意が必要です");
+  }
   // prompt: "select_account" を指定しないと、ブラウザに既にGoogleセッションが
   // あるとき（家族の他の人が使った端末等）アカウント選択画面が出ず、直前に
   // ログインしていたアカウントへ無言でサインインしてしまう
