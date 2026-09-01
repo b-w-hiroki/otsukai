@@ -87,7 +87,7 @@ body {
 /* ======= Auth Screen ======= */
 .auth-hero {
   background: linear-gradient(160deg, #7c3aed 0%, #5b5ef4 55%, #818cf8 100%);
-  padding: 60px 24px 56px;
+  padding: 40px 24px 56px;
   text-align: center; position: relative; overflow: hidden;
 }
 /* ふわふわ漂う光の玉。単色グラデ背景だけだと平坦に見えるための奥行き演出。
@@ -109,15 +109,6 @@ body {
   content: ''; position: absolute; bottom: -1px; left: 0; right: 0;
   height: 48px; background: var(--bg);
   border-radius: 50% 50% 0 0 / 48px 48px 0 0;
-}
-.auth-logo {
-  font-size: 56px; line-height: 1; margin-bottom: 16px;
-  position: relative; display: inline-block;
-  animation: logoFloat 3.5s ease-in-out infinite;
-}
-@keyframes logoFloat {
-  0%,100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-7px) rotate(3deg); }
 }
 .auth-title {
   font-size: 32px; font-weight: 800; letter-spacing: -0.8px;
