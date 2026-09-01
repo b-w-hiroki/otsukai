@@ -86,6 +86,13 @@
   // ===== シードデータ（親じろう視点） =====
   const now = Date.now();
   const H = 36e5, D = 864e5;
+  // 月初直後（数時間以内）にテストが走ると、"○時間前"のような相対オフセットが
+  // 前月に食い込んでしまい、「今月の完了」を前提にしたテスト（renderMonthlySummary
+  // の実支出表示チェック等）が失敗することがあった（実際に発生。features-test.mjs）。
+  // 「直近の完了」を表すシードは、月初より必ず後になるようクランプする
+  // （通常は now - offsetMs のままで、月境界をまたぐ瞬間だけ効く）。
+  const monthStart = new Date(new Date(now).getFullYear(), new Date(now).getMonth(), 1).getTime();
+  const recentDone = (offsetMs) => Math.max(now - offsetMs, monthStart + 10 * 60e3);
   // onboardingSeen: true — 他の回帰テストが毎回オンボーディングにブロックされないよう、
   // 既定では「見た後」の状態にしておく（onboarding-test.mjs だけ個別に false へ戻す）
   store.users = { "uid-parent": { name: "じろう", emoji: "😎", familyId: "fam1", onboardingSeen: true } };
@@ -103,8 +110,8 @@
         r3: { name: "トイレットペーパー", diff: "hard", urgent: false, status: "open", requestedBy: "uid-parent", requestedAt: now - 3 * H, category: "daily", memo: "12ロール・ダブル" , photoUrl: SAMPLE_PHOTO },
         r4: { name: "単3電池", diff: "normal", urgent: false, status: "open", requestedBy: "uid-mom", requestedAt: now - 5 * H, category: "other", brand: "パナソニック" },
         r5: { name: "食パン", diff: "normal", urgent: false, status: "claimed", claimedBy: "uid-child", claimedAt: now - 30 * 6e4, requestedBy: "uid-parent", requestedAt: now - 2 * H, category: "food" },
-        r6: { name: "オレンジジュース", diff: "normal", status: "done", requestedBy: "uid-mom", completedBy: "uid-child", requestedAt: now - 1 * D, completedAt: now - 2 * H, category: "food", reactions: { "uid-mom": "❤️" } },
-        r7: { name: "洗剤", diff: "normal", status: "done", requestedBy: "uid-parent", completedBy: "uid-mom", requestedAt: now - 2 * D, completedAt: now - 1 * D, category: "daily" },
+        r6: { name: "オレンジジュース", diff: "normal", status: "done", requestedBy: "uid-mom", completedBy: "uid-child", requestedAt: now - 1 * D, completedAt: recentDone(2 * H), category: "food", reactions: { "uid-mom": "❤️" } },
+        r7: { name: "洗剤", diff: "normal", status: "done", requestedBy: "uid-parent", completedBy: "uid-mom", requestedAt: now - 2 * D, completedAt: recentDone(1 * D), category: "daily" },
         r8: { name: "こどもチャレンジ付録の電池", diff: "normal", status: "done", requestedBy: "uid-child", completedBy: "uid-parent", requestedAt: now - 3 * D, completedAt: now - 3 * D },
       },
       comments: { r2: { c1: { text: "Lサイズがいいな", authorUid: "uid-mom", authorEmoji: "🌸", authorName: "はな", createdAt: now - 30 * 6e4 } } },

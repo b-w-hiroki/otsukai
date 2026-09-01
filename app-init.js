@@ -444,8 +444,11 @@ function renderOnboardingInstallStep() {
 // ===== Init =====
 function wireGlobalEvents() {
   $("btn-google").addEventListener("click", signInGoogle);
-  $("btn-signin").addEventListener("click", signInEmail);
-  $("btn-signup").addEventListener("click", signUpEmail);
+  $("btn-auth-submit").addEventListener("click", submitAuthForm);
+  $("auth-agree").addEventListener("change", updateAuthAgreeGate);
+  document.querySelectorAll('#screen-auth .seg-btn[data-auth-mode]').forEach((btn) => {
+    btn.addEventListener("click", () => switchAuthMode(btn.dataset.authMode));
+  });
   $("btn-save-profile").addEventListener("click", saveProfile);
   $("btn-create-family").addEventListener("click", createFamily);
   $("btn-join-family").addEventListener("click", joinFamily);
@@ -585,7 +588,7 @@ function wireGlobalEvents() {
   // Enter キーも追加ボタンと同じ分岐（shortcutMode を無視すると⭐登録シートで
   // 本物の依頼が作られてしまうバグがあった）
   $("new-name").addEventListener("keydown", (e) => { if (e.key === "Enter") { if (editingRequestId) updateRequest(); else if (editingShortcutId) updateShortcut(); else if (shortcutMode) addShortcutFromSheet(); else addRequest(); } });
-  $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") signInEmail(); });
+  $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") submitAuthForm(); });
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
     closeSheet();
