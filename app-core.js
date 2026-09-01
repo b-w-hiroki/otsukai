@@ -181,13 +181,6 @@ function playBeep(urgent) {
 
 // ===== Auth =====
 function initAuthListener() {
-  // signInWithRedirect からの戻り時、リダイレクト自体が失敗していた場合のエラーは
-  // ここでしか拾えない（呼び出し元の signInGoogle() は画面遷移前で完結しているため）。
-  // 成功時はこの結果を待たずとも下の onAuthStateChanged が発火するので、ここでは
-  // エラー表示だけを行う
-  auth.getRedirectResult().catch((e) => {
-    if (e && e.code) showAuthError(authErrorJa(e));
-  });
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       state.uid = null;
@@ -257,13 +250,10 @@ async function signInGoogle() {
   // ログインしていたアカウントへ無言でサインインしてしまう
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  // signInWithPopup ではなく signInWithRedirect を使う。ポップアップ+裏の認証用iframeの
-  // 組み合わせは、Safari のストレージ分離（ITP）と相性が悪く「missing initial state」で
-  // 失敗することがある（authDomain がアプリの配信ドメインと別だと起きやすい）。
-  // リダイレクトなら画面遷移だけで完結するため、この問題を避けられる。
-  // 戻ってきた後の結果確認・エラー表示は initAuthListener() の getRedirectResult() 側で行う
-  // （画面遷移を挟むため、ここでは開始時のエラーしか拾えない）
-  try { await auth.signInWithRedirect(provider); }
+  // 一時的に signInWithRedirect を試したが、Chrome でも Google 画面から戻ると
+  // ログイン画面に戻ってしまう不具合が出たため signInWithPopup に戻した
+  // （承認済みドメイン未設定が本来の原因だった可能性が高く、そちらは解消済み）
+  try { await auth.signInWithPopup(provider); }
   catch (e) { showAuthError(authErrorJa(e)); }
 }
 function authErrorJa(e) {
