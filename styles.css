@@ -120,12 +120,14 @@ body {
   50% { transform: translateY(-7px) rotate(3deg); }
 }
 .auth-title {
-  font-size: 28px; font-weight: 800; letter-spacing: -0.7px;
-  margin: 0 0 8px; position: relative;
-  background: linear-gradient(135deg, #ffffff 20%, rgba(255,255,255,0.68) 100%);
+  font-size: 32px; font-weight: 800; letter-spacing: -0.8px;
+  margin: 0 0 8px; position: relative; text-wrap: balance;
+  background: linear-gradient(135deg, #ffffff 20%, rgba(255,255,255,0.78) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.auth-tagline { font-size: 13px; color: rgba(255,255,255,0.68); margin: 0; font-weight: 600; position: relative; letter-spacing: 0.2px; }
+/* 以前は白68%不透明度で、背景グラデの明るい部分ではコントラストが弱く読みにくかった。
+   88%まで上げて、太さも上げてはっきり読めるようにした */
+.auth-tagline { font-size: 14.5px; color: rgba(255,255,255,0.88); margin: 0; font-weight: 700; position: relative; letter-spacing: 0.2px; }
 /* 実機のミニプレビュー。文字だけの訴求より「実際に動くアプリ」だと一目で伝わる。
    通常のドキュメントフローに置く（タグライン等に絶対配置で重ねない）ことで、
    文字量や画面幅が変わってもテキストと衝突しない */
@@ -145,12 +147,15 @@ body {
   .auth-preview { animation: none; }
 }
 .auth-body { margin-top: -4px; position: relative; z-index: 1; padding: 0 16px; }
+/* ログイン/新規登録タブは項目が2つだけで場所に余裕があるので、共通の.seg-btn
+   （ミッションのサブタブ等・項目数が多く詰め込む場面向け）より少し大きくする */
+#screen-auth .seg-btn { font-size: 14px; }
 
 /* Auth: features / app description */
-.auth-features { padding: 20px 0 4px; }
+.auth-features { padding: 22px 0 4px; }
 .auth-features-lead {
-  font-size: 14px; text-align: center; color: var(--ink-2);
-  margin: 0 0 14px; font-weight: 700; line-height: 1.7;
+  font-size: 16px; text-align: center; color: var(--ink-2);
+  margin: 0 0 16px; font-weight: 700; line-height: 1.65; text-wrap: balance;
 }
 .auth-features-lead b { color: var(--pri-dark); }
 .auth-feature-list {
@@ -158,29 +163,31 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-card);
-  padding: 4px 14px;
+  padding: 6px 16px;
 }
 .auth-feature {
-  display: flex; gap: 12px; align-items: center;
-  padding: 12px 2px;
+  display: flex; gap: 14px; align-items: center;
+  padding: 15px 2px;
   border-bottom: 1px solid var(--border-soft);
 }
 .auth-feature:last-child { border-bottom: none; }
 .auth-feature-icon {
-  font-size: 22px; line-height: 1;
-  width: 40px; height: 40px; flex-shrink: 0;
+  font-size: 25px; line-height: 1;
+  width: 46px; height: 46px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--pri-soft), #e0e7ff);
-  border-radius: 12px;
+  border-radius: 13px;
 }
 .auth-feature-text b {
-  font-size: 13px; color: var(--ink);
-  display: block; margin-bottom: 2px;
+  font-size: 14.5px; color: var(--ink);
+  display: block; margin-bottom: 3px;
   font-weight: 800; letter-spacing: -0.2px;
 }
+/* 以前は12px・var(--muted)で、本文としては小さく・薄すぎて読みにくかった。
+   1段濃い ink-2 に上げてサイズも本文相当まで拡大した */
 .auth-feature-text p {
-  font-size: 12px; color: var(--muted);
-  margin: 0; line-height: 1.55;
+  font-size: 13px; color: var(--ink-2);
+  margin: 0; line-height: 1.6;
 }
 
 /* ======= Topbar ======= */
