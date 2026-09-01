@@ -139,8 +139,17 @@ body {
 }
 .auth-body { margin-top: -4px; position: relative; z-index: 1; padding: 0 16px; }
 /* ログイン/新規登録タブは項目が2つだけで場所に余裕があるので、共通の.seg-btn
-   （ミッションのサブタブ等・項目数が多く詰め込む場面向け）より少し大きくする */
-#screen-auth .seg-btn { font-size: 14px; }
+   （ミッションのサブタブ等・項目数が多く詰め込む場面向け）より少し大きくする。
+   選択中/未選択の判別が付きにくいという指摘があったため、選択中は塗り潰しの
+   濃い配色にしてコントラストを強める（他の .seg-btn 利用箇所には影響させない）。 */
+#screen-auth .seg-btn { font-size: 14px; color: var(--muted); }
+#screen-auth .seg-btn:hover:not(:disabled) { background: var(--border); color: var(--ink-2); }
+#screen-auth .seg-btn.active {
+  background: var(--pri);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.35);
+}
+#screen-auth .seg-btn.active:hover:not(:disabled) { background: var(--pri); color: #fff; }
 
 /* Auth: features / app description */
 .auth-features { padding: 22px 0 4px; }
