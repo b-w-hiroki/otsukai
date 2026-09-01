@@ -59,6 +59,9 @@
     currentUser: { uid: "uid-parent", metadata: { lastSignInTime: new Date().toISOString() }, delete: async () => {} },
     onAuthStateChanged(cb) { setTimeout(() => cb({ uid: "uid-parent" }), 0); },
     async signOut() {},
+    // signInWithRedirect の戻り確認。テストでは実際にリダイレクトを起こさないため、
+    // 「待機中の結果は無い」を表す null ユーザーを返す（本物のSDKと同じ形）
+    async getRedirectResult() { return { user: null }; },
   };
   const auth = () => authObj;
   auth.GoogleAuthProvider = function () {};
