@@ -23,6 +23,10 @@ admin.initializeApp();
 const REGION = "asia-southeast1";
 const RUNTIME_OPTS = { memory: "128MB", timeoutSeconds: 60 };
 const DB_INSTANCE = "otsukai-app-4b62b-default-rtdb";
+// お問い合わせフォームの通知メールの届け先。送信に使う Gmail アカウント
+// （Secret Manager の CONTACT_GMAIL_USER。アプリパスワードの持ち主）とは別でよい。
+// contact.html / privacy.html に載せている公開アドレスと揃えておく
+const CONTACT_NOTIFY_TO = "hiroki.torii4649@gmail.com";
 
 /** 家族の pushTokens を読み、条件に合うトークンへ FCM を送って無効分を掃除する */
 async function sendToFamily(familyId, { title, body, tag, filterUid }) {
@@ -775,8 +779,9 @@ exports.submitContactForm = functions
     }
     try {
       await mailer.transporter.sendMail({
+        // Gmail は差出人を認証したアカウントに書き換えるため from は送信用アカウント
         from: `おうちのおつかい <${mailer.user}>`,
-        to: mailer.user,
+        to: CONTACT_NOTIFY_TO || mailer.user,
         replyTo: email,
         subject: `【おうちのおつかい】${subject}`,
         text: [

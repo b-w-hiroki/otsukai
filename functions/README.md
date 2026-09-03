@@ -46,15 +46,24 @@ Cloud Functions / Cloud Scheduler は **Blaze（従量課金）プラン**が必
 `contact.html` から送信されたお問い合わせは `submitContactForm` が受け取り、
 まず Realtime Database の `contactMessages` に記録する（ここまでは追加設定不要）。
 開発者宛てのメール通知も行うには、Gmail の SMTP 用に **アプリパスワード**を発行し、
-Secret Manager に登録する：
+Secret Manager に登録する。
 
-1. 通知を受け取りたい Google アカウントで、[Googleアカウントの管理 → セキュリティ](https://myaccount.google.com/security) → **2段階認証を有効化**（未設定なら先に済ませる）
-2. 同じ画面から **アプリパスワード** を作成（アプリ名は「otsukai」など任意）。表示された16桁の文字列を控える
+**送信に使うアカウントと届け先は別でよい**:
+
+| 役割 | どこで決まるか | 例 |
+|---|---|---|
+| 送信に使う Gmail（認証・差出人になる） | Secret Manager の `CONTACT_GMAIL_USER` ＋ そのアカウントで発行したアプリパスワード | プライベートのアカウント |
+| 届け先（通知が届く） | `index.js` の `CONTACT_NOTIFY_TO` | ページに載せている公開アドレス |
+
+届け先を変えるときは `CONTACT_NOTIFY_TO` を書き換えて再デプロイする（空文字にすると送信用アカウント宛てになる）。
+
+1. **送信に使う** Google アカウントで、[Googleアカウントの管理 → セキュリティ](https://myaccount.google.com/security) → **2段階認証を有効化**（未設定なら先に済ませる）
+2. 同じアカウントで **アプリパスワード** を作成（アプリ名は「otsukai」など任意）。表示された16桁の文字列を控える
 3. リポジトリのルートで:
 
 ```bash
 firebase functions:secrets:set CONTACT_GMAIL_USER
-# → 通知を受け取りたい Gmail アドレスを入力
+# → 手順1のアカウントの Gmail アドレスを入力（届け先ではなく、送信に使う方）
 
 firebase functions:secrets:set CONTACT_GMAIL_APP_PASSWORD
 # → 手順2で発行した16桁のアプリパスワードを入力
