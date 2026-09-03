@@ -112,6 +112,13 @@
         <textarea id="c-body" placeholder="できるだけ詳しく教えてください（不具合の場合は、いつ・どの画面で・何をしたら起きたか など）"></textarea>
       </div>
 
+      <!-- スパム対策のハニーポット。人には見えない/フォーカスされない項目で、
+           ここが埋まっていたら機械的な送信とみなして黙って無視する（送信元には
+           成功したように見せておく）。スクリーンリーダーからも隠す -->
+      <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+        <input type="text" id="c-hp" name="company" tabindex="-1" autocomplete="off" />
+      </div>
+
       <p id="form-error">お問い合わせ内容を入力してください</p>
       <p id="form-status"></p>
 
@@ -164,11 +171,20 @@
       var name = document.getElementById("c-name").value.trim();
       var type = document.getElementById("c-type").value;
       var reply = document.getElementById("c-reply").value.trim();
+      var honeypot = document.getElementById("c-hp").value;
+
+      // ハニーポットが埋まっている＝機械的な送信。実際には送らず、
+      // 相手には成功したように見せておく（学習させて回避されるのを防ぐ）
+      if (honeypot) {
+        setStatus("success", "✅ 送信しました。ご連絡ありがとうございます。");
+        form.reset();
+        return;
+      }
 
       btn.disabled = true;
       setStatus("sending", "送信しています…");
 
-      submitFn({ name: name, type: type, replyTo: reply, message: body })
+      submitFn({ name: name, type: type, replyTo: reply, message: body, hp: honeypot })
         .then(function () {
           setStatus("success", "✅ 送信しました。ご連絡ありがとうございます。");
           form.reset();

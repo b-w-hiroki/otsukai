@@ -730,6 +730,11 @@ exports.submitContactForm = functions
   .region(REGION)
   .runWith({ ...RUNTIME_OPTS, secrets: ["CONTACT_GMAIL_USER", "CONTACT_GMAIL_APP_PASSWORD"] })
   .https.onCall(async (data) => {
+    // ハニーポット（クライアント側のJSを無視してcallableへ直接送ってくる
+    // 機械的な送信への対策）。埋まっていたら黙って成功扱いにする
+    if (data && data.hp) {
+      return { ok: true };
+    }
     const name = String((data && data.name) || "").trim().slice(0, 100);
     const type = String((data && data.type) || "その他のご質問").trim().slice(0, 40);
     const replyTo = String((data && data.replyTo) || "").trim().slice(0, 200);
