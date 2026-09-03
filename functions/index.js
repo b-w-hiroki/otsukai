@@ -49,7 +49,7 @@ async function sendToFamily(familyId, { title, body, tag, filterUid }) {
   const resp = await admin.messaging().sendEachForMulticast({
     notification: { title, body },
     // type:"event" はフォアグラウンドのアプリが二重トーストを避けるための目印
-    data: { tag, url: "./", type: "event" },
+    data: { tag, url: "./app.html", type: "event" },
     tokens,
   });
   const removals = [];
@@ -219,7 +219,7 @@ exports.shoppingReminder = functions
 
         const resp = await admin.messaging().sendEachForMulticast({
           notification: { title: "🧺 おうちのおつかい", body },
-          data: { tag: `reminder-${timeKey}`, url: "./" },
+          data: { tag: `reminder-${timeKey}`, url: "./app.html" },
           tokens,
         });
 

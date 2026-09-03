@@ -18,14 +18,14 @@ messaging.onBackgroundMessage((payload) => {
     icon: "./icon-192.png",
     badge: "./icon-192.png",
     tag: data.tag || "otsukai-reminder",
-    data: { url: data.url || "./" }
+    data: { url: data.url || "./app.html" }
   });
 });
 
 // 通知タップでアプリを開く（既に開いていればフォーカス）。
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || "./";
+  const target = (event.notification.data && event.notification.data.url) || "./app.html";
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const c of clients) {

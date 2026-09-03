@@ -27,6 +27,12 @@
     .muted { color: var(--muted); font-size: 14.5px; line-height: 1.8; }
     a { color: var(--pri); }
     footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
+    /* スマホではフッターのリンク（使い方ガイド・プライバシーポリシー）を中央寄せ。
+       各リンクは上下にパディングを持たせて44pxのタップ領域を確保する */
+    @media (max-width: 767px) {
+      footer p { text-align: center; }
+      footer a { display: inline-block; padding: 10px 6px; }
+    }
 
     .field { margin-bottom: 22px; }
     label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
@@ -165,7 +171,7 @@
       </p>
     </footer>
   </div>
-  <a href="./" class="back-float">← アプリに戻る</a>
+  <a href="./app.html" class="back-float">← アプリに戻る</a>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>

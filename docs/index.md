@@ -76,7 +76,8 @@
 
 | 成果物 | 置き場 | 名前の付け方 |
 |---|---|---|
-| アプリ本体 | **ルート直下**（`index.html` / `app-*.js`（機能ごとに10分割） / `styles.css` / `sw.js`） | 動かさない。移動するとPWAの配信パスが壊れる |
+| アプリ本体 | **ルート直下**（`app.html` / `app-*.js`（機能ごとに10分割） / `styles.css` / `sw.js`） | 動かさない。移動するとPWAの配信パスが壊れる |
+| 紹介ページ（LP） | **ルート直下の `index.html`** | ログイン不要で読める静的ページ。PWA起動時は `app.html` へ転送 |
 | よく買うものの連想イラスト | `shortcut-icons/` | 英語名.svg（`app-requests.js` の `SHORTCUT_ICON_MATCH` から参照） |
 | 説明用スクショ | `docs/screenshots/` | `NN-名前.png`（連番・480px幅・256色） |
 | ドキュメント | `docs/` | 小文字ハイフン区切り。`hub.html` から参照されているものはリネーム禁止 |
@@ -105,7 +106,7 @@
 
 | 場所 | 役割 | 入口 |
 |---|---|---|
-| **ルート直下** | アプリ本体（PWA） | `index.html` → `app-core.js`（読み込み順は `index.html` の `<script>` 参照） |
+| **ルート直下** | 紹介ページ＋アプリ本体（PWA） | `index.html`（紹介）→ `app.html` → `app-core.js`（読み込み順は `app.html` の `<script>` 参照） |
 | `docs/` | ドキュメント一式 | **このファイル** |
 | `docs/rules/` | 決め事 | `ui.md` / `deploy.md` / `workflow.md` |
 | `docs/screenshots/` | 説明用スクショ18枚 | `features.md` から参照 |
@@ -118,7 +119,8 @@
 
 | ファイル | 役割 |
 |---|---|
-| `index.html` | アプリ本体 |
+| `index.html` | 紹介ページ（ランディングページ）。ログイン不要。PWA起動時は `app.html` へ転送 |
+| `app.html` | アプリ本体（ログイン画面から始まる） |
 | `hub.html` | プロジェクトハブ（メインアプリ / 旧版 / ドキュメント / ロードマップ） |
 | `guide.html` | 使い方ガイド（利用者向け・平易な説明） |
 | `terms.html` | 利用規約 |
