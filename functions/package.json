@@ -2,7 +2,7 @@
   "name": "otsukai-functions",
   "description": "おうちのおつかい — 買い物リマインドのプッシュ通知（Cloud Functions）",
   "engines": {
-    "node": "18"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {
