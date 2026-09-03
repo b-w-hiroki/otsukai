@@ -719,11 +719,14 @@ exports.notifyRewardRedeem = functions
  * Secret Manager で管理する。未設定の間はメール送信だけスキップし、
  * DBへの記録は行う（Firebase Console から確認できる）。詳しくは README.md。
  */
+// Google が表示するアプリパスワードは「abcd efgh ijkl mnop」と4文字ごとに空白が
+// 入っており、そのまま登録すると 535 Username and Password not accepted になる。
+// 前後の空白や改行も同様なので、ここで取り除いてから使う
 function getContactMailer() {
-  const user = process.env.CONTACT_GMAIL_USER;
-  const pass = process.env.CONTACT_GMAIL_APP_PASSWORD;
+  const user = String(process.env.CONTACT_GMAIL_USER || "").trim();
+  const pass = String(process.env.CONTACT_GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
   if (!user || !pass) return null;
-  return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+  return { user, transporter: nodemailer.createTransport({ service: "gmail", auth: { user, pass } }) };
 }
 
 exports.submitContactForm = functions
@@ -765,15 +768,15 @@ exports.submitContactForm = functions
       createdAt: admin.database.ServerValue.TIMESTAMP,
     });
 
-    const transporter = getContactMailer();
-    if (!transporter) {
+    const mailer = getContactMailer();
+    if (!mailer) {
       console.warn("CONTACT_GMAIL_USER / CONTACT_GMAIL_APP_PASSWORD 未設定のためメール通知をスキップ（DBには記録済み）");
       return { ok: true };
     }
     try {
-      await transporter.sendMail({
-        from: `おうちのおつかい <${process.env.CONTACT_GMAIL_USER}>`,
-        to: process.env.CONTACT_GMAIL_USER,
+      await mailer.transporter.sendMail({
+        from: `おうちのおつかい <${mailer.user}>`,
+        to: mailer.user,
         replyTo: email,
         subject: `【おうちのおつかい】${subject}`,
         text: [

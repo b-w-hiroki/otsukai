@@ -65,6 +65,20 @@ firebase functions:secrets:set CONTACT_GMAIL_APP_PASSWORD
 未設定のままでも動作は壊れない（`contactMessages` への記録だけ行われ、メール送信はスキップされる）。
 Firebase Console の Realtime Database から `contactMessages` を見れば内容は確認できる。
 
+**注意**: アプリパスワードは**発行したアカウント本人のアドレス**としか組み合わせられない。
+`CONTACT_GMAIL_USER` に入れたアドレスのアカウントでログインした状態で発行すること
+（別アカウントで発行すると `535-5.7.8 Username and Password not accepted` で送信に失敗する）。
+表示される「abcd efgh ijkl mnop」の空白は関数側で取り除くので、そのまま貼っても構わない。
+
+値の確認・修正:
+
+```bash
+firebase functions:secrets:access CONTACT_GMAIL_USER          # 今の値を表示
+firebase functions:secrets:set CONTACT_GMAIL_APP_PASSWORD     # 登録し直し（新バージョンになる）
+firebase deploy --only functions:submitContactForm            # 変更後はこの関数だけ再デプロイで反映
+firebase functions:log --only submitContactForm               # 送信失敗の理由を見る
+```
+
 ## 4. Realtime Database のルール（必須）
 
 リポジトリ直下に **`database.rules.json`** を用意しています。
