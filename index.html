@@ -93,6 +93,15 @@
     h2 { font-size: 24px; line-height: 1.4; margin: 0 0 6px; font-weight: 900; }
     .sub { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
 
+    /* よくある困りごと（3つを大きく） */
+    .pains { display: grid; gap: 12px; margin: 20px 0 8px; }
+    @media (min-width: 640px) { .pains { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .pain { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 16px 14px; }
+    .pain .n { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; }
+    .pain .k { display: inline-block; font-size: 22px; font-weight: 900; line-height: 1.3; margin-bottom: 8px; background: linear-gradient(transparent 62%, var(--marker) 62%); padding: 0 2px; }
+    .pain p { margin: 0; font-size: 14px; color: var(--ink-2); }
+    .talk-label { margin: 26px 0 12px; font-size: 13px; font-weight: 700; color: var(--muted); }
+
     /* 家族の会話 */
     .talk { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
     .msg { display: flex; align-items: flex-end; gap: 10px; }
@@ -211,7 +220,13 @@
 
     <section id="why">
       <h2 class="maru">こんなこと、ありませんか？</h2>
-      <p class="sub">買い物のやりとりは、いつも口頭かメッセージで、流れてしまいがちです。</p>
+      <p class="sub">口頭やメッセージでの「買ってきて」は、流れてしまいがち。よくあるのはこの3つです。</p>
+      <div class="pains">
+        <div class="pain"><span class="n">01</span><span class="k maru">二重買い</span><p>頼んだ人も頼まれた人も買ってきて、冷蔵庫に牛乳が2本。</p></div>
+        <div class="pain"><span class="n">02</span><span class="k maru">買い忘れ</span><p>「言ったのに」誰も買っていない。気づくのは、使おうとした朝。</p></div>
+        <div class="pain"><span class="n">03</span><span class="k maru">言った・言わない</span><p>頼んだかどうか誰も思い出せず、ちょっとした責め合いに。</p></div>
+      </div>
+      <p class="talk-label">たとえば、こんな日。</p>
       <div class="talk">
         <div class="msg"><div class="avatar">🧑</div><div><span class="who">おかあさん</span><div class="bubble">帰りに牛乳買ってきて〜</div></div></div>
         <div class="msg me"><div class="avatar">🧔</div><div><span class="who">おとうさん</span><div class="bubble">了解！</div></div></div>
