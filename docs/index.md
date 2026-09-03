@@ -36,7 +36,7 @@
 |---|---|---|
 | 通知 | `features.md` §10（いつ・何が・誰に届くか） | `functions/README.md`（どの関数が送るか） |
 | 更新 | `features.md` §9（どのボタンをいつ押すか） | `rules/deploy.md` §4（なぜ3段構えか・SWの落とし穴） |
-| 使い方 | `guide.html`（アプリ内から開く、平易な説明） | `docs/features.md`（機能仕様12章・スクショ付き） |
+| 使い方 | `guide.html`（アプリ内から開く、平易な説明） | `docs/features.md`（機能仕様13章・スクショ付き） |
 
 寄せると片方が使えなくなるため、あえて分けている。ただし**足すときは両方直す**。
 
@@ -58,7 +58,7 @@
 | ファイル | 中身 | 鮮度 |
 |---|---|---|
 | [`features.md`](./features.md) | 機能仕様13章（利用者向け・スクショ18枚） | 機能追加のたび更新 |
-| [`../functions/README.md`](../functions/README.md) | 関数9つの責務・仕組み図・VAPID/Blaze の設定 | 関数追加のたび更新 |
+| [`../functions/README.md`](../functions/README.md) | 関数10個の責務・仕組み図・VAPID/Blaze/メール通知の設定 | 関数追加のたび更新 |
 | [`release-plan.md`](./release-plan.md) | ストア配信 Phase 0/1/2・費用表 | **金額は2026年7月時点**（Play $25 / Apple $99・年） |
 | [`monetization-ideas.md`](./monetization-ideas.md) | 広告配置案・i-mobile の PID/asid 実値・残タスク | 配置変更のたび更新 |
 
@@ -125,7 +125,7 @@
 | `guide.html` | 使い方ガイド（利用者向け・平易な説明） |
 | `terms.html` | 利用規約 |
 | `privacy.html` | プライバシーポリシー（ストア申請に必須） |
-| `contact.html` | お問い合わせフォーム（mailtoでメール送信） |
+| `contact.html` | お問い合わせフォーム（Cloud Functions `submitContactForm` 経由で記録＋メール通知） |
 | `app.v1.html` | 旧バージョンの保存。**触らない** |
 
 ---
@@ -134,7 +134,9 @@
 
 | # | やること | 書いてある場所 |
 |---|---|---|
-| 2 | `firebase deploy --only functions` | [`rules/deploy.md` §3](./rules/deploy.md) |
-| 3 | `firebase functions:artifacts:setpolicy --location asia-southeast1` | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |
-| 5 | お問い合わせフォームのメール通知用に、Gmail アプリパスワードを発行し Secret Manager に登録（任意。未設定でもDB記録は動く） | [`../functions/README.md` §3](../functions/README.md) |
+| 6 | 通知タップで `app.html` を開く変更（`functions/index.js`）を反映する `firebase deploy --only functions`（急ぎではない） | [`rules/deploy.md` §3](./rules/deploy.md) |
+| 7 | i-mobile の媒体審査を紹介ページの URL（`https://otsukai.birdman-studio.com/`）で再申請 | [`monetization-ideas.md`](./monetization-ideas.md) |
+
+済み（2026-09-03）: functions 初回デプロイ（Node 22）、コンテナイメージの削除ポリシー（1日）、
+お問い合わせメール通知の Secret Manager 登録と到達確認。
