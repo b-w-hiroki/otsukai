@@ -8,9 +8,10 @@
   <meta name="theme-color" content="#6366f1" />
   <link rel="icon" type="image/png" href="icon-192.png" />
   <style>
-    :root { --ink:#1c1917; --muted:#78716c; --border:#e7e5e1; --pri:#6366f1; --bg:#faf9f7; --surface:#fff; --danger:#dc2626; }
+    /* --muted は注釈用。terms/privacy より一段濃くして、フォームの説明文が読めるようにしている */
+    :root { --ink:#1c1917; --muted:#57534e; --border:#e7e5e1; --pri:#6366f1; --bg:#faf9f7; --surface:#fff; --danger:#dc2626; }
     @media (prefers-color-scheme: dark) {
-      :root { --ink:#f5f4f2; --muted:#a8a29e; --border:#35323f; --pri:#a5b4fc; --bg:#14131a; --surface:#1e1d26; --danger:#f87171; }
+      :root { --ink:#f5f4f2; --muted:#c4bfb8; --border:#35323f; --pri:#a5b4fc; --bg:#14131a; --surface:#1e1d26; --danger:#f87171; }
     }
     * { box-sizing: border-box; }
     body {
@@ -23,13 +24,13 @@
     header { padding: 40px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
     h1 { font-size: 24px; margin: 0 0 8px; letter-spacing: -0.4px; }
     p { font-size: 15px; }
-    .muted { color: var(--muted); font-size: 13px; }
+    .muted { color: var(--muted); font-size: 14.5px; line-height: 1.8; }
     a { color: var(--pri); }
     footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
 
     .field { margin-bottom: 22px; }
     label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
-    label .opt { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px; }
+    label .opt { font-weight: 500; color: var(--muted); font-size: 13px; margin-left: 4px; }
     label .req { font-weight: 700; color: var(--danger); font-size: 12px; margin-left: 4px; }
     input, textarea {
       width: 100%; min-height: 44px; padding: 11px 14px;
@@ -69,7 +70,7 @@
     #form-status.success { display: block; color: #16a34a; background: rgba(22,163,74,0.1); }
     #form-status.error { display: block; color: var(--danger); background: rgba(220,38,38,0.1); }
 
-    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 20px 0; font-size: 13px; color: var(--muted); }
+    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 20px 0; font-size: 14.5px; line-height: 1.8; color: var(--ink); }
 
     .back-float {
       position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
@@ -82,6 +83,13 @@
       z-index: 50; -webkit-tap-highlight-color: transparent;
     }
     .back-float:active { transform: translateX(-50%) scale(0.96); }
+    /* ログイン画面からの遷移（?from=auth）では出さない（JSでこのクラスを付ける） */
+    .back-float.is-hidden { display: none; }
+    /* PC（広い画面）では固定ボタンは不要。フッターのリンクだけにする */
+    @media (min-width: 768px) {
+      .back-float { display: none; }
+      body { padding-bottom: 40px; }
+    }
   </style>
 </head>
 <body>
@@ -164,6 +172,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <script src="./firebase-config.js"></script>
   <script>
+    // ログイン画面（index.html の #screen-auth）からは別タブで開かれ、元のタブに
+    // アプリが残っているので「アプリに戻る」は出さない
+    if (new URLSearchParams(location.search).get("from") === "auth") {
+      var backFloat = document.querySelector(".back-float");
+      if (backFloat) backFloat.classList.add("is-hidden");
+    }
+
     // Firebase SDK の初期化は送信時まで遅らせる。SDK が読み込めない環境（オフライン・
     // 広告ブロッカー等）でもフォーム自体（同意チェック→ボタン有効化、入力チェック）は
     // 動かし、送信時に初めて「送信できない」と案内する
