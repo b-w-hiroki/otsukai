@@ -25,7 +25,8 @@ const MIME = {
 const server = http.createServer(async (req, res) => {
   try {
     const path = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
-    const file = join(ROOT, path === "/" ? "index.html" : path.replace(/^\/+/, ""));
+    // "/" はアプリ本体（app.html）。ルートの index.html は紹介ページ
+    const file = join(ROOT, path === "/" ? "app.html" : path.replace(/^\/+/, ""));
     if (!file.startsWith(normalize(ROOT))) throw new Error("traversal");
     const body = await readFile(file);
     res.writeHead(200, { "content-type": MIME[extname(file)] || "application/octet-stream" });

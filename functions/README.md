@@ -2,7 +2,7 @@
 
 「設定画面で指定した時刻に、未完了の買い物があれば家族のスマホへプッシュ通知」を実現するためのサーバー側（Cloud Functions + Cloud Scheduler）です。
 
-> アプリ本体（`index.html` / `firebase-messaging-sw.js`）のクライアント実装は導入済みです。
+> アプリ本体（`app.html` / `firebase-messaging-sw.js`）のクライアント実装は導入済みです。
 > このディレクトリの関数をデプロイし、下記の **3点（VAPIDキー / Blaze / DBルール）** を設定すると有効になります。
 
 ---

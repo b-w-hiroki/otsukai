@@ -2,10 +2,11 @@
 // ・ナビゲーションはネットワーク優先（オンライン時は常に最新）、オフライン時のみキャッシュを返す。
 // ・Firebase SDK（gstatic.com）や設定・アイコンなどの静的アセットはプリキャッシュし、
 //   キャッシュ優先で返す（圏外でもアプリが起動できるように）。
-// アプリ本体 = index.html（ルート）、プロジェクトハブ = hub.html。
-const CACHE = "otsukai-v114";
+// アプリ本体 = app.html、紹介ページ = index.html（ルート）、プロジェクトハブ = hub.html。
+const CACHE = "otsukai-v115";
 
 const PRECACHE = [
+  "./app.html",
   "./index.html",
   "./hub.html",
   "./privacy.html",
@@ -118,8 +119,13 @@ self.addEventListener("fetch", (event) => {
 
   // ナビゲーション: ネットワーク優先 → 失敗時キャッシュ
   if (request.mode === "navigate") {
-    const isHub = url.pathname.endsWith("hub.html");
-    const cacheKey = isHub ? "./hub.html" : "./index.html";
+    // 紹介ページ（ルート）・アプリ本体・ハブをそれぞれ別のキーでキャッシュする。
+    // それ以外（guide/terms/privacy/contact）はプリキャッシュ済みのファイル名で引く
+    const path = url.pathname;
+    const cacheKey = path.endsWith("app.html") ? "./app.html"
+      : path.endsWith("hub.html") ? "./hub.html"
+      : /\.html$/.test(path) ? "./" + path.split("/").pop()
+      : "./index.html";
     event.respondWith(
       fetch(request)
         .then((response) => {

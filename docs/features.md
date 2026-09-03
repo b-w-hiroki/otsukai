@@ -3,11 +3,12 @@
 家族で買い物を共有するスマホアプリです。
 **「あれ買ってきて」を家族みんなのリストに**まとめて、誰が何を買うかを迷わず決められます。
 
-📱 **アプリ**: https://b-w-hiroki.github.io/otsukai/
-（Safari / Chrome で開いて「ホーム画面に追加」するとアプリとして使えます）
+📱 **アプリ**: https://otsukai.birdman-studio.com/app.html
+（Safari / Chrome で開いて「ホーム画面に追加」するとアプリとして使えます。
+サイトのトップ https://otsukai.birdman-studio.com/ は紹介ページです）
 
-> このページは開発者向けの機能仕様（全12章・スクショ付き）です。
-> もっと読みやすい利用者向けページは [使い方ガイド](https://b-w-hiroki.github.io/otsukai/guide.html) にあります。
+> このページは開発者向けの機能仕様（全13章・スクショ付き）です。
+> もっと読みやすい利用者向けページは [使い方ガイド](https://otsukai.birdman-studio.com/guide.html) にあります。
 
 ---
 

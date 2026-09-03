@@ -110,8 +110,12 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 
 ## 6. このリポジトリの前提（覚えておくこと）
 
-- **アプリ本体はルート直下にフラット配置**（`index.html` / `app-*.js` / `styles.css` / `sw.js`）。
+- **アプリ本体はルート直下にフラット配置**（`app.html` / `app-*.js` / `styles.css` / `sw.js`）。
   移動するとキャッシュ・PWA・GitHub Pages の配信パスが全部ずれるので動かさない
+- **ルートの `index.html` は紹介ページ（ランディングページ）**で、アプリ本体ではない。
+  広告の媒体審査やSNSからの訪問者向けに、ログイン不要で内容が読める静的ページ。
+  PWAとして起動されたとき・`?action=` 付きで開かれたときは `app.html` へ即リダイレクトする
+  （インストール済みPWAの起動URLは `./` のままのため）。アプリを開くリンクは `./app.html` に向ける
 - **`app.js` は機能ごとに10ファイルへ分割済み**（`app-core.js` から `app-init.js` まで）。
   すべてクラシックスクリプトでグローバルスコープを共有しており、`index.html` の
   `<script>` の並び順で読み込み順が保証される（**順序を変えない**。特に `app-init.js`

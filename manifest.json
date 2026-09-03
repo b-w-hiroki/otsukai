@@ -6,7 +6,7 @@
   "lang": "ja",
   "dir": "ltr",
   "categories": ["lifestyle", "utilities", "shopping"],
-  "start_url": "./",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -27,7 +27,7 @@
       "name": "おつかいを追加",
       "short_name": "追加",
       "description": "買いたいものをすぐに追加する",
-      "url": "./?action=add",
+      "url": "./app.html?action=add",
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]

@@ -57,10 +57,12 @@ export async function startHarness(opts = {}) {
         res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });
         return res.end(ocrStub);
       }
-      const f = join(ROOT, p === "/" ? "index.html" : p.replace(/^\/+/, ""));
+      // テストは "/" でアプリ本体（app.html）を開く。ルートの index.html は紹介ページで、
+      // ここではアプリの挙動を見たいため
+      const f = join(ROOT, p === "/" ? "app.html" : p.replace(/^\/+/, ""));
       if (!f.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
       let b = await readFile(f);
-      if (f.endsWith("index.html")) {
+      if (f.endsWith("app.html")) {
         b = Buffer.from(
           String(b)
             .replace(/https:\/\/www\.gstatic\.com\/firebasejs\/9\.23\.0\//g, "/__fb/")

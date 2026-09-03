@@ -20,19 +20,22 @@ jobs:
             node --check "$f"
           done
 
-      - name: index.html インラインスクリプトの構文チェック
+      - name: HTML インラインスクリプトの構文チェック（app.html / index.html / contact.html）
         run: |
           node -e '
             const fs = require("fs");
-            const html = fs.readFileSync("index.html", "utf8");
-            const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
-            let m, count = 0, errors = 0;
-            while ((m = re.exec(html))) {
-              count++;
-              try { new Function(m[1]); }
-              catch (e) { errors++; console.error("Script #" + count + ": " + e.message); }
+            let errors = 0;
+            for (const file of ["app.html", "index.html", "contact.html"]) {
+              const html = fs.readFileSync(file, "utf8");
+              const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+              let m, count = 0;
+              while ((m = re.exec(html))) {
+                count++;
+                try { new Function(m[1]); }
+                catch (e) { errors++; console.error(file + " script #" + count + ": " + e.message); }
+              }
+              console.log(file + ": inline scripts " + count);
             }
-            console.log("inline scripts: " + count + ", errors: " + errors);
             if (errors > 0) process.exit(1);
           '
 

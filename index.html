@@ -2,920 +2,221 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-  <title>🧺 おうちのおつかい</title>
-  <meta name="description" content="家族でおつかいを依頼・分担できるアプリ" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- インストール済みPWA（起動URLが ./ のまま）や、ホーム画面ショートカット（./?action=add）から
+       開かれたときは、紹介ページを見せずにアプリ本体へ即移動する。描画前に判定するため head の先頭に置く -->
+  <script>
+    (function () {
+      var standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+      var q = new URLSearchParams(location.search);
+      if (standalone || q.has("action")) location.replace("./app.html" + location.search);
+    })();
+  </script>
+  <title>おうちのおつかい — 家族で買い物リストを共有するアプリ</title>
+  <meta name="description" content="「あれ買ってきて」を家族みんなのリストに。買い忘れ防止の予測、子どものやる気が続くポイント＆ミッションつき。無料・インストール不要で、スマホのブラウザからすぐ使えます。" />
+  <link rel="canonical" href="https://otsukai.birdman-studio.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="おうちのおつかい — 家族で買い物リストを共有するアプリ" />
+  <meta property="og:description" content="「あれ買ってきて」を家族みんなのリストに。買い忘れ防止の予測、ポイント＆ミッションつき。無料・インストール不要。" />
+  <meta property="og:url" content="https://otsukai.birdman-studio.com/" />
+  <meta property="og:image" content="https://otsukai.birdman-studio.com/docs/screenshots/01-home.png" />
+  <meta name="twitter:card" content="summary" />
   <meta name="theme-color" content="#6366f1" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-192.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="おつかい" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    :root { --ink:#1c1917; --ink-2:#44403c; --muted:#57534e; --border:#e7e5e1; --pri:#6366f1; --pri-dark:#4f46e5; --pri-soft:#eeecfb; --bg:#faf9f7; --surface:#fff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --ink:#f5f4f2; --ink-2:#d6d3cd; --muted:#c4bfb8; --border:#35323f; --pri:#a5b4fc; --pri-dark:#818cf8; --pri-soft:#262244; --bg:#14131a; --surface:#1e1d26; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif;
+      color: var(--ink); background: var(--bg); line-height: 1.8; -webkit-font-smoothing: antialiased;
+    }
+    img { max-width: 100%; height: auto; }
+    a { color: var(--pri); }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+    /* ヘッダー */
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; color: var(--ink); text-decoration: none; }
+    .top nav { display: flex; align-items: center; gap: 4px; }
+    .top nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 600; color: var(--ink-2); text-decoration: none; border-radius: 10px; }
+    .top nav a:hover { background: var(--pri-soft); }
+    .top nav .hide-sp { display: none; }
+    @media (min-width: 640px) { .top nav .hide-sp { display: inline-flex; } }
+
+    /* ボタン */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 48px; padding: 0 26px; border-radius: 999px; font-weight: 700; font-size: 15px;
+      text-decoration: none; border: 1.5px solid transparent; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--pri) 0%, var(--pri-dark) 100%); color: #fff; box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-ghost { background: var(--surface); color: var(--pri); border-color: var(--border); }
+
+    /* ヒーロー */
+    .hero { display: grid; gap: 28px; padding: 28px 0 40px; align-items: center; }
+    @media (min-width: 768px) { .hero { grid-template-columns: 1.15fr 1fr; padding: 48px 0 64px; } }
+    .hero h1 { font-size: 30px; line-height: 1.4; margin: 0 0 14px; letter-spacing: -0.5px; }
+    @media (min-width: 768px) { .hero h1 { font-size: 38px; } }
+    .hero h1 b { color: var(--pri-dark); }
+    .hero p.lead { font-size: 16px; color: var(--ink-2); margin: 0 0 22px; }
+    .hero .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .hero .note { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
+    .hero-shot { margin: 0 auto; width: min(300px, 78vw); border-radius: 28px; overflow: hidden; border: 6px solid var(--surface); box-shadow: 0 24px 60px rgba(45,20,110,0.22); background: var(--surface); }
+    .hero-shot img { display: block; }
+
+    /* セクション共通 */
+    section { padding: 36px 0; border-top: 1px solid var(--border); }
+    h2 { font-size: 22px; margin: 0 0 8px; letter-spacing: -0.3px; }
+    .sub { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
+
+    /* 機能 */
+    .features { display: grid; gap: 14px; }
+    @media (min-width: 640px) { .features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (min-width: 900px) { .features { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .feature { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+    .feature .icon { font-size: 26px; line-height: 1; margin-bottom: 10px; }
+    .feature b { display: block; font-size: 15.5px; margin-bottom: 4px; }
+    .feature p { margin: 0; font-size: 14px; color: var(--ink-2); }
+
+    /* 流れ */
+    .flow { display: grid; gap: 12px; }
+    @media (min-width: 640px) { .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .step { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+    .step .num { flex: 0 0 32px; height: 32px; border-radius: 50%; background: var(--pri-soft); color: var(--pri); display: flex; align-items: center; justify-content: center; font-weight: 800; }
+    .step b { display: block; font-size: 15px; margin-bottom: 2px; }
+    .step p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+
+    /* 画面 */
+    .shots { display: grid; gap: 16px; }
+    @media (min-width: 640px) { .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .shot { text-align: center; }
+    .shot img { display: block; margin: 0 auto 8px; border-radius: 18px; border: 1px solid var(--border); max-width: 260px; }
+    .shot span { font-size: 13px; color: var(--muted); }
+
+    /* 安心 */
+    .trust { display: grid; gap: 10px; }
+    @media (min-width: 640px) { .trust { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .trust li { list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+    .trust ul { margin: 0; padding: 0; display: contents; }
+
+    /* 運営者情報 */
+    table { border-collapse: collapse; width: 100%; max-width: 560px; font-size: 14px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { width: 9em; color: var(--muted); font-weight: 600; }
+
+    /* 最後のCTA・フッター */
+    .cta-end { text-align: center; padding: 44px 0; }
+    .cta-end p { color: var(--ink-2); margin: 0 0 16px; }
+    footer { border-top: 1px solid var(--border); padding: 22px 0 40px; font-size: 13px; color: var(--muted); }
+    footer .links { display: flex; flex-wrap: wrap; gap: 2px 4px; justify-content: center; margin-bottom: 8px; }
+    footer .links a { display: inline-block; padding: 10px 8px; color: var(--pri); }
+    footer .copy { text-align: center; }
+  </style>
 </head>
 <body>
-  <!-- 横持ち検知（スマホの横持ちのみ対象）。manifest.json の orientation:portrait は
-       インストール済みPWAにしか効かないため、ブラウザのタブで開いた場合の保険。 -->
-  <div id="rotate-overlay" class="rotate-overlay" aria-hidden="true">
-    <div class="rotate-overlay-icon">📱</div>
-    <p>このアプリは<b>縦向き</b>でご利用ください</p>
-  </div>
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="./">🧺 おうちのおつかい</a>
+      <nav aria-label="サイト内リンク">
+        <a class="hide-sp" href="./guide.html">使い方</a>
+        <a class="hide-sp" href="./contact.html">お問い合わせ</a>
+        <a class="btn btn-primary" style="min-height:40px;padding:0 18px;font-size:14px;" href="./app.html">アプリを開く</a>
+      </nav>
+    </header>
 
-  <!-- Toasts (global) -->
-  <div id="toasts" class="toast-wrap"></div>
-
-  <!-- 更新モーダル（新バージョン検知・ソシャゲ風の強制アップデート）。
-       閉じるボタンは無い。showUpdateModal() / scheduleForcedUpdate()（app-init.js）参照。 -->
-  <div id="update-modal" class="update-modal">
-    <div class="update-modal-card">
-      <div class="update-modal-icon">🆕</div>
-      <div class="update-modal-title">新しいバージョンがあります</div>
-      <p class="update-modal-text">ご利用には最新版が必要です。</p>
-      <button id="btn-apply-update" class="btn-block">アップデート</button>
-    </div>
-  </div>
-
-  <!-- Screen: Loading -->
-  <div id="screen-loading" class="screen active">
-    <div class="loading-screen">
-      <div class="spinner">🧺</div>
-      <div class="muted" style="font-weight:500;">読み込み中…</div>
-    </div>
-  </div>
-
-  <!-- Screen: Config error -->
-  <div id="screen-config" class="screen">
-    <div class="center-pad">
-      <h1>🧺 おうちのおつかい</h1>
-      <div class="banner error">
-        <b>Firebase設定が必要です</b>
-        <p><code>firebase-config.js</code> の <code>FIREBASE_CONFIG</code> をご自身のFirebaseプロジェクトの値に置き換えてください。</p>
-        <p>必要なサービス: <b>Authentication</b>（Email/Password と Google）と <b>Realtime Database</b></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Screen: 読み込み失敗（Firebase SDK が読み込めなかった。広告ブロッカー等が主因）。
-       init() が firebaseInitFailed を見て切り替える（app-core.js / app-init.js）。 -->
-  <div id="screen-load-error" class="screen">
-    <div class="center-pad">
-      <h1>🧺 おうちのおつかい</h1>
-      <div class="banner error">
-        <b>読み込みに失敗しました</b>
-        <p>広告ブロッカーやプライバシー系の拡張機能が、アプリに必要な通信をブロックしている可能性があります。無効にしてから再読み込みしてください。</p>
-        <p>直らない場合は、通信環境（社内ネットワーク等の制限）もご確認ください。</p>
-      </div>
-      <button id="btn-load-error-reload" class="btn-block" style="margin-top:12px;">🔄 再読み込み</button>
-    </div>
-  </div>
-
-  <!-- Screen: Auth -->
-  <div id="screen-auth" class="screen">
-    <div class="auth-hero">
-      <div class="blob blob-1"></div>
-      <div class="blob blob-2"></div>
-      <div class="blob blob-3"></div>
-      <h1 class="auth-title">おうちのおつかい</h1>
-      <p class="auth-tagline">家族でリアルタイムにお買い物をシェア</p>
-      <!-- 実際の画面のミニプレビュー（サンプルデータ）。文字だけの訴求より
-           「実際に動くアプリ」だと一目で伝わるように置いている -->
-      <div class="auth-preview" aria-hidden="true">
-        <img src="./docs/screenshots/01-home.png" alt="" loading="lazy" />
-      </div>
-    </div>
-    <div class="auth-body">
-      <div class="auth-features">
-        <p class="auth-features-lead">
-          「あれ買ってきて」を、家族みんなのリストに。<br>
-          おつかい・在庫・ミッションを一つにまとめた<br>
-          <b>家族専用のおつかいアプリ</b>です。
+    <div class="hero">
+      <div>
+        <h1>「あれ買ってきて」を、<br><b>家族みんなのリスト</b>に。</h1>
+        <p class="lead">
+          おうちのおつかいは、家族で買い物リストを共有するアプリです。
+          頼みたいものを入れると家族のスマホに届き、誰が買うかがひと目で分かります。
+          買い忘れ防止の予測や、子どものお手伝いが続くポイント＆ミッションも。
         </p>
-        <div class="auth-feature-list">
-          <div class="auth-feature">
-            <span class="auth-feature-icon">🛒</span>
-            <div class="auth-feature-text">
-              <b>頼みたい物が家族のスマホへ即同期</b>
-              <p>「卵が切れた」と入れた瞬間、外出中の家族の画面に届く。誰が引き受けたかも一目で分かる。</p>
-            </div>
-          </div>
-          <div class="auth-feature">
-            <span class="auth-feature-icon">📦</span>
-            <div class="auth-feature-text">
-              <b>家のストックを写真付きで管理</b>
-              <p>残量を「あり / 少ない / なし」で記録。買い忘れも買いすぎもなくなる。</p>
-            </div>
-          </div>
-          <div class="auth-feature">
-            <span class="auth-feature-icon">🎯</span>
-            <div class="auth-feature-text">
-              <b>子どもへのおつかいをミッション化</b>
-              <p>親が子に依頼、完了すると履歴に残る。お手伝いがちょっとした冒険になる。</p>
-            </div>
-          </div>
-          <div class="auth-feature">
-            <span class="auth-feature-icon">⚡</span>
-            <div class="auth-feature-text">
-              <b>よく買うものをワンタップで追加</b>
-              <p>定番品を登録しておけば、毎回の入力なしで即リスト化。</p>
-            </div>
-          </div>
+        <div class="cta">
+          <a class="btn btn-primary" href="./app.html">無料でアプリを開く</a>
+          <a class="btn btn-ghost" href="./guide.html">使い方を見る</a>
         </div>
+        <p class="note">インストール不要・スマホのブラウザからそのまま使えます。「ホーム画面に追加」でアプリのように起動できます。</p>
       </div>
-      <div class="card" style="margin-top: 16px;">
-        <div class="seg-control" role="tablist" aria-label="ログイン・新規登録の切り替え">
-          <button type="button" class="seg-btn active" data-auth-mode="signin" role="tab" aria-selected="true">ログイン</button>
-          <button type="button" class="seg-btn" data-auth-mode="signup" role="tab" aria-selected="false">新規登録</button>
-        </div>
-        <button id="btn-google" class="outline" style="width:100%; margin: 16px 0 4px; padding:13px; font-size:15px; display:inline-flex; align-items:center; justify-content:center; gap:10px;">
-          <svg width="19" height="19" viewBox="0 0 18 18" aria-hidden="true" style="flex-shrink:0;">
-            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
-            <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
-            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
-          </svg>
-          <span id="btn-google-label">Googleでログイン</span>
-        </button>
-        <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
-          <div style="flex:1;height:1px;background:var(--border);"></div>
-          <span class="muted" style="font-size:13px;font-weight:700;">または</span>
-          <div style="flex:1;height:1px;background:var(--border);"></div>
-        </div>
-        <div class="setup-form">
-          <input id="auth-email" type="email" placeholder="メールアドレス" autocomplete="email" />
-          <input id="auth-password" type="password" placeholder="パスワード（6文字以上）" autocomplete="current-password" />
-          <label id="auth-agree-row" style="display:none; align-items:flex-start; gap:8px; margin: 2px 0 4px; cursor:pointer; min-height:44px;">
-            <input type="checkbox" id="auth-agree" style="margin-top:3px; width:18px; height:18px; flex-shrink:0;" />
-            <span style="font-size:13px; line-height:1.6; color:var(--ink-2);">
-              <a href="terms.html" target="_blank" rel="noopener">利用規約</a>と<a href="privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意します
-            </span>
-          </label>
-          <button id="btn-auth-submit" style="width:100%; padding:13px; font-size:15px;">ログイン</button>
-        </div>
-        <p id="auth-error" class="banner error" style="display:none; margin-top:12px; margin-bottom:0;"></p>
-      </div>
-      <!-- ログイン前でも問い合わせ・使い方に辿り着けるよう、カードの下に小さな導線を置く。
-           タップ領域44pxを確保するため各リンクに上下パディングを持たせる -->
-      <p class="muted" style="text-align:center; font-size:12px; margin:10px 0 0;">
-        <a href="./guide.html" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">使い方ガイド</a>
-        ·
-        <a href="./contact.html?from=auth" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">お問い合わせ</a>
-      </p>
-      <!-- 広告枠 (i-mobile「ログイン画面 バナー」スポット、要 新規スポット作成)
-           initAdSlots() の対応行のコメントを外して mid/asid を設定すると表示される。 -->
-      <div id="ad-slot-auth" class="ad-slot">
-        <div class="ad-label">広告</div>
-        <div class="ad-content"></div>
-      </div>
+      <div class="hero-shot"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="おうちのおつかいのホーム画面。買い物リストと「そろそろ切れるかも」の予測" /></div>
     </div>
+
+    <section id="features">
+      <h2>できること</h2>
+      <p class="sub">買い物のやりとりで起きがちな「言った・言わない」「買い忘れ」「二重買い」をなくします。</p>
+      <div class="features">
+        <div class="feature"><div class="icon">🛒</div><b>頼みたい物が家族のスマホへ即同期</b><p>「卵が切れた」と入れた瞬間、外出中の家族の画面に届く。誰が引き受けたかも一目で分かる。</p></div>
+        <div class="feature"><div class="icon">⏳</div><b>「そろそろ切れるかも」を予測</b><p>買った履歴から次に切れる時期を推定して、買い忘れる前にお知らせ。</p></div>
+        <div class="feature"><div class="icon">📦</div><b>家のストックを写真付きで管理</b><p>残量を「たっぷり / 少ない / なし」で記録。買い忘れも買いすぎもなくなる。</p></div>
+        <div class="feature"><div class="icon">🎯</div><b>お手伝いをミッション化</b><p>おつかいを完了するとポイントがたまり、ごほうびと交換。子どものやる気が続く。</p></div>
+        <div class="feature"><div class="icon">⚡</div><b>よく買うものをワンタップで追加</b><p>定番品を登録しておけば、毎回の入力なしで即リスト化。</p></div>
+        <div class="feature"><div class="icon">💴</div><b>支出の記録</b><p>買った金額をメモして、家族の食費・日用品費をざっくり把握。レシートの読み取りにも対応。</p></div>
+      </div>
+    </section>
+
+    <section id="flow">
+      <h2>使い方はかんたん</h2>
+      <p class="sub">家族の誰かが頼み、買いに行ける人が引き受け、買えたら完了。それだけです。</p>
+      <div class="flow">
+        <div class="step"><div class="num">1</div><div><b>＋で追加</b><p>買ってほしいものを入れる。写真やカテゴリも付けられます。</p></div></div>
+        <div class="step"><div class="num">2</div><div><b>◯タップで「買うよ」</b><p>買いに行く人が宣言。誰が担当かが家族全員に見えます。</p></div></div>
+        <div class="step"><div class="num">3</div><div><b>✅で「買ったよ」</b><p>完了すると履歴に残り、ポイントがもらえます。</p></div></div>
+      </div>
+    </section>
+
+    <section id="screens">
+      <h2>画面イメージ</h2>
+      <p class="sub">サンプルデータでの表示例です。</p>
+      <div class="shots">
+        <div class="shot"><img src="./docs/screenshots/01-home.png" width="480" height="1039" loading="lazy" alt="ホーム画面" /><span>ホーム — 買い忘れ防止の予測とチェックリスト</span></div>
+        <div class="shot"><img src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" loading="lazy" alt="よく買うもの" /><span>よく買うもの — 写真付きでタップして追加</span></div>
+        <div class="shot"><img src="./docs/screenshots/10-missions.png" width="480" height="1039" loading="lazy" alt="ミッション" /><span>ミッション — ポイントとごほうびで子どもも楽しく</span></div>
+      </div>
+    </section>
+
+    <section id="trust">
+      <h2>安心して使うために</h2>
+      <p class="sub">家庭で使うものなので、次のことを大切にしています。</p>
+      <div class="trust"><ul>
+        <li>🔒 データは<b>家族グループの中だけ</b>で共有され、外部には公開されません</li>
+        <li>👨‍👩‍👧 家族の招待やメンバー管理は<b>保護者</b>が行います（子どもは招待コードで参加）</li>
+        <li>🆓 基本機能は<b>無料</b>で使えます。アカウントはメールアドレスまたは Google アカウントで作成</li>
+        <li>📱 iPhone / Android どちらでも。ブラウザで開いて「ホーム画面に追加」するとアプリのように使えます</li>
+      </ul></div>
+    </section>
+
+    <section id="about">
+      <h2>運営者情報</h2>
+      <table>
+        <tr><th>サービス名</th><td>おうちのおつかい（Ouchi no Otsukai）</td></tr>
+        <tr><th>運営</th><td>個人開発（Birdman Studio）</td></tr>
+        <tr><th>公開URL</th><td><a href="https://otsukai.birdman-studio.com/">https://otsukai.birdman-studio.com/</a></td></tr>
+        <tr><th>お問い合わせ</th><td><a href="./contact.html">お問い合わせフォーム</a></td></tr>
+        <tr><th>規約・ポリシー</th><td><a href="./terms.html">利用規約</a> ・ <a href="./privacy.html">プライバシーポリシー</a></td></tr>
+      </table>
+    </section>
+
+    <div class="cta-end">
+      <p>登録は1分。家族を招待して、今日の買い物から始められます。</p>
+      <a class="btn btn-primary" href="./app.html">無料でアプリを開く</a>
+    </div>
+
+    <footer>
+      <div class="links">
+        <a href="./guide.html">使い方ガイド</a>
+        <a href="./terms.html">利用規約</a>
+        <a href="./privacy.html">プライバシーポリシー</a>
+        <a href="./contact.html">お問い合わせ</a>
+        <a href="./hub.html">プロジェクトハブ</a>
+      </div>
+      <div class="copy">© 2025 おうちのおつかい</div>
+    </footer>
   </div>
-
-  <!-- Screen: Profile setup -->
-  <div id="screen-profile" class="screen">
-    <div class="center-pad">
-      <h1>👋 プロフィール</h1>
-      <p class="muted">家族の中での名前と絵文字を選んでください。</p>
-      <div class="card">
-        <div class="setup-form">
-          <label for="profile-name">名前</label>
-          <input id="profile-name" placeholder="例: パパ / ママ / たろう" maxlength="20" />
-          <label>絵文字アイコン</label>
-          <div id="emoji-picker" class="emoji-picker"></div>
-          <button id="btn-save-profile">保存して次へ</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Screen: Family setup -->
-  <div id="screen-family" class="screen">
-    <div class="center-pad">
-      <h1>👨‍👩‍👧‍👦 家族グループ</h1>
-      <p class="muted">家族グループを新しく作るか、招待コードで参加しましょう。</p>
-      <div class="card">
-        <h2>新しく作る</h2>
-        <div class="setup-form">
-          <input id="family-name" placeholder="家族の名前（例: ○○家）" maxlength="20" />
-          <button id="btn-create-family">作成する</button>
-        </div>
-      </div>
-      <div class="card">
-        <h2>招待コードで参加</h2>
-        <div class="setup-form">
-          <input id="invite-code" placeholder="招待コード（6文字）" maxlength="8" style="text-transform:uppercase;" />
-          <button id="btn-join-family" class="ghost">参加する</button>
-        </div>
-      </div>
-      <p id="family-error" class="banner error" style="display:none;"></p>
-    </div>
-  </div>
-
-  <!-- Screen: Main app -->
-  <div id="screen-main" class="screen">
-    <div class="topbar">
-      <div class="topbar-inner">
-        <button id="btn-player-profile" class="topbar-player-btn" aria-label="プレイヤー情報">
-          <div class="avatar" id="my-avatar">🙂</div>
-          <div class="topbar-player-info">
-            <div class="title" id="top-family-name"><span id="top-family-text">家族</span><span id="top-role-badge" class="role-badge" style="display:none;"></span></div>
-          </div>
-        </button>
-        <div class="grow"></div>
-        <!-- ミッションはコア機能ではないため下部ナビから外し、ここにサイドボタンとして置く -->
-        <button id="btn-missions-nav" class="topbar-icon-btn" data-tab="missions" aria-label="ミッション">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 4h10l1.5 4.5a5.5 5.5 0 01-11 0z"/>
-            <path d="M5 4H4a2 2 0 00-2 2v.5a2 2 0 002 2h2"/>
-            <path d="M19 4h1a2 2 0 012 2v.5a2 2 0 01-2 2h-2"/>
-            <line x1="12" y1="16" x2="12" y2="20"/>
-            <path d="M8 20h8"/>
-          </svg>
-          <span id="badge-missions" class="nav-badge" style="display:none;">0</span>
-        </button>
-        <button id="btn-howto" class="howto-btn" style="display:none;" aria-label="使い方">？</button>
-      </div>
-    </div>
-
-    <div class="app">
-      <!-- Tab: Requests -->
-      <section id="tab-requests" class="tab active">
-        <div id="suggest-section"></div>
-        <div id="list-open"></div>
-        <!-- 広告枠 (i-mobile「トップページ バナー」スポット)
-             initAdSlots() / injectImobileBanner() で SP/PC 別タグを端末判定して注入。
-             スポットIDの差し替えは app-init.js の initAdSlots() の引数で行う。 -->
-        <div id="ad-slot-requests" class="ad-slot">
-          <div class="ad-label">広告</div>
-          <div class="ad-content"></div>
-        </div>
-      </section>
-
-      <!-- Tab: Stock -->
-      <section id="tab-stock" class="tab">
-        <div class="card settings-acc closed" data-acc="lowlead">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>⏳ そろそろ切れるかも</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <p class="muted" style="font-size:12px;margin:0 0 10px;">
-              買い忘れそうなものを、お買い物タブのいちばん上に先回りで出します。
-            </p>
-            <div class="row" style="gap:8px;">
-              <span style="font-weight:700;font-size:13px;white-space:nowrap;">知らせる時期</span>
-              <select id="opt-low-lead" style="flex:1;">
-                <option value="0">切れる当日に</option>
-                <option value="1">1日前から</option>
-                <option value="2">2日前から（おすすめ）</option>
-                <option value="3">3日前から</option>
-                <option value="5">5日前から</option>
-                <option value="7">1週間前から</option>
-                <option value="10">10日前から</option>
-                <option value="14">2週間前から</option>
-                <option value="30">1か月前から</option>
-              </select>
-            </div>
-            <p class="muted" style="font-size:11px;margin-top:6px;">
-              買う間隔から予測したものに効きます（家族で共通）。ストックが 🟡🔴 のものは、この設定に関係なくすぐ出ます。<br>
-              品ごとの間隔は、下の品名をタップすると指定できます。
-            </p>
-          </div>
-        </div>
-        <div id="stock-out-section"></div>
-        <div id="stock-low-section"></div>
-        <div id="stock-ok-section"></div>
-        <div id="stock-empty" class="empty" style="display:none;">
-          <div class="empty-icon">📦</div>
-          <b>ストックがまだありません</b><br>
-          ＋ 新しく登録する、から追加しましょう
-        </div>
-      </section>
-
-      <!-- Tab: Missions -->
-      <section id="tab-missions" class="tab">
-        <div id="streak-section"></div>
-        <!-- ウィークリー/ごほうび/ミッションが縦積みで長くなっていたため、
-             サブタブで切り替える（ストリークだけは常に見える位置に残す）。 -->
-        <div class="seg-control" role="tablist" aria-label="ミッションタブ内の切り替え">
-          <button type="button" class="seg-btn active" data-msub="weekly" role="tab" aria-selected="true">⚡ ウィークリー</button>
-          <button type="button" class="seg-btn" data-msub="rewards" role="tab" aria-selected="false">🎁 ごほうび</button>
-          <button type="button" class="seg-btn" data-msub="admin" role="tab" aria-selected="false">🎯 ミッション</button>
-        </div>
-        <div id="weekly-missions-section" class="mission-subtab active" data-msub="weekly"></div>
-        <div id="rewards-section" class="mission-subtab" data-msub="rewards"></div>
-        <div id="missions-content" class="mission-subtab" data-msub="admin"></div>
-      </section>
-
-      <!-- Tab: Settings -->
-      <section id="tab-settings" class="tab">
-        <div class="card settings-acc closed" data-acc="profile">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>👤 プロフィール</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <div class="setup-form">
-              <label>名前</label>
-              <input id="set-name" maxlength="20" />
-              <label>絵文字アイコン</label>
-              <div id="set-emoji-picker" class="emoji-picker"></div>
-              <button id="btn-update-profile">更新</button>
-            </div>
-            <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-              <button id="btn-self-delete-toggle" class="section-toggle-btn" aria-expanded="false">🗑️ アカウント削除メニューを開く <span class="toggle-chevron">▾</span></button>
-              <div id="self-delete-body" style="display:none;">
-                <p class="muted" style="font-size:12px;margin-top:10px;">
-                  アカウントを削除すると、プロフィールとログイン情報が削除されます。
-                  あなたが追加した依頼やコメントは家族の記録として残ります。この操作は取り消せません。
-                </p>
-                <button id="btn-self-delete" class="danger" style="width:100%;margin-top:8px;min-height:44px;">🗑️ 自分のアカウントを削除する</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card settings-acc closed" data-acc="family">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>👨‍👩‍👧‍👦 家族招待</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <p><b id="set-family-name"></b></p>
-            <p class="muted">招待コード（家族を増やすときに共有）</p>
-            <div class="row">
-              <input id="set-invite-code" readonly style="font-family: monospace; font-size: 18px; text-align: center; letter-spacing: 2px;" />
-              <button id="btn-copy-code" class="ghost tiny-btn" style="white-space:nowrap;">コピー</button>
-            </div>
-            <h3 style="margin-top:12px;">メンバー</h3>
-            <div id="member-list" class="row wrap"></div>
-          </div>
-        </div>
-        <div id="member-admin-card" class="card settings-acc closed" data-acc="member-admin" style="display:none;">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>🛡️ メンバー管理（保護者）</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <button id="btn-member-admin-toggle" class="section-toggle-btn" aria-expanded="false">🔧 管理メニューを開く <span class="toggle-chevron">▾</span></button>
-            <div id="member-admin-body" style="display:none;">
-              <p class="muted" style="font-size:12px;">アカウントを削除しても、その人が追加した依頼やコメントは家族の記録に残ります。誤操作防止のため、削除は保護者だけが行えます。</p>
-              <div id="member-admin-list"></div>
-            </div>
-          </div>
-        </div>
-        <div class="card settings-acc closed" data-acc="notify">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>🔔 通知</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <label class="row">
-              <input type="checkbox" id="opt-sound" checked style="width:18px;height:18px;" />
-              <span>サウンドを鳴らす</span>
-            </label>
-            <div class="row" style="margin-top:12px;gap:8px;">
-              <span style="font-weight:700;font-size:13px;">🎨 テーマ</span>
-              <select id="opt-theme" style="flex:1;">
-                <option value="auto">端末の設定に合わせる</option>
-                <option value="light">ライト</option>
-                <option value="dark">ダーク</option>
-              </select>
-            </div>
-
-            <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
-              <div class="row" style="justify-content:space-between;align-items:center;">
-                <span style="font-weight:700;">📱 買い物リマインド</span>
-                <button id="btn-enable-push" class="ghost tiny-btn" style="white-space:nowrap;">通知をオンにする</button>
-              </div>
-              <p id="push-status" class="muted" style="font-size:12px;margin-top:6px;"></p>
-
-              <div style="margin-top:12px;">
-                <label class="muted" style="font-size:13px;">通知する時刻（毎日・家族で共有）</label>
-                <div id="reminder-times-list" class="row wrap" style="gap:6px;margin:8px 0;"></div>
-                <div class="row" style="gap:6px;">
-                  <input type="time" id="reminder-time-input" step="300" style="flex:1;" />
-                  <button id="btn-add-reminder-time" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
-                </div>
-                <p class="muted" style="font-size:11px;margin-top:6px;">設定した時刻に、未完了の買い物があると家族へ通知します。</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card settings-acc closed" data-acc="maintenance">
-          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
-            <h2>🔧 メンテナンス</h2>
-            <span class="settings-acc-chevron">▼</span>
-          </button>
-          <div class="settings-acc-body">
-            <p class="muted" style="font-size:12px;">表示が古い・データがおかしいと感じたときに使ってください。</p>
-            <div class="btn-stack">
-              <button id="btn-refresh-data" class="btn-block btn-neutral">🔄 データを再読み込み</button>
-              <button id="btn-force-update" class="btn-block btn-neutral">⬇️ アプリを最新版に更新</button>
-              <button id="btn-force-signout" class="btn-block btn-neutral">🚪 強制ログアウト（設定リセット）</button>
-            </div>
-            <p class="muted" style="font-size:11px;margin-top:8px;">
-              現在のバージョン: <span id="app-version">—</span>
-            </p>
-          </div>
-        </div>
-        <div class="card">
-          <p style="font-weight:800;margin:0;">📄 その他</p>
-          <div class="btn-stack">
-            <a href="./guide.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">💡 使い方ガイド</a>
-            <a href="./terms.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">📜 利用規約</a>
-            <a href="./privacy.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">🔒 プライバシーポリシー</a>
-            <a href="./contact.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">✉️ お問い合わせ</a>
-          </div>
-        </div>
-        <div class="card card-support">
-          <p style="font-weight:800;margin:0 0 6px;">☕ 開発者を応援する</p>
-          <p class="muted" style="font-size:12px;margin:0 0 12px;">個人開発で無料で続けています。よければ応援していただけると励みになります。</p>
-          <a href="https://ofuse.me/ff51ce4a" target="_blank" rel="noopener" class="btn-block btn-support" style="display:block;text-decoration:none;">☕ OFUSEで応援する</a>
-        </div>
-        <div class="card">
-          <button id="btn-logout" class="secondary" style="width:100%;">ログアウト</button>
-        </div>
-      </section>
-    </div>
-
-    <nav class="bottom-nav">
-      <!-- アクティブなタブの位置に合わせてスライドする背景（タップでもスワイプでも動く）。
-           実際の位置は JS（positionNavIndicator, app-init.js）がボタンの実測位置から計算する。
-           お買い物（中央の丸ボタン）は対象外（missionsと同じ「対応ボタン無し」扱い）。 -->
-      <span class="bottom-nav-indicator" aria-hidden="true"></span>
-      <!-- ストック: パッケージ箱 -->
-      <button data-tab="stock">
-        <span class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
-            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-            <line x1="12" y1="22.08" x2="12" y2="12"/>
-          </svg>
-        </span>
-        <span class="nav-label">ストック</span>
-        <span id="badge-stock" class="nav-badge" style="display:none;">0</span>
-      </button>
-      <!-- お買い物: 中央の目立つ丸ボタン（旧＋の位置）。ショッピングバッグ -->
-      <button data-tab="requests" class="active bottom-nav-home">
-        <span class="nav-icon-raised">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <path d="M16 10a4 4 0 01-8 0"/>
-          </svg>
-          <span id="badge-requests" class="nav-badge" style="display:none;">0</span>
-        </span>
-        <span class="nav-label">お買い物</span>
-      </button>
-      <!-- 設定: サンギア -->
-      <button data-tab="settings">
-        <span class="nav-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/>
-          </svg>
-        </span>
-        <span class="nav-label">設定</span>
-      </button>
-    </nav>
-
-    <!-- タブごとのフローティングボタン列（[data-tab] に一致するタブを表示中だけ出す。
-         updateFloatWraps() 参照）。右下の＋（旧fab-add）を廃止し、代わりにここへ
-         集約した。お買い物ページから開始。 -->
-    <div id="shortcut-float-wrap" class="shortcut-float-wrap" data-tab="requests" style="display:none;">
-      <!-- 「よく買うもの」は下部タブを廃止し、ここから開くシート（#shortcut-sheet）に一本化した -->
-      <button id="btn-shortcut-toggle" class="shortcut-float-btn"><span style="font-size:17px;line-height:1;">⚡</span> よく買う</button>
-      <!-- 履歴はこの列からは外した。プレイヤー情報シート（アバターをタップ）の
-           「🛒買い物履歴」から開ける。空いた枠は追加ボタンにした -->
-      <button id="btn-add-float" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 追加</button>
-    </div>
-    <!-- ストックタブ: 新規登録の入り口 -->
-    <div id="stock-float-wrap" class="shortcut-float-wrap" data-tab="stock" style="display:none;">
-      <button id="btn-stock-register" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 新しく登録する</button>
-    </div>
-    <!-- ミッションタブ: 新規作成の入り口（保護者のみ。updateFloatWraps() で判定） -->
-    <div id="mission-float-wrap" class="shortcut-float-wrap" data-tab="missions" style="display:none;">
-      <button id="btn-mission-register" class="shortcut-float-btn add"><span style="font-size:17px;line-height:1;">＋</span> 新しいミッション</button>
-    </div>
-
-    <!-- How-to modal -->
-    <div id="howto-modal-backdrop" class="howto-modal-backdrop"></div>
-    <div id="howto-modal" class="howto-modal" role="dialog" aria-label="使い方">
-      <div class="howto-modal-header">
-        <div class="sheet-title">💡 使い方</div>
-        <button id="btn-howto-close" class="sheet-close">✕</button>
-      </div>
-      <div class="howto-steps" style="margin-top:14px;">
-        <div class="howto-step" style="--i:0">
-          <div class="howto-num">1</div>
-          <div class="howto-text">
-            <strong>＋ をタップして追加</strong>
-            <span>品名・メモ・難易度を入れて送信</span>
-          </div>
-          <div class="howto-emoji">🛒</div>
-        </div>
-        <div class="howto-step" style="--i:1">
-          <div class="howto-num">2</div>
-          <div class="howto-text">
-            <strong>家族が「買ってくる！」と立候補</strong>
-            <span>リアルタイムで誰が動いてるか一目でわかる</span>
-          </div>
-          <div class="howto-emoji">🙋</div>
-        </div>
-        <div class="howto-step" style="--i:2">
-          <div class="howto-num">3</div>
-          <div class="howto-text">
-            <strong>買ったら完了マーク</strong>
-            <span>履歴に記録されて貢献度もわかる</span>
-          </div>
-          <div class="howto-emoji">✅</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 初回オンボーディング（使い方＋ホーム画面追加の案内。初回だけ・localStorageで管理。app-init.js）
-         2種類のモードを行き来する:
-         ・カード（ようこそ／ホーム画面追加）: 画面中央のカード。対象となる実要素が無いステップ用
-         ・スポットライト（＋追加／ストック／ミッション）: 実際のボタンを暗転の中で光らせ、
-           吹き出しで説明する（ソシャゲのチュートリアル風）。実ボタンをそのままタップしても
-           進む（本物の操作として機能する）し、吹き出しの「次へ」でも進める。 -->
-    <div id="onboarding-backdrop" class="onboarding-backdrop"></div>
-    <div id="onboarding-modal" class="onboarding-modal" role="dialog" aria-modal="true" aria-label="はじめかた">
-      <div class="onboarding-header">
-        <div class="onboarding-dots" id="onboarding-dots">
-          <span class="onboarding-dot" data-step="0"></span>
-          <span class="onboarding-dot" data-step="1"></span>
-          <span class="onboarding-dot" data-step="2"></span>
-          <span class="onboarding-dot" data-step="3"></span>
-          <span class="onboarding-dot" data-step="4"></span>
-        </div>
-        <button id="btn-onboarding-skip" class="onboarding-skip">スキップ</button>
-      </div>
-      <div class="onboarding-pages">
-        <div class="onboarding-page" data-step="0">
-          <div class="onboarding-page-title">ようこそ！</div>
-          <div class="onboarding-hero">
-            <div class="onboarding-hero-char" aria-hidden="true">🧺</div>
-            <div class="onboarding-hero-bubble">「牛乳お願い」がひと言で伝わる<br>家族のおつかいアプリです。<br>使い方をサクッと紹介します！</div>
-          </div>
-        </div>
-        <div class="onboarding-page" data-step="4">
-          <div class="onboarding-page-title">ホーム画面に追加しよう</div>
-          <div id="onboarding-install-body"></div>
-        </div>
-      </div>
-      <div class="onboarding-footer">
-        <button id="btn-onboarding-next" class="btn-block">次へ</button>
-      </div>
-    </div>
-
-    <!-- スポットライト演出（暗転＋実要素の穴あき＋吹き出し）。要素は3つとも空で、
-         showSpotlightStep()（app-init.js）が対象要素の位置に合わせて毎回動かす。 -->
-    <div id="onboarding-spot-backdrop" class="onboarding-spot-backdrop"></div>
-    <div id="onboarding-spot-ring" class="onboarding-spot-ring"></div>
-    <div id="onboarding-spot-tip" class="onboarding-spot-tip" role="dialog" aria-modal="true">
-      <div class="onboarding-spot-tip-arrow" id="onboarding-spot-arrow"></div>
-      <div class="onboarding-header">
-        <div class="onboarding-dots" id="onboarding-spot-dots">
-          <span class="onboarding-dot" data-step="0"></span>
-          <span class="onboarding-dot" data-step="1"></span>
-          <span class="onboarding-dot" data-step="2"></span>
-          <span class="onboarding-dot" data-step="3"></span>
-          <span class="onboarding-dot" data-step="4"></span>
-        </div>
-        <button id="btn-onboarding-spot-skip" class="onboarding-skip">スキップ</button>
-      </div>
-      <div class="onboarding-spot-tip-title" id="onboarding-spot-title"></div>
-      <div class="onboarding-spot-tip-text" id="onboarding-spot-text"></div>
-      <div class="onboarding-spot-tip-hint">👆 タップしてみよう</div>
-      <button id="btn-onboarding-spot-next" class="btn-block">次へ</button>
-    </div>
-
-    <!-- Sheet backdrop (shared) -->
-    <div id="sheet-backdrop" class="sheet-backdrop"></div>
-
-    <!-- 写真の拡大表示 -->
-    <div id="photo-viewer" class="photo-viewer" role="dialog" aria-modal="true" aria-label="写真を拡大">
-      <button id="btn-photo-viewer-close" class="photo-viewer-close" aria-label="閉じる">✕</button>
-      <img id="photo-viewer-img" alt="" />
-    </div>
-
-    <!-- Add sheet -->
-    <div id="sheet-add" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">🛍️ おつかいを追加</div>
-          <button id="btn-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div class="setup-form">
-          <input id="new-name" placeholder="買いたいもの（例: 牛乳）" maxlength="60" />
-          <!-- 写真（任意）: どれを買ってきてほしいか一目で伝えるため -->
-          <div>
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">写真（任意・どれを買うか伝わります）</label>
-            <label id="req-photo-label" class="photo-upload">
-              <input type="file" id="req-photo-input" accept="image/*" style="display:none;" />
-              <span id="req-photo-preview-wrap">
-                <span class="photo-placeholder">📷 タップして写真を選ぶ</span>
-              </span>
-            </label>
-            <div class="row" style="gap:8px;margin-top:14px;">
-              <button type="button" id="btn-req-photo-icon" class="ghost tiny-btn">🎨 イラストから選ぶ</button>
-              <button type="button" id="btn-req-photo-clear" class="ghost tiny-btn" style="display:none;">✕ 写真を外す</button>
-            </div>
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">カテゴリ（必須・いずれか1つをタップ）</label>
-            <div id="new-category" class="cat-chips">
-              <button type="button" class="cat-chip" data-cat="food">🍎 食品</button>
-              <button type="button" class="cat-chip" data-cat="daily">🧻 日用品</button>
-              <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
-            </div>
-          </div>
-          <div class="row" style="gap:8px;">
-            <div style="flex:1;">
-              <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">手間</label>
-              <select id="new-diff" style="width:100%;">
-                <option value="normal">ふつう</option>
-                <option value="hard">💪 ちょっと大変</option>
-                <option value="extreme">😅 めちゃ大変</option>
-              </select>
-            </div>
-            <label class="row" style="white-space:nowrap;align-self:flex-end;padding-bottom:11px;">
-              <input type="checkbox" id="new-urgent" style="width:18px;height:18px;" />
-              <span>🔥 急ぎ</span>
-            </label>
-          </div>
-          <div class="row" style="gap:8px;">
-            <div style="flex:1; position:relative;">
-              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
-              <input id="new-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
-            </div>
-            <input id="new-brand" placeholder="🏷️ ブランド指定（任意）" maxlength="40" style="flex:1.4;" />
-          </div>
-          <textarea id="new-memo" placeholder="📝 メモ・注意点（任意）" maxlength="200"></textarea>
-          <div>
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">担当者を指名（任意）</label>
-            <select id="new-assignee" style="width:100%;">
-              <option value="">👥 誰でもOK</option>
-            </select>
-          </div>
-          <!-- よく買うもの登録のときだけ表示。ストックと連動する買う間隔（任意） -->
-          <div id="new-cycle-wrap" style="display:none;">
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">買う間隔（任意）</label>
-            <div class="row" style="gap:6px;">
-              <input id="new-cycle-days" type="number" min="1" max="365" inputmode="numeric" placeholder="例: 7" style="flex:1;" />
-              <span style="font-size:13px;font-weight:700;white-space:nowrap;">日ごと</span>
-            </div>
-            <p class="muted" style="font-size:11px;margin-top:4px;">指定すると、ストックのこの品にも設定され「⏳ そろそろ切れるかも」でお知らせします。空欄なら買い物履歴から自動で学習します。</p>
-          </div>
-          <div class="row" style="gap:8px;">
-            <button id="btn-add-request" style="flex:1;">追加する</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Shortcut sheet: 買い物ページのフローティングボタン（⚡よく買う）から開く、
-         「よく買うもの」の管理そのもの（下部タブを廃止し、ここに一本化した）。
-         追加・編集（削除・写真差し替え）・新規登録のすべてをここで行う。 -->
-    <div id="shortcut-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">⚡ よく買うもの</div>
-          <button id="btn-shortcut-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div class="seg-control" role="tablist" aria-label="表示形式の切り替え">
-          <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="card" role="tab">🖼️ カード</button>
-          <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="list" role="tab">☰ リスト</button>
-        </div>
-        <p class="muted" style="font-size:11px;margin:8px 0 10px;">「✏️ 編集」中は写真をタップすると差し替えられます。</p>
-        <div id="shortcut-sheet-chips" class="shortcut-chips"></div>
-        <div class="btn-stack" style="margin-top:10px;">
-          <button id="btn-shortcut-register" class="ghost btn-block">＋ 新しく登録する</button>
-          <button id="btn-shortcut-edit" class="section-toggle-btn" style="display:none;">✏️ 編集 <span class="toggle-chevron">▾</span></button>
-        </div>
-        <!-- 編集モード中、カードの写真をタップすると発火する共有のファイル入力
-             （カードごとに用意せず、どのカードを対象にするかはJS側の変数で覚える） -->
-        <input type="file" id="shortcut-photo-replace-input" accept="image/*" style="display:none;" />
-      </div>
-    </div>
-
-    <!-- Stock add sheet -->
-    <div id="stock-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">📦 ストックを登録</div>
-          <button id="btn-stock-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div class="setup-form">
-          <input id="stock-name" placeholder="商品名（例: シャンプー、醤油）" maxlength="40" />
-          <input id="stock-memo" placeholder="こだわり・メモ（任意）例: 国産・無添加" maxlength="60" />
-          <div style="position:relative;">
-            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
-            <input id="stock-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
-          </div>
-          <div>
-            <input id="stock-cycle" type="number" min="1" max="365" inputmode="numeric" placeholder="何日ごとに買う？（任意）例: 7" />
-            <p class="muted" style="font-size:11px;margin-top:4px;">指定すると、切れる前に「⏳ そろそろ切れるかも」でお知らせします。空欄なら買い物履歴から自動で学習します。</p>
-          </div>
-          <!-- 写真アップロード -->
-          <div>
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">商品写真（任意）</label>
-            <label id="stock-photo-label" class="stock-photo-upload">
-              <input type="file" id="stock-photo-input" accept="image/*" style="display:none;" />
-              <span id="stock-photo-preview-wrap">
-                <span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>
-              </span>
-            </label>
-            <button type="button" id="btn-stock-photo-icon" class="ghost tiny-btn" style="margin-top:6px;">🎨 イラストから選ぶ</button>
-          </div>
-          <div class="stock-level-picker">
-            <button class="slp-btn active" data-lvl="ok">🟢 たっぷり</button>
-            <button class="slp-btn" data-lvl="low">🟡 少ない</button>
-            <button class="slp-btn" data-lvl="out">🔴 切れた</button>
-          </div>
-          <button id="btn-add-stock">追加する</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ストック詳細シートで写真を撮る/選ぶを選んだときの共有ファイル入力 -->
-    <input type="file" id="stock-detail-photo-input" accept="image/*" style="display:none;" />
-
-    <!-- Player profile sheet -->
-    <div id="player-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title" id="player-sheet-title">プレイヤー情報</div>
-          <button id="btn-player-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div id="player-sheet-body"></div>
-      </div>
-    </div>
-
-    <!-- Extra expense sheet（お使いリスト以外で買ったものの金額ログ）。
-         「＋その他の支出を記録」ボタンはプレイヤー情報シートの中にあり、その上に
-         重ねて開くため、DOM順もプレイヤー情報シートより後ろに置く必要がある
-         （.sheet はどれも同じスタッキング文脈なので、後ろにある方が上に乗る）。 -->
-    <div id="expense-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">💴 その他の支出を記録</div>
-          <button id="btn-expense-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div class="setup-form">
-          <p class="muted" style="font-size:12px;margin:0 0 4px;">お使いリスト以外で買ったものの金額も、まとめて集計できます。</p>
-          <label id="expense-receipt-label" class="stock-photo-upload">
-            <input type="file" id="expense-receipt-input" accept="image/*" capture="environment" style="display:none;" />
-            <span id="expense-receipt-status" class="stock-photo-placeholder">📷 レシート写真から金額を読み取る（任意）</span>
-          </label>
-          <p class="muted" style="font-size:11px;margin:4px 0 0;">読み取り精度は保証されません。金額は保存前に必ずご確認ください。</p>
-          <div style="position:relative;">
-            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
-            <input id="expense-amount" type="number" min="0" max="9999999" inputmode="numeric" placeholder="金額" style="padding-left:26px;" />
-          </div>
-          <input id="expense-memo" placeholder="メモ（任意）例: コンビニでお茶" maxlength="60" />
-          <button id="btn-add-expense">記録する</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Family stats sheet -->
-    <div id="family-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">👨‍👩‍👧 家族の状況</div>
-          <button id="btn-family-close" class="sheet-close">✕</button>
-        </div>
-        <div id="family-sheet-body" style="padding-bottom:16px;"></div>
-      </div>
-    </div>
-
-    <!-- Mission history sheet -->
-    <div id="mission-history-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">🏆 ミッション履歴</div>
-          <button id="btn-mission-history-close" class="sheet-close">✕</button>
-        </div>
-        <div id="mission-history-body" style="padding-bottom:16px;"></div>
-      </div>
-    </div>
-
-    <!-- Shortcut sheet（旧: フロートボタン上の吹き出しポップオーバー。
-         品数が多いと画面からはみ出て操作しづらかったため、他のシートと同じ
-         下から出るボトムシートに統一した） -->
-    <!-- History sheet -->
-    <div id="history-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">✅ 購入完了済み履歴</div>
-        </div>
-        <div id="history-list" style="padding-bottom:8px;"></div>
-      </div>
-      <!-- 閉じるボタンは画面下部（親指が届く位置）に置く -->
-      <div class="sheet-footer">
-        <button id="btn-history-close" class="store-mode-close-btn">✕ 閉じる</button>
-      </div>
-    </div>
-
-    <!-- Stock detail sheet -->
-    <div id="stock-detail-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title" id="stock-detail-title">ストック詳細</div>
-          <button id="btn-stock-detail-close" class="sheet-close">✕</button>
-        </div>
-        <div id="stock-detail-body"></div>
-      </div>
-    </div>
-
-    <!-- Mission create sheet (parent only) -->
-    <div id="mission-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">🎯 ミッションを作成</div>
-          <button id="btn-mission-sheet-close" class="sheet-close">✕</button>
-        </div>
-        <div class="setup-form">
-          <div>
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">担当する子ども</label>
-            <select id="mission-assignee" style="width:100%;"></select>
-          </div>
-          <input id="mission-title-input" placeholder="ミッション名（例: お手伝い、勉強）" maxlength="40" />
-          <div class="row" style="gap:8px;">
-            <div style="flex:1;position:relative;">
-              <input id="mission-target" type="number" min="1" max="999" placeholder="クリア回数" />
-            </div>
-            <div style="flex:1;position:relative;">
-              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
-              <input id="mission-reward-input" type="number" min="1" max="99999" placeholder="おこづかい（円）" style="padding-left:26px;" />
-            </div>
-          </div>
-          <p class="muted" style="font-size:11px;margin-top:-4px;">※ クリア回数達成でおこづかいが発生します</p>
-          <button id="btn-add-mission">ミッションを作成する</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 「イラストから選ぶ」ピッカー。よく買うもの/ストック/おつかいの写真欄から共通で開く。
-         対象（差し替え先）は openIconPicker() に渡すコールバックで都度切り替える。
-         他のどのシートの上にも重ねて開けるよう、.sheet の中でいちばん最後（DOM順）に置く
-         （.sheet はどれも同じスタッキング文脈なので、後ろにある方が上に乗る）。 -->
-    <div id="icon-picker-sheet" class="sheet">
-      <div class="sheet-handle"></div>
-      <div class="sheet-content">
-        <div class="sheet-header">
-          <div class="sheet-title">写真を選ぶ</div>
-          <button id="btn-icon-picker-close" class="sheet-close">✕</button>
-        </div>
-        <!-- 差し替え先（編集モード等）から開いたときだけ表示。「イラストを選ぶ」と
-             「写真をセットする」を別の選択肢として並べる（onCamera 未指定なら非表示のまま）。 -->
-        <button type="button" id="btn-icon-picker-camera" class="ghost tiny-btn" style="width:100%;margin-bottom:14px;display:none;">写真をセットする（撮影・ライブラリから選ぶ）</button>
-        <div id="icon-picker-grid-label" class="muted" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:none;">🎨 イラストを選ぶ</div>
-        <p class="muted" style="font-size:11px;margin:0 0 8px;">用意したイラストです。実物の写真ではありません。</p>
-        <div id="icon-picker-grid" class="icon-picker-grid"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- functions-compat（アカウント完全削除でしか使わない）は起動時には読み込まず、
-       必要になった時点で app-core.js の loadFunctionsSdk() が動的に読み込む。
-       このURLの文字列は起動時に読む他のSDKと同じ場所から作る（下のFIREBASE_SDK_BASE）。 -->
-  <script>const FIREBASE_SDK_BASE = "https://www.gstatic.com/firebasejs/9.23.0/";</script>
-  <!-- レシート写真からの金額読み取り（app-history.js の loadOcrSdk()）でだけ使う、
-       無料の端末内OCR。こちらも起動時には読み込まない。 -->
-  <script>const OCR_SDK_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";</script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
-  <script src="./firebase-config.js"></script>
-  <!-- app.js を機能単位で分割（旧: 単一の app.js 3,758行）。
-       クラシックスクリプトのままなのでグローバルスコープを共有し、挙動は分割前と同一。
-       読み込み順はこの並び順で保証される（後続ファイルは先行ファイルの関数・状態を参照できる）。 -->
-  <script src="./app-core.js"></script>
-  <script src="./app-requests.js"></script>
-  <script src="./app-rewards.js"></script>
-  <script src="./app-stock.js"></script>
-  <script src="./app-mission-admin.js"></script>
-  <script src="./app-render.js"></script>
-  <script src="./app-notify.js"></script>
-  <script src="./app-lowstock.js"></script>
-  <script src="./app-history.js"></script>
-  <script src="./app-init.js"></script>
 </body>
 </html>
