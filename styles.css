@@ -85,9 +85,11 @@ body {
 .loading-screen .muted { font-weight: 600; font-size: 13px; letter-spacing: 0.4px; }
 
 /* ======= Auth Screen ======= */
+/* サービスの説明は紹介ページ（index.html）に移したので、ここはタイトルだけの短い帯にして
+   ログインカードをファーストビューに収める */
 .auth-hero {
   background: linear-gradient(160deg, #7c3aed 0%, #5b5ef4 55%, #818cf8 100%);
-  padding: 40px 24px 56px;
+  padding: 34px 24px 60px;
   text-align: center; position: relative; overflow: hidden;
 }
 /* ふわふわ漂う光の玉。単色グラデ背景だけだと平坦に見えるための奥行き演出。
@@ -119,25 +121,8 @@ body {
 /* 以前は白68%不透明度で、背景グラデの明るい部分ではコントラストが弱く読みにくかった。
    88%まで上げて、太さも上げてはっきり読めるようにした */
 .auth-tagline { font-size: 14.5px; color: rgba(255,255,255,0.88); margin: 0; font-weight: 700; position: relative; letter-spacing: 0.2px; }
-/* 実機のミニプレビュー。文字だけの訴求より「実際に動くアプリ」だと一目で伝わる。
-   通常のドキュメントフローに置く（タグライン等に絶対配置で重ねない）ことで、
-   文字量や画面幅が変わってもテキストと衝突しない */
-.auth-preview {
-  width: 88px; height: 158px; margin: 20px auto 0;
-  border-radius: 15px; overflow: hidden;
-  box-shadow: 0 14px 30px rgba(15,12,50,0.32), 0 0 0 3px rgba(255,255,255,0.55);
-  transform: rotate(7deg);
-  animation: previewFloat 5s ease-in-out infinite;
-}
-.auth-preview img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
-@keyframes previewFloat {
-  0%,100% { transform: rotate(7deg) translateY(0); }
-  50% { transform: rotate(7deg) translateY(-6px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .auth-preview { animation: none; }
-}
-.auth-body { margin-top: -4px; position: relative; z-index: 1; padding: 0 16px; }
+/* カードをヒーローの丸い切り抜きに少し重ねて、一体感を出しつつ上に寄せる */
+.auth-body { margin-top: -28px; position: relative; z-index: 1; padding: 0 16px; }
 /* ログイン/新規登録タブは項目が2つだけで場所に余裕があるので、共通の.seg-btn
    （ミッションのサブタブ等・項目数が多く詰め込む場面向け）より少し大きくする。
    選択中/未選択の判別が付きにくいという指摘があったため、選択中は塗り潰しの
@@ -150,45 +135,6 @@ body {
   box-shadow: 0 2px 8px rgba(99,102,241,0.35);
 }
 #screen-auth .seg-btn.active:hover:not(:disabled) { background: var(--pri); color: #fff; }
-
-/* Auth: features / app description */
-.auth-features { padding: 22px 0 4px; }
-.auth-features-lead {
-  font-size: 16px; text-align: center; color: var(--ink-2);
-  margin: 0 0 16px; font-weight: 700; line-height: 1.65; text-wrap: balance;
-}
-.auth-features-lead b { color: var(--pri-dark); }
-.auth-feature-list {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
-  padding: 6px 16px;
-}
-.auth-feature {
-  display: flex; gap: 14px; align-items: center;
-  padding: 15px 2px;
-  border-bottom: 1px solid var(--border-soft);
-}
-.auth-feature:last-child { border-bottom: none; }
-.auth-feature-icon {
-  font-size: 25px; line-height: 1;
-  width: 46px; height: 46px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--pri-soft), #e0e7ff);
-  border-radius: 13px;
-}
-.auth-feature-text b {
-  font-size: 14.5px; color: var(--ink);
-  display: block; margin-bottom: 3px;
-  font-weight: 800; letter-spacing: -0.2px;
-}
-/* 以前は12px・var(--muted)で、本文としては小さく・薄すぎて読みにくかった。
-   1段濃い ink-2 に上げてサイズも本文相当まで拡大した */
-.auth-feature-text p {
-  font-size: 13px; color: var(--ink-2);
-  margin: 0; line-height: 1.6;
-}
 
 /* ======= Topbar ======= */
 .topbar {

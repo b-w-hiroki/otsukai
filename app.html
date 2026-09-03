@@ -81,50 +81,10 @@
       <div class="blob blob-3"></div>
       <h1 class="auth-title">おうちのおつかい</h1>
       <p class="auth-tagline">家族でリアルタイムにお買い物をシェア</p>
-      <!-- 実際の画面のミニプレビュー（サンプルデータ）。文字だけの訴求より
-           「実際に動くアプリ」だと一目で伝わるように置いている -->
-      <div class="auth-preview" aria-hidden="true">
-        <img src="./docs/screenshots/01-home.png" alt="" loading="lazy" />
-      </div>
     </div>
+    <!-- サービスの説明は紹介ページ（index.html）に移したので、ここはログインだけを
+         ファーストビューに収める。説明を見たい人はカード下の「サービスについて」から -->
     <div class="auth-body">
-      <div class="auth-features">
-        <p class="auth-features-lead">
-          「あれ買ってきて」を、家族みんなのリストに。<br>
-          おつかい・在庫・ミッションを一つにまとめた<br>
-          <b>家族専用のおつかいアプリ</b>です。
-        </p>
-        <div class="auth-feature-list">
-          <div class="auth-feature">
-            <span class="auth-feature-icon">🛒</span>
-            <div class="auth-feature-text">
-              <b>頼みたい物が家族のスマホへ即同期</b>
-              <p>「卵が切れた」と入れた瞬間、外出中の家族の画面に届く。誰が引き受けたかも一目で分かる。</p>
-            </div>
-          </div>
-          <div class="auth-feature">
-            <span class="auth-feature-icon">📦</span>
-            <div class="auth-feature-text">
-              <b>家のストックを写真付きで管理</b>
-              <p>残量を「あり / 少ない / なし」で記録。買い忘れも買いすぎもなくなる。</p>
-            </div>
-          </div>
-          <div class="auth-feature">
-            <span class="auth-feature-icon">🎯</span>
-            <div class="auth-feature-text">
-              <b>子どもへのおつかいをミッション化</b>
-              <p>親が子に依頼、完了すると履歴に残る。お手伝いがちょっとした冒険になる。</p>
-            </div>
-          </div>
-          <div class="auth-feature">
-            <span class="auth-feature-icon">⚡</span>
-            <div class="auth-feature-text">
-              <b>よく買うものをワンタップで追加</b>
-              <p>定番品を登録しておけば、毎回の入力なしで即リスト化。</p>
-            </div>
-          </div>
-        </div>
-      </div>
       <div class="card" style="margin-top: 16px;">
         <div class="seg-control" role="tablist" aria-label="ログイン・新規登録の切り替え">
           <button type="button" class="seg-btn active" data-auth-mode="signin" role="tab" aria-selected="true">ログイン</button>
@@ -160,6 +120,8 @@
       <!-- ログイン前でも問い合わせ・使い方に辿り着けるよう、カードの下に小さな導線を置く。
            タップ領域44pxを確保するため各リンクに上下パディングを持たせる -->
       <p class="muted" style="text-align:center; font-size:12px; margin:10px 0 0;">
+        <a href="./" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">サービスについて</a>
+        ·
         <a href="./guide.html" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">使い方ガイド</a>
         ·
         <a href="./contact.html?from=auth" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">お問い合わせ</a>
