@@ -23,6 +23,10 @@ admin.initializeApp();
 const REGION = "asia-southeast1";
 const RUNTIME_OPTS = { memory: "128MB", timeoutSeconds: 60 };
 const DB_INSTANCE = "otsukai-app-4b62b-default-rtdb";
+// お問い合わせフォームの通知メールの届け先。送信に使う Gmail アカウント
+// （Secret Manager の CONTACT_GMAIL_USER。アプリパスワードの持ち主）とは別でよい。
+// contact.html / privacy.html に載せている公開アドレスと揃えておく
+const CONTACT_NOTIFY_TO = "hiroki.torii4649@gmail.com";
 
 /** 家族の pushTokens を読み、条件に合うトークンへ FCM を送って無効分を掃除する */
 async function sendToFamily(familyId, { title, body, tag, filterUid }) {
@@ -719,11 +723,14 @@ exports.notifyRewardRedeem = functions
  * Secret Manager で管理する。未設定の間はメール送信だけスキップし、
  * DBへの記録は行う（Firebase Console から確認できる）。詳しくは README.md。
  */
+// Google が表示するアプリパスワードは「abcd efgh ijkl mnop」と4文字ごとに空白が
+// 入っており、そのまま登録すると 535 Username and Password not accepted になる。
+// 前後の空白や改行も同様なので、ここで取り除いてから使う
 function getContactMailer() {
-  const user = process.env.CONTACT_GMAIL_USER;
-  const pass = process.env.CONTACT_GMAIL_APP_PASSWORD;
+  const user = String(process.env.CONTACT_GMAIL_USER || "").trim();
+  const pass = String(process.env.CONTACT_GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
   if (!user || !pass) return null;
-  return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+  return { user, transporter: nodemailer.createTransport({ service: "gmail", auth: { user, pass } }) };
 }
 
 exports.submitContactForm = functions
@@ -765,15 +772,16 @@ exports.submitContactForm = functions
       createdAt: admin.database.ServerValue.TIMESTAMP,
     });
 
-    const transporter = getContactMailer();
-    if (!transporter) {
+    const mailer = getContactMailer();
+    if (!mailer) {
       console.warn("CONTACT_GMAIL_USER / CONTACT_GMAIL_APP_PASSWORD 未設定のためメール通知をスキップ（DBには記録済み）");
       return { ok: true };
     }
     try {
-      await transporter.sendMail({
-        from: `おうちのおつかい <${process.env.CONTACT_GMAIL_USER}>`,
-        to: process.env.CONTACT_GMAIL_USER,
+      await mailer.transporter.sendMail({
+        // Gmail は差出人を認証したアカウントに書き換えるため from は送信用アカウント
+        from: `おうちのおつかい <${mailer.user}>`,
+        to: CONTACT_NOTIFY_TO || mailer.user,
         replyTo: email,
         subject: `【おうちのおつかい】${subject}`,
         text: [
