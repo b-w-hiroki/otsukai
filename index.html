@@ -129,11 +129,25 @@
     .more .li p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
     .pt { display: inline-block; font-size: 12px; font-weight: 800; color: var(--pri-dark); background: var(--pri-soft); border-radius: 8px; padding: 2px 8px; margin-left: 6px; }
 
-    /* 画面 */
-    .shots { display: grid; gap: 22px; }
-    @media (min-width: 640px) { .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; } .shots .shot:nth-child(2) { margin-bottom: 28px; } }
-    .shot img { display: block; margin: 0 auto 8px; border-radius: 18px; border: 1px solid var(--border); max-width: 240px; }
-    .shot p { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
+    /* 帯（全幅の背景で節にリズムをつける） */
+    section.band { background: var(--surface); box-shadow: 0 0 0 100vmax var(--surface); clip-path: inset(0 -100vmax); border-top: 0; }
+    section.band + section { border-top: 0; }
+
+    /* 画面カルーセル */
+    .sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+    .car-nav { display: flex; gap: 6px; flex-shrink: 0; padding-bottom: 20px; }
+    .car-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0 0 3px; }
+    .car-btn:active { transform: translateY(1px); }
+    .car { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 20px; margin: 0 -20px; padding: 6px 20px 12px; scrollbar-width: none; -webkit-overflow-scrolling: touch; outline: none; }
+    .car::-webkit-scrollbar { display: none; }
+    .car:focus-visible { box-shadow: inset 0 0 0 2px var(--pri); border-radius: 12px; }
+    .car figure { flex: 0 0 min(236px, 68vw); margin: 0; scroll-snap-align: center; }
+    @media (min-width: 640px) { .car figure { scroll-snap-align: start; } }
+    .car img { display: block; width: 100%; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); }
+    .car figcaption { margin-top: 8px; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .car-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
+    .car-dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--border); transition: width .2s, background .2s; }
+    .car-dots span.on { width: 18px; background: var(--pri); }
 
     /* 作った人から */
     .paper { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 22px 22px 18px; max-width: 620px; box-shadow: 0 1px 0 var(--border); }
@@ -207,7 +221,7 @@
       </div>
     </section>
 
-    <section id="how">
+    <section id="how" class="band">
       <h2 class="maru">おうちのおつかいだと、こうなります</h2>
       <p class="sub">1つの品目が、家族の画面でこう進みます。誰が担当かも、終わったかも、全員に同時に見えます。</p>
       <div class="flow">
@@ -234,16 +248,29 @@
     </section>
 
     <section id="screens">
-      <h2 class="maru">画面イメージ</h2>
-      <p class="sub">サンプルデータでの表示です。</p>
-      <div class="shots">
-        <div class="shot"><img src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" alt="よく買うものの画面" /><p>よく買うもの</p></div>
-        <div class="shot"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="ホーム画面" /><p>ホーム（買い物リストと予測）</p></div>
-        <div class="shot"><img src="./docs/screenshots/10-missions.png" width="480" height="1039" alt="ミッションの画面" /><p>ミッションとポイント</p></div>
+      <div class="sec-head">
+        <div>
+          <h2 class="maru">画面イメージ</h2>
+          <p class="sub">サンプルデータでの表示です。横にスワイプして見られます。</p>
+        </div>
+        <div class="car-nav">
+          <button type="button" class="car-btn" data-dir="-1" aria-label="前の画面へ">‹</button>
+          <button type="button" class="car-btn" data-dir="1" aria-label="次の画面へ">›</button>
+        </div>
       </div>
+      <div class="car" id="shots-car" tabindex="0" aria-label="アプリの画面イメージ（横スクロール）">
+        <figure><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="ホーム画面" /><figcaption>ホーム — 買い物リストと「そろそろ切れるかも」</figcaption></figure>
+        <figure><img src="./docs/screenshots/03-add-sheet.png" width="480" height="1039" alt="おつかいを追加する画面" /><figcaption>追加 — 写真・カテゴリ・急ぎを付けて頼む</figcaption></figure>
+        <figure><img src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" alt="よく買うもの" /><figcaption>よく買うもの — タップで即リストへ</figcaption></figure>
+        <figure><img src="./docs/screenshots/11-stock.png" width="480" height="1039" alt="ストック" /><figcaption>ストック — 家にある物を「たっぷり / 少ない / なし」で</figcaption></figure>
+        <figure><img src="./docs/screenshots/10-missions.png" width="480" height="1039" alt="ミッション" /><figcaption>ミッション — ポイントとごほうび</figcaption></figure>
+        <figure><img src="./docs/screenshots/19-expenses.png" width="480" height="1039" alt="支出・家計" /><figcaption>支出 — いくら使ったかをメモ</figcaption></figure>
+        <figure><img src="./docs/screenshots/09-history.png" width="480" height="1039" alt="購入履歴" /><figcaption>履歴 — 買ったものは家族の記録に</figcaption></figure>
+      </div>
+      <div class="car-dots" id="shots-dots" aria-hidden="true"></div>
     </section>
 
-    <section id="note">
+    <section id="note" class="band">
       <h2 class="maru">作った人から</h2>
       <div class="paper">
         <p>「牛乳買ってきて」って頼んだのに誰も買ってこなかったり、逆に2本になったり。うちの「言った・言わない」をなくしたくて、家族用に作ったのがこのアプリです。</p>
@@ -282,5 +309,33 @@
       </div>
     </footer>
   </div>
+  <script>
+    // 画面イメージのカルーセル: スクロール位置に合わせてドットを更新し、‹ › で1枚ずつ送る。
+    // 本体は CSS の scroll-snap なので、JS が動かなくても横スクロールはできる
+    (function () {
+      var car = document.getElementById("shots-car");
+      var dots = document.getElementById("shots-dots");
+      if (!car || !dots) return;
+      var figs = Array.prototype.slice.call(car.querySelectorAll("figure"));
+      figs.forEach(function () { dots.appendChild(document.createElement("span")); });
+      var marks = dots.querySelectorAll("span");
+      function update() {
+        var mid = car.scrollLeft + car.clientWidth / 2, idx = 0, best = Infinity;
+        figs.forEach(function (f, i) {
+          var d = Math.abs(f.offsetLeft + f.offsetWidth / 2 - mid);
+          if (d < best) { best = d; idx = i; }
+        });
+        marks.forEach(function (m, i) { m.classList.toggle("on", i === idx); });
+      }
+      car.addEventListener("scroll", function () { window.requestAnimationFrame(update); }, { passive: true });
+      Array.prototype.forEach.call(document.querySelectorAll(".car-btn"), function (b) {
+        b.addEventListener("click", function () {
+          var step = figs[0] ? figs[0].offsetWidth + 16 : 260;
+          car.scrollBy({ left: step * Number(b.getAttribute("data-dir")), behavior: "smooth" });
+        });
+      });
+      update();
+    })();
+  </script>
 </body>
 </html>

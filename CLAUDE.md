@@ -3,7 +3,8 @@
 家族で買い物を共有する **PWA 1本**のリポジトリ。
 GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM / Functions）を使う。
 
-公開URL: https://b-w-hiroki.github.io/otsukai/
+公開URL: https://otsukai.birdman-studio.com/ （紹介ページ。アプリ本体は `/app.html`。
+旧 URL `https://b-w-hiroki.github.io/otsukai/` は GitHub Pages が新ドメインへ転送する）
 
 ---
 
@@ -28,8 +29,9 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 
 | 依頼が来たら | 先に読む | 主な対象ファイル |
 |---|---|---|
-| **画面の見た目・ボタン・レイアウト** | [`docs/rules/ui.md`](./docs/rules/ui.md) | `styles.css`, `index.html`, `app-*.js` |
-| **機能を足す・変える** | [`docs/features.md`](./docs/features.md) → `docs/rules/ui.md` | `app-*.js`, `index.html` |
+| **画面の見た目・ボタン・レイアウト** | [`docs/rules/ui.md`](./docs/rules/ui.md) | `styles.css`, `app.html`, `app-*.js` |
+| **機能を足す・変える** | [`docs/features.md`](./docs/features.md) → `docs/rules/ui.md` | `app-*.js`, `app.html` |
+| **紹介ページ（トップ）** | [`docs/monetization-ideas.md`](./docs/monetization-ideas.md)（媒体審査の経緯） | `index.html`（自己完結の静的ページ） |
 | **通知・ポイント・サーバー処理** | [`functions/README.md`](./functions/README.md) → [`docs/rules/deploy.md`](./docs/rules/deploy.md) | `functions/index.js` |
 | **DBの構造・権限** | [`docs/rules/deploy.md` §2](./docs/rules/deploy.md) | `database.rules.json` |
 | **リリース・更新が届かない** | [`docs/rules/deploy.md`](./docs/rules/deploy.md) | `sw.js`, `manifest.json` |
@@ -117,7 +119,7 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
   PWAとして起動されたとき・`?action=` 付きで開かれたときは `app.html` へ即リダイレクトする
   （インストール済みPWAの起動URLは `./` のままのため）。アプリを開くリンクは `./app.html` に向ける
 - **`app.js` は機能ごとに10ファイルへ分割済み**（`app-core.js` から `app-init.js` まで）。
-  すべてクラシックスクリプトでグローバルスコープを共有しており、`index.html` の
+  すべてクラシックスクリプトでグローバルスコープを共有しており、`app.html` の
   `<script>` の並び順で読み込み順が保証される（**順序を変えない**。特に `app-init.js`
   が持つ `init()` 呼び出しは最後に読み込まれる前提）
 - `hub.html` は**プロジェクトハブ**（メインアプリ / 旧版 v1 / ドキュメント / ロードマップへの入口）
