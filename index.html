@@ -157,6 +157,13 @@
         </div>
         <p id="auth-error" class="banner error" style="display:none; margin-top:12px; margin-bottom:0;"></p>
       </div>
+      <!-- ログイン前でも問い合わせ・使い方に辿り着けるよう、カードの下に小さな導線を置く。
+           タップ領域44pxを確保するため各リンクに上下パディングを持たせる -->
+      <p class="muted" style="text-align:center; font-size:12px; margin:10px 0 0;">
+        <a href="./guide.html" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">使い方ガイド</a>
+        ·
+        <a href="./contact.html" target="_blank" rel="noopener" style="display:inline-block; padding:14px 8px; line-height:1.4; color:var(--pri);">お問い合わせ</a>
+      </p>
       <!-- 広告枠 (i-mobile「ログイン画面 バナー」スポット、要 新規スポット作成)
            initAdSlots() の対応行のコメントを外して mid/asid を設定すると表示される。 -->
       <div id="ad-slot-auth" class="ad-slot">
@@ -419,6 +426,7 @@
             <a href="./guide.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">💡 使い方ガイド</a>
             <a href="./terms.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">📜 利用規約</a>
             <a href="./privacy.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">🔒 プライバシーポリシー</a>
+            <a href="./contact.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">✉️ お問い合わせ</a>
           </div>
         </div>
         <div class="card card-support">

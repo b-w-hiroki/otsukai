@@ -41,7 +41,31 @@ Cloud Functions / Cloud Scheduler は **Blaze（従量課金）プラン**が必
 - Firebase Console → 左下「アップグレード」→ Blaze
 - 毎分起動でも無料枠内に収まることが多いですが、課金が発生し得る点はご認識ください。
 
-## 3. Realtime Database のルール（必須）
+## 3. お問い合わせフォームのメール通知（任意）
+
+`contact.html` から送信されたお問い合わせは `submitContactForm` が受け取り、
+まず Realtime Database の `contactMessages` に記録する（ここまでは追加設定不要）。
+開発者宛てのメール通知も行うには、Gmail の SMTP 用に **アプリパスワード**を発行し、
+Secret Manager に登録する：
+
+1. 通知を受け取りたい Google アカウントで、[Googleアカウントの管理 → セキュリティ](https://myaccount.google.com/security) → **2段階認証を有効化**（未設定なら先に済ませる）
+2. 同じ画面から **アプリパスワード** を作成（アプリ名は「otsukai」など任意）。表示された16桁の文字列を控える
+3. リポジトリのルートで:
+
+```bash
+firebase functions:secrets:set CONTACT_GMAIL_USER
+# → 通知を受け取りたい Gmail アドレスを入力
+
+firebase functions:secrets:set CONTACT_GMAIL_APP_PASSWORD
+# → 手順2で発行した16桁のアプリパスワードを入力
+```
+
+4. `firebase deploy --only functions` でデプロイ
+
+未設定のままでも動作は壊れない（`contactMessages` への記録だけ行われ、メール送信はスキップされる）。
+Firebase Console の Realtime Database から `contactMessages` を見れば内容は確認できる。
+
+## 4. Realtime Database のルール（必須）
 
 リポジトリ直下に **`database.rules.json`** を用意しています。
 家族メンバーだけが家族データを読み書きでき、`reminderTimes` / `pushTokens` /
@@ -80,7 +104,7 @@ firebase functions:log --only shoppingReminder
 
 ---
 
-## 含まれる関数（9つ）
+## 含まれる関数（10個）
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
@@ -93,6 +117,7 @@ firebase functions:log --only shoppingReminder
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動＋古い週次ミッションデータの掃除 |
 | `deleteMemberAccount` | callable（**本人のみ**。役割問わず自分自身のアカウントをいつでも削除可） | 自分のアカウント完全削除。他人の指定は permission-denied で拒否。**最後の保護者は削除不可**（家族ロック防止） |
+| `submitContactForm` | callable（`contact.html`から・未ログインでも可） | お問い合わせを `contactMessages` に記録し、Gmail SMTP経由で開発者へメール通知（未設定ならDB記録のみ） |
 
 `firebase deploy --only functions` でまとめてデプロイされます。
 
@@ -102,6 +127,8 @@ firebase functions:log --only shoppingReminder
 > - **ごほうびポイントの付与は `awardPoints` のデプロイ後に動作**します（子どもによる
 >   ポイント偽造を防ぐため、付与をサーバー側に移しました）。未デプロイの間は
 >   完了してもポイントが増えません（交換は残高があれば動きます）
+> - お問い合わせフォーム（`contact.html`）は `submitContactForm` のデプロイ後に動作。
+>   未デプロイの間は送信ボタンを押してもエラーになります
 
 ## メモ / 調整ポイント
 

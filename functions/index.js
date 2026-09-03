@@ -12,6 +12,7 @@
  */
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 
@@ -707,4 +708,87 @@ exports.notifyRewardRedeem = functions
       console.error("notifyRewardRedeem failed", familyId, e);
     }
     return null;
+  });
+
+/**
+ * contact.html のお問い合わせフォームから呼ばれる callable。
+ * ・RTDB の contactMessages に記録として残す（root は既定で読み書き不可のため、
+ *   Admin SDK 経由のここからしか書き込めない。DBルールの追加は不要）
+ * ・Gmail の SMTP 経由で開発者本人へメール通知する
+ * メール送信用の認証情報（CONTACT_GMAIL_USER / CONTACT_GMAIL_APP_PASSWORD）は
+ * Secret Manager で管理する。未設定の間はメール送信だけスキップし、
+ * DBへの記録は行う（Firebase Console から確認できる）。詳しくは README.md。
+ */
+function getContactMailer() {
+  const user = process.env.CONTACT_GMAIL_USER;
+  const pass = process.env.CONTACT_GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+}
+
+exports.submitContactForm = functions
+  .region(REGION)
+  .runWith({ ...RUNTIME_OPTS, secrets: ["CONTACT_GMAIL_USER", "CONTACT_GMAIL_APP_PASSWORD"] })
+  .https.onCall(async (data) => {
+    // ハニーポット（クライアント側のJSを無視してcallableへ直接送ってくる
+    // 機械的な送信への対策）。埋まっていたら黙って成功扱いにする
+    if (data && data.hp) {
+      return { ok: true };
+    }
+    const name = String((data && data.name) || "").trim().slice(0, 100);
+    const company = String((data && data.company) || "").trim().slice(0, 200);
+    const email = String((data && data.email) || "").trim().slice(0, 200);
+    const phone = String((data && data.phone) || "").trim().slice(0, 40);
+    const subject = String((data && data.subject) || "").trim().slice(0, 120);
+    const message = String((data && data.message) || "").trim().slice(0, 4000);
+    const agreed = !!(data && data.agreed);
+    // 必須項目と同意はクライアント側でも見ているが、callable を直接叩かれる
+    // 前提でサーバー側でも検証する（会社名・電話番号は任意）
+    if (!name || !email || !subject || !message) {
+      throw new functions.https.HttpsError("invalid-argument", "お名前・メールアドレス・件名・お問い合わせ内容は必須です");
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new functions.https.HttpsError("invalid-argument", "メールアドレスの形式が正しくありません");
+    }
+    if (!agreed) {
+      throw new functions.https.HttpsError("failed-precondition", "プライバシーポリシーへの同意が必要です");
+    }
+
+    await admin.database().ref("contactMessages").push({
+      name,
+      company: company || null,
+      email,
+      phone: phone || null,
+      subject,
+      message,
+      agreed: true,
+      createdAt: admin.database.ServerValue.TIMESTAMP,
+    });
+
+    const transporter = getContactMailer();
+    if (!transporter) {
+      console.warn("CONTACT_GMAIL_USER / CONTACT_GMAIL_APP_PASSWORD 未設定のためメール通知をスキップ（DBには記録済み）");
+      return { ok: true };
+    }
+    try {
+      await transporter.sendMail({
+        from: `おうちのおつかい <${process.env.CONTACT_GMAIL_USER}>`,
+        to: process.env.CONTACT_GMAIL_USER,
+        replyTo: email,
+        subject: `【おうちのおつかい】${subject}`,
+        text: [
+          `お名前: ${name}`,
+          company && `会社名・組織名: ${company}`,
+          `メールアドレス: ${email}`,
+          phone && `電話番号: ${phone}`,
+          `件名: ${subject}`,
+          "",
+          message,
+        ].filter(Boolean).join("\n"),
+      });
+    } catch (e) {
+      // メール送信に失敗してもDBには記録済みのため、致命的エラーにはしない
+      console.error("お問い合わせメール送信失敗:", e);
+    }
+    return { ok: true };
   });

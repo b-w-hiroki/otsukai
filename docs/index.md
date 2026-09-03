@@ -28,6 +28,7 @@
 | **機能の仕様（利用者向け）** | `docs/features.md` | — |
 | **利用規約** | `terms.html` | — |
 | **プライバシーポリシー** | `privacy.html` | — |
+| **お問い合わせ** | `contact.html` | — |
 
 **粒度が違うものは、無理に片方へ寄せない。** 通知・更新・使い方は正本が2つある:
 
@@ -122,6 +123,7 @@
 | `guide.html` | 使い方ガイド（利用者向け・平易な説明） |
 | `terms.html` | 利用規約 |
 | `privacy.html` | プライバシーポリシー（ストア申請に必須） |
+| `contact.html` | お問い合わせフォーム（mailtoでメール送信） |
 | `app.v1.html` | 旧バージョンの保存。**触らない** |
 
 ---
@@ -133,3 +135,4 @@
 | 2 | `firebase deploy --only functions` | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 3 | `firebase functions:artifacts:setpolicy --location asia-southeast1` | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |
+| 5 | お問い合わせフォームのメール通知用に、Gmail アプリパスワードを発行し Secret Manager に登録（任意。未設定でもDB記録は動く） | [`../functions/README.md` §3](../functions/README.md) |
