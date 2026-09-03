@@ -52,6 +52,14 @@
       display: none; color: var(--danger); font-size: 13px; font-weight: 700;
       margin: -8px 0 20px;
     }
+    #form-status {
+      display: none; font-size: 14px; font-weight: 700; margin: -8px 0 20px;
+      padding: 12px 14px; border-radius: 12px;
+    }
+    #form-status.sending { display: block; color: var(--muted); background: var(--surface); border: 1.5px solid var(--border); }
+    #form-status.success { display: block; color: #16a34a; background: rgba(22,163,74,0.1); }
+    #form-status.error { display: block; color: var(--danger); background: rgba(220,38,38,0.1); }
+    #btn-submit:disabled { opacity: 0.6; cursor: default; }
 
     .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 20px 0; font-size: 13px; color: var(--muted); }
 
@@ -76,8 +84,7 @@
     </header>
 
     <p class="muted">
-      送信ボタンを押すと、入力内容を差し込んだ状態でお使いのメールアプリが開きます。
-      内容をご確認のうえ、そのまま送信してください。
+      このフォームから送信すると、開発者宛てに直接メールが届きます。
     </p>
 
     <form id="contact-form">
@@ -106,12 +113,13 @@
       </div>
 
       <p id="form-error">お問い合わせ内容を入力してください</p>
+      <p id="form-status"></p>
 
-      <button type="submit" id="btn-submit">メールアプリで送信する</button>
+      <button type="submit" id="btn-submit">送信する</button>
     </form>
 
-    <div class="box">
-      メールアプリが開かない場合は、
+    <div class="box" id="fallback-box">
+      うまく送信できない場合は、
       <a href="mailto:hiroki.torii4649@gmail.com">hiroki.torii4649@gmail.com</a>
       まで直接ご連絡ください。
     </div>
@@ -125,32 +133,52 @@
   </div>
   <a href="./" class="back-float">← アプリに戻る</a>
 
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+  <script src="./firebase-config.js"></script>
   <script>
-    document.getElementById("contact-form").addEventListener("submit", function (e) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    var submitFn = firebase.app().functions("asia-southeast1").httpsCallable("submitContactForm");
+
+    var form = document.getElementById("contact-form");
+    var btn = document.getElementById("btn-submit");
+    var errorEl = document.getElementById("form-error");
+    var statusEl = document.getElementById("form-status");
+
+    function setStatus(kind, text) {
+      statusEl.className = kind || "";
+      statusEl.textContent = text || "";
+      statusEl.style.display = text ? "block" : "none";
+    }
+
+    form.addEventListener("submit", function (e) {
       e.preventDefault();
       var body = document.getElementById("c-body").value.trim();
-      var errorEl = document.getElementById("form-error");
       if (!body) {
         errorEl.style.display = "block";
         return;
       }
       errorEl.style.display = "none";
+      setStatus("", "");
 
       var name = document.getElementById("c-name").value.trim();
       var type = document.getElementById("c-type").value;
       var reply = document.getElementById("c-reply").value.trim();
 
-      var lines = [];
-      if (name) lines.push("お名前: " + name);
-      if (reply) lines.push("返信用メールアドレス: " + reply);
-      if (lines.length) lines.push("");
-      lines.push(body);
+      btn.disabled = true;
+      setStatus("sending", "送信しています…");
 
-      var subject = "【おうちのおつかい】" + type;
-      var mailto = "mailto:hiroki.torii4649@gmail.com"
-        + "?subject=" + encodeURIComponent(subject)
-        + "&body=" + encodeURIComponent(lines.join("\n"));
-      window.location.href = mailto;
+      submitFn({ name: name, type: type, replyTo: reply, message: body })
+        .then(function () {
+          setStatus("success", "✅ 送信しました。ご連絡ありがとうございます。");
+          form.reset();
+          btn.disabled = false;
+        })
+        .catch(function (err) {
+          console.error("submitContactForm failed", err);
+          setStatus("error", "⚠️ 送信に失敗しました。お手数ですが下のメールアドレスへ直接ご連絡ください。");
+          btn.disabled = false;
+        });
     });
   </script>
 </body>

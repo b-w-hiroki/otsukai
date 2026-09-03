@@ -95,6 +95,7 @@ firebase deploy --only functions
 | ごほうびポイントの付与 | `awardPoints` |
 | メンバーのアカウント削除 | `deleteMemberAccount` |
 | 買い物リマインド・週次サマリー | `shoppingReminder` / `weeklySummary` |
+| お問い合わせフォーム（`contact.html`） | `submitContactForm` |
 
 関数ごとの責務は `functions/README.md` を参照。
 

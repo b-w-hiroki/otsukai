@@ -135,3 +135,4 @@
 | 2 | `firebase deploy --only functions` | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 3 | `firebase functions:artifacts:setpolicy --location asia-southeast1` | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |
+| 5 | お問い合わせフォームのメール通知用に、Gmail アプリパスワードを発行し Secret Manager に登録（任意。未設定でもDB記録は動く） | [`../functions/README.md` §3](../functions/README.md) |

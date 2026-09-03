@@ -12,6 +12,7 @@
  */
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const nodemailer = require("nodemailer");
 
 admin.initializeApp();
 
@@ -707,4 +708,62 @@ exports.notifyRewardRedeem = functions
       console.error("notifyRewardRedeem failed", familyId, e);
     }
     return null;
+  });
+
+/**
+ * contact.html のお問い合わせフォームから呼ばれる callable。
+ * ・RTDB の contactMessages に記録として残す（root は既定で読み書き不可のため、
+ *   Admin SDK 経由のここからしか書き込めない。DBルールの追加は不要）
+ * ・Gmail の SMTP 経由で開発者本人へメール通知する
+ * メール送信用の認証情報（CONTACT_GMAIL_USER / CONTACT_GMAIL_APP_PASSWORD）は
+ * Secret Manager で管理する。未設定の間はメール送信だけスキップし、
+ * DBへの記録は行う（Firebase Console から確認できる）。詳しくは README.md。
+ */
+function getContactMailer() {
+  const user = process.env.CONTACT_GMAIL_USER;
+  const pass = process.env.CONTACT_GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+}
+
+exports.submitContactForm = functions
+  .region(REGION)
+  .runWith({ ...RUNTIME_OPTS, secrets: ["CONTACT_GMAIL_USER", "CONTACT_GMAIL_APP_PASSWORD"] })
+  .https.onCall(async (data) => {
+    const name = String((data && data.name) || "").trim().slice(0, 100);
+    const type = String((data && data.type) || "その他のご質問").trim().slice(0, 40);
+    const replyTo = String((data && data.replyTo) || "").trim().slice(0, 200);
+    const message = String((data && data.message) || "").trim().slice(0, 4000);
+    if (!message) {
+      throw new functions.https.HttpsError("invalid-argument", "お問い合わせ内容を入力してください");
+    }
+
+    await admin.database().ref("contactMessages").push({
+      name: name || null,
+      type,
+      replyTo: replyTo || null,
+      message,
+      createdAt: admin.database.ServerValue.TIMESTAMP,
+    });
+
+    const transporter = getContactMailer();
+    if (!transporter) {
+      console.warn("CONTACT_GMAIL_USER / CONTACT_GMAIL_APP_PASSWORD 未設定のためメール通知をスキップ（DBには記録済み）");
+      return { ok: true };
+    }
+    try {
+      await transporter.sendMail({
+        from: `おうちのおつかい <${process.env.CONTACT_GMAIL_USER}>`,
+        to: process.env.CONTACT_GMAIL_USER,
+        replyTo: replyTo || undefined,
+        subject: `【おうちのおつかい】${type}`,
+        text: [name && `お名前: ${name}`, replyTo && `返信用: ${replyTo}`, "", message]
+          .filter(Boolean)
+          .join("\n"),
+      });
+    } catch (e) {
+      // メール送信に失敗してもDBには記録済みのため、致命的エラーにはしない
+      console.error("お問い合わせメール送信失敗:", e);
+    }
+    return { ok: true };
   });
