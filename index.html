@@ -25,197 +25,261 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" href="icon-192.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" />
   <style>
-    :root { --ink:#1c1917; --ink-2:#44403c; --muted:#57534e; --border:#e7e5e1; --pri:#6366f1; --pri-dark:#4f46e5; --pri-soft:#eeecfb; --bg:#faf9f7; --surface:#fff; }
+    :root {
+      --ink:#1c1917; --ink-2:#44403c; --muted:#57534e; --border:#e7e5e1; --bg:#faf9f7; --surface:#fff; --paper:#fffdf5;
+      --pri:#6366f1; --pri-dark:#4f46e5; --pri-soft:#eeecfb;
+      --marker:#fde68a;
+      --c-open:#3b82f6; --c-open-soft:#eff6ff; --c-claimed:#b45309; --c-claimed-soft:#fffbeb; --c-done:#047857; --c-done-soft:#ecfdf5; --c-thanks:#be185d; --c-thanks-soft:#fdf2f8;
+    }
     @media (prefers-color-scheme: dark) {
-      :root { --ink:#f5f4f2; --ink-2:#d6d3cd; --muted:#c4bfb8; --border:#35323f; --pri:#a5b4fc; --pri-dark:#818cf8; --pri-soft:#262244; --bg:#14131a; --surface:#1e1d26; }
+      :root {
+        --ink:#f5f4f2; --ink-2:#d6d3cd; --muted:#c4bfb8; --border:#35323f; --bg:#14131a; --surface:#1e1d26; --paper:#24222c;
+        --pri:#a5b4fc; --pri-dark:#818cf8; --pri-soft:#262244;
+        --marker:#5b4a12;
+        --c-open:#93c5fd; --c-open-soft:#1e2a44; --c-claimed:#fbbf24; --c-claimed-soft:#3a2f12; --c-done:#6ee7b7; --c-done-soft:#12342a; --c-thanks:#f9a8d4; --c-thanks-soft:#3b1f30;
+      }
     }
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      margin: 0; font-family: system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif;
-      color: var(--ink); background: var(--bg); line-height: 1.8; -webkit-font-smoothing: antialiased;
+      margin: 0; font-family: 'Noto Sans JP', system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif;
+      color: var(--ink); background: var(--bg); line-height: 1.85; -webkit-font-smoothing: antialiased;
     }
     img { max-width: 100%; height: auto; }
-    a { color: var(--pri); }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+    a { color: var(--pri-dark); }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 20px; }
+    .maru { font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Noto Sans JP', sans-serif; }
+    .mark { background: linear-gradient(transparent 58%, var(--marker) 58%); padding: 0 2px; }
 
     /* ヘッダー */
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
-    .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 17px; color: var(--ink); text-decoration: none; }
-    .top nav { display: flex; align-items: center; gap: 4px; }
-    .top nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 600; color: var(--ink-2); text-decoration: none; border-radius: 10px; }
-    .top nav a:hover { background: var(--pri-soft); }
-    .top nav .hide-sp { display: none; }
-    @media (min-width: 640px) { .top nav .hide-sp { display: inline-flex; } }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; }
+    .brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); text-decoration: none; font-weight: 900; font-size: 17px; }
+    .brand svg { width: 26px; height: 26px; }
+    .top nav { display: flex; align-items: center; gap: 2px; }
+    .top nav a.text { display: none; align-items: center; min-height: 44px; padding: 0 12px; font-size: 14px; font-weight: 500; color: var(--ink-2); text-decoration: none; }
+    @media (min-width: 640px) { .top nav a.text { display: inline-flex; } }
 
     /* ボタン */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      min-height: 48px; padding: 0 26px; border-radius: 999px; font-weight: 700; font-size: 15px;
-      text-decoration: none; border: 1.5px solid transparent; -webkit-tap-highlight-color: transparent;
-    }
-    .btn-primary { background: linear-gradient(135deg, var(--pri) 0%, var(--pri-dark) 100%); color: #fff; box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-ghost { background: var(--surface); color: var(--pri); border-color: var(--border); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 26px; border-radius: 12px; font-weight: 700; font-size: 15px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    .btn-solid { background: var(--pri); color: #fff; }
+    .btn-solid:active { transform: translateY(1px); }
+    .btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
+    .textlink { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; font-weight: 700; color: var(--pri-dark); text-decoration: underline; text-underline-offset: 4px; }
 
     /* ヒーロー */
-    .hero { display: grid; gap: 28px; padding: 28px 0 40px; align-items: center; }
-    @media (min-width: 768px) { .hero { grid-template-columns: 1.15fr 1fr; padding: 48px 0 64px; } }
-    .hero h1 { font-size: 30px; line-height: 1.4; margin: 0 0 14px; letter-spacing: -0.5px; }
-    @media (min-width: 768px) { .hero h1 { font-size: 38px; } }
-    .hero h1 b { color: var(--pri-dark); }
-    .hero p.lead { font-size: 16px; color: var(--ink-2); margin: 0 0 22px; }
-    .hero .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+    .hero { display: grid; gap: 32px; padding: 20px 0 48px; align-items: center; }
+    @media (min-width: 768px) { .hero { grid-template-columns: 1.2fr 1fr; padding: 40px 0 72px; } }
+    .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+    .hero h1 { font-size: 32px; line-height: 1.45; margin: 0 0 16px; letter-spacing: -0.01em; font-weight: 900; }
+    @media (min-width: 768px) { .hero h1 { font-size: 40px; } }
+    .hero .lead { font-size: 16px; color: var(--ink-2); margin: 0 0 24px; max-width: 34em; }
+    .hero .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
     .hero .note { font-size: 13px; color: var(--muted); margin: 14px 0 0; }
-    .hero-shot { margin: 0 auto; width: min(300px, 78vw); border-radius: 28px; overflow: hidden; border: 6px solid var(--surface); box-shadow: 0 24px 60px rgba(45,20,110,0.22); background: var(--surface); }
-    .hero-shot img { display: block; }
+    .stage { position: relative; width: min(300px, 76vw); margin: 10px auto 0; padding: 18px 0 0; }
+    .phone { transform: rotate(-3deg); border-radius: 26px; overflow: hidden; border: 5px solid var(--surface); box-shadow: 0 24px 50px rgba(28,25,23,0.18); background: var(--surface); }
+    .phone img { display: block; }
+    .chip { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 8px 20px rgba(28,25,23,0.14); display: flex; align-items: center; justify-content: center; }
+    .chip img { width: 34px; height: 34px; }
+    .chip.c1 { left: -22px; top: 44px; transform: rotate(-8deg); }
+    .chip.c2 { right: -18px; top: 8px; width: 52px; height: 52px; transform: rotate(9deg); }
+    .chip.c3 { left: -10px; bottom: 90px; width: 54px; height: 54px; transform: rotate(-5deg); }
 
-    /* セクション共通 */
-    section { padding: 36px 0; border-top: 1px solid var(--border); }
-    h2 { font-size: 22px; margin: 0 0 8px; letter-spacing: -0.3px; }
+    /* セクション */
+    section { padding: 44px 0; }
+    section + section { border-top: 1px dashed var(--border); }
+    h2 { font-size: 24px; line-height: 1.4; margin: 0 0 6px; font-weight: 900; }
     .sub { margin: 0 0 22px; color: var(--muted); font-size: 14px; }
 
-    /* 機能 */
-    .features { display: grid; gap: 14px; }
-    @media (min-width: 640px) { .features { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (min-width: 900px) { .features { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .feature { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
-    .feature .icon { font-size: 26px; line-height: 1; margin-bottom: 10px; }
-    .feature b { display: block; font-size: 15.5px; margin-bottom: 4px; }
-    .feature p { margin: 0; font-size: 14px; color: var(--ink-2); }
+    /* 家族の会話 */
+    .talk { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
+    .msg { display: flex; align-items: flex-end; gap: 10px; }
+    .msg.me { flex-direction: row-reverse; }
+    .avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; background: var(--pri-soft); display: flex; align-items: center; justify-content: center; font-size: 19px; }
+    .msg > div { max-width: 80%; }
+    .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 10px 14px; font-size: 15px; width: fit-content; }
+    .msg.me > div { display: flex; flex-direction: column; align-items: flex-end; }
+    .msg.me .bubble { background: var(--pri-soft); border-color: transparent; }
+    .msg .who { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .talk .then { align-self: center; font-size: 13px; color: var(--muted); padding: 6px 12px; border: 1px dashed var(--border); border-radius: 999px; }
 
-    /* 流れ */
-    .flow { display: grid; gap: 12px; }
-    @media (min-width: 640px) { .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .step { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
-    .step .num { flex: 0 0 32px; height: 32px; border-radius: 50%; background: var(--pri-soft); color: var(--pri); display: flex; align-items: center; justify-content: center; font-weight: 800; }
-    .step b { display: block; font-size: 15px; margin-bottom: 2px; }
-    .step p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+    /* 流れ（アプリの行を模した4段） */
+    .flow { display: grid; gap: 10px; max-width: 560px; }
+    .row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+    .row .circle { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+    .row .item { font-weight: 700; font-size: 15px; }
+    .row .item small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
+    .tag { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .tag.open { color: var(--c-open); background: var(--c-open-soft); }
+    .tag.claimed { color: var(--c-claimed); background: var(--c-claimed-soft); }
+    .tag.done { color: var(--c-done); background: var(--c-done-soft); }
+    .tag.thanks { color: var(--c-thanks); background: var(--c-thanks-soft); }
+    .row.done .circle { border-color: var(--c-done); background: var(--c-done-soft); }
+    .row.claimed .circle { border-color: var(--c-claimed); }
+    .flow .arrow { text-align: center; color: var(--muted); font-size: 12px; line-height: 1; }
+
+    /* ほかの機能（左に品目イラスト） */
+    .more { display: grid; gap: 4px; max-width: 640px; }
+    .more .li { display: grid; grid-template-columns: 44px 1fr; gap: 14px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .more .li:last-child { border-bottom: none; }
+    .more .li img { width: 40px; height: 40px; }
+    .more .li b { display: block; font-size: 15.5px; }
+    .more .li p { margin: 2px 0 0; font-size: 14px; color: var(--ink-2); }
+    .pt { display: inline-block; font-size: 12px; font-weight: 800; color: var(--pri-dark); background: var(--pri-soft); border-radius: 8px; padding: 2px 8px; margin-left: 6px; }
 
     /* 画面 */
-    .shots { display: grid; gap: 16px; }
-    @media (min-width: 640px) { .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-    .shot { text-align: center; }
-    .shot img { display: block; margin: 0 auto 8px; border-radius: 18px; border: 1px solid var(--border); max-width: 260px; }
-    .shot span { font-size: 13px; color: var(--muted); }
+    .shots { display: grid; gap: 22px; }
+    @media (min-width: 640px) { .shots { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; } .shots .shot:nth-child(2) { margin-bottom: 28px; } }
+    .shot img { display: block; margin: 0 auto 8px; border-radius: 18px; border: 1px solid var(--border); max-width: 240px; }
+    .shot p { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
 
-    /* 安心 */
-    .trust { display: grid; gap: 10px; }
-    @media (min-width: 640px) { .trust { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    .trust li { list-style: none; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
-    .trust ul { margin: 0; padding: 0; display: contents; }
+    /* 作った人から */
+    .paper { background: var(--paper); border: 1px solid var(--border); border-radius: 6px; padding: 22px 22px 18px; max-width: 620px; box-shadow: 0 1px 0 var(--border); }
+    .paper p { margin: 0 0 12px; font-size: 15px; }
+    .paper .sign { margin: 0; text-align: right; font-size: 13px; color: var(--muted); }
 
-    /* 運営者情報 */
-    table { border-collapse: collapse; width: 100%; max-width: 560px; font-size: 14px; }
-    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { width: 9em; color: var(--muted); font-weight: 600; }
+    /* 締め */
+    .end { padding: 40px 0 8px; }
+    .end .box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
+    .end .box p { margin: 0; font-size: 15px; }
+    .end .box small { display: block; color: var(--muted); font-size: 12.5px; }
 
-    /* 最後のCTA・フッター */
-    .cta-end { text-align: center; padding: 44px 0; }
-    .cta-end p { color: var(--ink-2); margin: 0 0 16px; }
-    footer { border-top: 1px solid var(--border); padding: 22px 0 40px; font-size: 13px; color: var(--muted); }
-    footer .links { display: flex; flex-wrap: wrap; gap: 2px 4px; justify-content: center; margin-bottom: 8px; }
-    footer .links a { display: inline-block; padding: 10px 8px; color: var(--pri); }
-    footer .copy { text-align: center; }
+    /* フッター */
+    footer { border-top: 1px solid var(--border); margin-top: 36px; padding: 26px 0 44px; font-size: 13px; color: var(--muted); }
+    footer .grid { display: grid; gap: 18px; }
+    @media (min-width: 640px) { footer .grid { grid-template-columns: 1fr 1fr; } }
+    footer dl { margin: 0; display: grid; grid-template-columns: 7em 1fr; gap: 4px 8px; }
+    footer dt { color: var(--muted); }
+    footer dd { margin: 0; color: var(--ink-2); }
+    footer dd a { display: inline-block; padding: 10px 0; margin: -10px 0; }
+    footer .links { display: flex; flex-wrap: wrap; gap: 0 4px; }
+    footer .links a { display: inline-block; padding: 10px 8px 10px 0; color: var(--ink-2); }
+    footer .copy { margin-top: 12px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header class="top">
-      <a class="brand" href="./">🧺 おうちのおつかい</a>
+      <a class="brand maru" href="./" aria-label="おうちのおつかい トップ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.4 9.3A2 2 0 0 1 16.6 20H7.4a2 2 0 0 1-2-1.7L4 9z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg>
+        おうちのおつかい
+      </a>
       <nav aria-label="サイト内リンク">
-        <a class="hide-sp" href="./guide.html">使い方</a>
-        <a class="hide-sp" href="./contact.html">お問い合わせ</a>
-        <a class="btn btn-primary" style="min-height:40px;padding:0 18px;font-size:14px;" href="./app.html">アプリを開く</a>
+        <a class="text" href="./guide.html">使い方</a>
+        <a class="text" href="./contact.html">お問い合わせ</a>
+        <a class="btn btn-solid btn-sm" href="./app.html">アプリを開く</a>
       </nav>
     </header>
 
     <div class="hero">
       <div>
-        <h1>「あれ買ってきて」を、<br><b>家族みんなのリスト</b>に。</h1>
+        <p class="eyebrow">家族の買い物リスト共有アプリ</p>
+        <h1 class="maru"><span class="mark">「あれ買ってきて」</span>を、<br>家族みんなのリストに。</h1>
         <p class="lead">
-          おうちのおつかいは、家族で買い物リストを共有するアプリです。
-          頼みたいものを入れると家族のスマホに届き、誰が買うかがひと目で分かります。
-          買い忘れ防止の予測や、子どものお手伝いが続くポイント＆ミッションも。
+          頼みたいものを入れると、家族のスマホにそのまま届きます。
+          誰が買いに行くかを宣言して、買えたら完了。それだけで「言った・言わない」と「二重買い」がなくなります。
         </p>
         <div class="cta">
-          <a class="btn btn-primary" href="./app.html">無料でアプリを開く</a>
-          <a class="btn btn-ghost" href="./guide.html">使い方を見る</a>
+          <a class="btn btn-solid" href="./app.html">無料でアプリを開く</a>
+          <a class="textlink" href="./guide.html">使い方を読む</a>
         </div>
-        <p class="note">インストール不要・スマホのブラウザからそのまま使えます。「ホーム画面に追加」でアプリのように起動できます。</p>
+        <p class="note">インストール不要。iPhone / Android のブラウザで開いて、「ホーム画面に追加」するとアプリのように使えます。</p>
       </div>
-      <div class="hero-shot"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="おうちのおつかいのホーム画面。買い物リストと「そろそろ切れるかも」の予測" /></div>
+      <div class="stage" aria-hidden="true">
+        <div class="phone"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="" /></div>
+        <div class="chip c1"><img src="./shortcut-icons/milk.svg" alt="" /></div>
+        <div class="chip c2"><img src="./shortcut-icons/egg.svg" alt="" /></div>
+        <div class="chip c3"><img src="./shortcut-icons/carrot.svg" alt="" /></div>
+      </div>
     </div>
 
-    <section id="features">
-      <h2>できること</h2>
-      <p class="sub">買い物のやりとりで起きがちな「言った・言わない」「買い忘れ」「二重買い」をなくします。</p>
-      <div class="features">
-        <div class="feature"><div class="icon">🛒</div><b>頼みたい物が家族のスマホへ即同期</b><p>「卵が切れた」と入れた瞬間、外出中の家族の画面に届く。誰が引き受けたかも一目で分かる。</p></div>
-        <div class="feature"><div class="icon">⏳</div><b>「そろそろ切れるかも」を予測</b><p>買った履歴から次に切れる時期を推定して、買い忘れる前にお知らせ。</p></div>
-        <div class="feature"><div class="icon">📦</div><b>家のストックを写真付きで管理</b><p>残量を「たっぷり / 少ない / なし」で記録。買い忘れも買いすぎもなくなる。</p></div>
-        <div class="feature"><div class="icon">🎯</div><b>お手伝いをミッション化</b><p>おつかいを完了するとポイントがたまり、ごほうびと交換。子どものやる気が続く。</p></div>
-        <div class="feature"><div class="icon">⚡</div><b>よく買うものをワンタップで追加</b><p>定番品を登録しておけば、毎回の入力なしで即リスト化。</p></div>
-        <div class="feature"><div class="icon">💴</div><b>支出の記録</b><p>買った金額をメモして、家族の食費・日用品費をざっくり把握。レシートの読み取りにも対応。</p></div>
+    <section id="why">
+      <h2 class="maru">こんなこと、ありませんか？</h2>
+      <p class="sub">買い物のやりとりは、いつも口頭かメッセージで、流れてしまいがちです。</p>
+      <div class="talk">
+        <div class="msg"><div class="avatar">🧑</div><div><span class="who">おかあさん</span><div class="bubble">帰りに牛乳買ってきて〜</div></div></div>
+        <div class="msg me"><div class="avatar">🧔</div><div><span class="who">おとうさん</span><div class="bubble">了解！</div></div></div>
+        <div class="then">…その日の夜</div>
+        <div class="msg"><div class="avatar">🧑</div><div><span class="who">おかあさん</span><div class="bubble">あれ、牛乳2本ある…私も買ってた</div></div></div>
+        <div class="msg me"><div class="avatar">🦊</div><div><span class="who">こども</span><div class="bubble">卵ないって言ったのに誰も買ってない！</div></div></div>
       </div>
     </section>
 
-    <section id="flow">
-      <h2>使い方はかんたん</h2>
-      <p class="sub">家族の誰かが頼み、買いに行ける人が引き受け、買えたら完了。それだけです。</p>
+    <section id="how">
+      <h2 class="maru">おうちのおつかいだと、こうなります</h2>
+      <p class="sub">1つの品目が、家族の画面でこう進みます。誰が担当かも、終わったかも、全員に同時に見えます。</p>
       <div class="flow">
-        <div class="step"><div class="num">1</div><div><b>＋で追加</b><p>買ってほしいものを入れる。写真やカテゴリも付けられます。</p></div></div>
-        <div class="step"><div class="num">2</div><div><b>◯タップで「買うよ」</b><p>買いに行く人が宣言。誰が担当かが家族全員に見えます。</p></div></div>
-        <div class="step"><div class="num">3</div><div><b>✅で「買ったよ」</b><p>完了すると履歴に残り、ポイントがもらえます。</p></div></div>
+        <div class="row"><div class="circle"></div><div class="item">牛乳<small>おかあさんが追加 · 🍎食品</small></div><span class="tag open">依頼中</span></div>
+        <div class="arrow">↓ 買いに行ける人が ◯ をタップ</div>
+        <div class="row claimed"><div class="circle">🧔</div><div class="item">牛乳<small>おとうさんが「買うよ」</small></div><span class="tag claimed">買うよ宣言</span></div>
+        <div class="arrow">↓ 買えたら ✅</div>
+        <div class="row done"><div class="circle">✓</div><div class="item">牛乳<small>18:42 に完了 · 履歴に残る</small></div><span class="tag done">買ったよ</span></div>
+        <div class="arrow">↓ 家族から</div>
+        <div class="row"><div class="circle">❤</div><div class="item">ありがとう<small>おかあさん・こども から</small></div><span class="tag thanks">+3pt</span></div>
+      </div>
+    </section>
+
+    <section id="more">
+      <h2 class="maru">ほかにも、毎日の買い物を軽くする仕組み</h2>
+      <p class="sub">どれも「家族で共有する」ことを前提に作っています。</p>
+      <div class="more">
+        <div class="li"><img src="./shortcut-icons/rice.svg" alt="" /><div><b>「そろそろ切れるかも」を予測</b><p>買った履歴から次に切れる時期を見積もって、切れる前にリストへ。米や洗剤のような「気づいたら無い」を減らします。</p></div></div>
+        <div class="li"><img src="./shortcut-icons/bread.svg" alt="" /><div><b>家のストックを「たっぷり / 少ない / なし」で記録</b><p>写真付きで在庫を共有。買い忘れも、買いすぎもなくなります。</p></div></div>
+        <div class="li"><img src="./shortcut-icons/tomato.svg" alt="" /><div><b>よく買うものはワンタップ</b><p>定番品を登録しておけば、毎回入力しなくても即リストに入ります。</p></div></div>
+        <div class="li"><img src="./shortcut-icons/apple.svg" alt="" /><div><b>お手伝いがポイントに<span class="pt">+3pt</span></b><p>おつかいを完了するとポイントがたまり、家族で決めた「ごほうび」と交換できます。子どものやる気が続きます。</p></div></div>
+        <div class="li"><img src="./shortcut-icons/onion.svg" alt="" /><div><b>いくら使ったかのメモ</b><p>買った金額を記録して、食費・日用品費をざっくり把握。レシートの読み取りにも対応しています。</p></div></div>
       </div>
     </section>
 
     <section id="screens">
-      <h2>画面イメージ</h2>
-      <p class="sub">サンプルデータでの表示例です。</p>
+      <h2 class="maru">画面イメージ</h2>
+      <p class="sub">サンプルデータでの表示です。</p>
       <div class="shots">
-        <div class="shot"><img src="./docs/screenshots/01-home.png" width="480" height="1039" loading="lazy" alt="ホーム画面" /><span>ホーム — 買い忘れ防止の予測とチェックリスト</span></div>
-        <div class="shot"><img src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" loading="lazy" alt="よく買うもの" /><span>よく買うもの — 写真付きでタップして追加</span></div>
-        <div class="shot"><img src="./docs/screenshots/10-missions.png" width="480" height="1039" loading="lazy" alt="ミッション" /><span>ミッション — ポイントとごほうびで子どもも楽しく</span></div>
+        <div class="shot"><img src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" alt="よく買うものの画面" /><p>よく買うもの</p></div>
+        <div class="shot"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="ホーム画面" /><p>ホーム（買い物リストと予測）</p></div>
+        <div class="shot"><img src="./docs/screenshots/10-missions.png" width="480" height="1039" alt="ミッションの画面" /><p>ミッションとポイント</p></div>
       </div>
     </section>
 
-    <section id="trust">
-      <h2>安心して使うために</h2>
-      <p class="sub">家庭で使うものなので、次のことを大切にしています。</p>
-      <div class="trust"><ul>
-        <li>🔒 データは<b>家族グループの中だけ</b>で共有され、外部には公開されません</li>
-        <li>👨‍👩‍👧 家族の招待やメンバー管理は<b>保護者</b>が行います（子どもは招待コードで参加）</li>
-        <li>🆓 基本機能は<b>無料</b>で使えます。アカウントはメールアドレスまたは Google アカウントで作成</li>
-        <li>📱 iPhone / Android どちらでも。ブラウザで開いて「ホーム画面に追加」するとアプリのように使えます</li>
-      </ul></div>
+    <section id="note">
+      <h2 class="maru">作った人から</h2>
+      <div class="paper">
+        <p>「牛乳買ってきて」って頼んだのに誰も買ってこなかったり、逆に2本になったり。うちの「言った・言わない」をなくしたくて、家族用に作ったのがこのアプリです。</p>
+        <p>データは家族グループの中だけで共有され、外には出ません。メンバーの招待や管理は保護者が行い、子どもは招待コードで参加します。基本機能は無料で、個人で開発・運営しています。</p>
+        <p class="sign">おうちのおつかい 開発者（個人開発・Birdman Studio）</p>
+      </div>
     </section>
 
-    <section id="about">
-      <h2>運営者情報</h2>
-      <table>
-        <tr><th>サービス名</th><td>おうちのおつかい（Ouchi no Otsukai）</td></tr>
-        <tr><th>運営</th><td>個人開発（Birdman Studio）</td></tr>
-        <tr><th>公開URL</th><td><a href="https://otsukai.birdman-studio.com/">https://otsukai.birdman-studio.com/</a></td></tr>
-        <tr><th>お問い合わせ</th><td><a href="./contact.html">お問い合わせフォーム</a></td></tr>
-        <tr><th>規約・ポリシー</th><td><a href="./terms.html">利用規約</a> ・ <a href="./privacy.html">プライバシーポリシー</a></td></tr>
-      </table>
-    </section>
-
-    <div class="cta-end">
-      <p>登録は1分。家族を招待して、今日の買い物から始められます。</p>
-      <a class="btn btn-primary" href="./app.html">無料でアプリを開く</a>
+    <div class="end">
+      <div class="box">
+        <p class="maru" style="font-weight:900;font-size:17px;">登録は1分。今日の買い物から始められます。<small>メールアドレスか Google アカウントで登録 → 家族を招待</small></p>
+        <a class="btn btn-solid" href="./app.html">無料でアプリを開く</a>
+      </div>
     </div>
 
     <footer>
-      <div class="links">
-        <a href="./guide.html">使い方ガイド</a>
-        <a href="./terms.html">利用規約</a>
-        <a href="./privacy.html">プライバシーポリシー</a>
-        <a href="./contact.html">お問い合わせ</a>
-        <a href="./hub.html">プロジェクトハブ</a>
+      <div class="grid">
+        <div>
+          <dl>
+            <dt>サービス名</dt><dd>おうちのおつかい（Ouchi no Otsukai）</dd>
+            <dt>運営</dt><dd>個人開発（Birdman Studio）</dd>
+            <dt>URL</dt><dd><a href="https://otsukai.birdman-studio.com/">otsukai.birdman-studio.com</a></dd>
+            <dt>お問い合わせ</dt><dd><a href="./contact.html">お問い合わせフォーム</a></dd>
+          </dl>
+        </div>
+        <div>
+          <div class="links">
+            <a href="./guide.html">使い方ガイド</a>
+            <a href="./terms.html">利用規約</a>
+            <a href="./privacy.html">プライバシーポリシー</a>
+            <a href="./contact.html">お問い合わせ</a>
+            <a href="./hub.html">プロジェクトハブ</a>
+          </div>
+          <div class="copy">© 2025 おうちのおつかい</div>
+        </div>
       </div>
-      <div class="copy">© 2025 おうちのおつかい</div>
     </footer>
   </div>
 </body>
