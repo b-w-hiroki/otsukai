@@ -30,14 +30,22 @@
     .field { margin-bottom: 22px; }
     label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
     label .opt { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px; }
-    input, select, textarea {
+    label .req { font-weight: 700; color: var(--danger); font-size: 12px; margin-left: 4px; }
+    input, textarea {
       width: 100%; min-height: 44px; padding: 11px 14px;
       border: 1.5px solid var(--border); border-radius: 12px;
       background: var(--surface); color: var(--ink);
       font-size: 15px; font-family: inherit; line-height: 1.5;
     }
     textarea { min-height: 160px; resize: vertical; }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--pri); }
+    input:focus, textarea:focus { outline: none; border-color: var(--pri); }
+
+    .agree {
+      display: flex; align-items: flex-start; gap: 10px;
+      min-height: 44px; margin: 4px 0 22px; cursor: pointer;
+      font-size: 14px; font-weight: 400; line-height: 1.7;
+    }
+    .agree input[type="checkbox"] { width: 20px; height: 20px; min-height: 0; margin-top: 4px; padding: 0; flex-shrink: 0; }
 
     #btn-submit {
       display: block; width: 100%; min-height: 48px; padding: 0 24px;
@@ -47,6 +55,7 @@
       box-shadow: 0 4px 18px rgba(99,102,241,0.4);
     }
     #btn-submit:active { transform: scale(0.98); }
+    #btn-submit:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
 
     #form-error {
       display: none; color: var(--danger); font-size: 13px; font-weight: 700;
@@ -59,7 +68,6 @@
     #form-status.sending { display: block; color: var(--muted); background: var(--surface); border: 1.5px solid var(--border); }
     #form-status.success { display: block; color: #16a34a; background: rgba(22,163,74,0.1); }
     #form-status.error { display: block; color: var(--danger); background: rgba(220,38,38,0.1); }
-    #btn-submit:disabled { opacity: 0.6; cursor: default; }
 
     .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 20px 0; font-size: 13px; color: var(--muted); }
 
@@ -84,31 +92,37 @@
     </header>
 
     <p class="muted">
-      このフォームから送信すると、開発者宛てに直接メールが届きます。
+      このフォームから送信すると、開発者宛てに直接メールが届きます。<span style="color:var(--danger);font-weight:700;">*</span> は必須項目です。
     </p>
 
-    <form id="contact-form">
+    <form id="contact-form" novalidate>
       <div class="field">
-        <label for="c-name">お名前<span class="opt">（任意）</span></label>
+        <label for="c-name">お名前<span class="req">*</span></label>
         <input type="text" id="c-name" autocomplete="name" placeholder="やまだ たろう" />
       </div>
 
       <div class="field">
-        <label for="c-type">お問い合わせの種類</label>
-        <select id="c-type">
-          <option value="不具合の報告">不具合の報告</option>
-          <option value="機能のご要望">機能のご要望</option>
-          <option value="その他のご質問">その他のご質問</option>
-        </select>
+        <label for="c-company">会社名・組織名<span class="opt">（任意）</span></label>
+        <input type="text" id="c-company" autocomplete="organization" placeholder="株式会社〇〇 / 〇〇小学校 PTA / 個人 など" />
       </div>
 
       <div class="field">
-        <label for="c-reply">ご返信用メールアドレス<span class="opt">（任意）</span></label>
-        <input type="email" id="c-reply" autocomplete="email" placeholder="reply@example.com" />
+        <label for="c-email">メールアドレス<span class="req">*</span></label>
+        <input type="email" id="c-email" autocomplete="email" inputmode="email" placeholder="example@example.com" />
       </div>
 
       <div class="field">
-        <label for="c-body">お問い合わせ内容</label>
+        <label for="c-phone">電話番号<span class="opt">（任意）</span></label>
+        <input type="tel" id="c-phone" autocomplete="tel" inputmode="tel" placeholder="090-1234-5678" />
+      </div>
+
+      <div class="field">
+        <label for="c-subject">件名<span class="req">*</span></label>
+        <input type="text" id="c-subject" placeholder="例: ログインできない / 機能の要望 など" />
+      </div>
+
+      <div class="field">
+        <label for="c-body">お問い合わせ内容<span class="req">*</span></label>
         <textarea id="c-body" placeholder="できるだけ詳しく教えてください（不具合の場合は、いつ・どの画面で・何をしたら起きたか など）"></textarea>
       </div>
 
@@ -116,13 +130,18 @@
            ここが埋まっていたら機械的な送信とみなして黙って無視する（送信元には
            成功したように見せておく）。スクリーンリーダーからも隠す -->
       <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
-        <input type="text" id="c-hp" name="company" tabindex="-1" autocomplete="off" />
+        <input type="text" id="c-hp" name="website" tabindex="-1" autocomplete="off" />
       </div>
 
-      <p id="form-error">お問い合わせ内容を入力してください</p>
+      <label class="agree" for="c-agree">
+        <input type="checkbox" id="c-agree" />
+        <span><a href="./privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>に同意します<span class="req">*</span></span>
+      </label>
+
+      <p id="form-error"></p>
       <p id="form-status"></p>
 
-      <button type="submit" id="btn-submit">送信する</button>
+      <button type="submit" id="btn-submit" disabled>送信する</button>
     </form>
 
     <div class="box" id="fallback-box">
@@ -134,7 +153,8 @@
     <footer>
       <p class="muted">
         <a href="./">← おうちのおつかいに戻る</a> ・
-        <a href="./guide.html">使い方ガイド</a>
+        <a href="./guide.html">使い方ガイド</a> ・
+        <a href="./privacy.html">プライバシーポリシー</a>
       </p>
     </footer>
   </div>
@@ -144,51 +164,78 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <script src="./firebase-config.js"></script>
   <script>
-    firebase.initializeApp(FIREBASE_CONFIG);
-    var submitFn = firebase.app().functions("asia-southeast1").httpsCallable("submitContactForm");
+    // Firebase SDK の初期化は送信時まで遅らせる。SDK が読み込めない環境（オフライン・
+    // 広告ブロッカー等）でもフォーム自体（同意チェック→ボタン有効化、入力チェック）は
+    // 動かし、送信時に初めて「送信できない」と案内する
+    function getSubmitFn() {
+      if (typeof firebase === "undefined") throw new Error("Firebase SDK が読み込めませんでした");
+      if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+      return firebase.app().functions("asia-southeast1").httpsCallable("submitContactForm");
+    }
 
     var form = document.getElementById("contact-form");
     var btn = document.getElementById("btn-submit");
+    var agree = document.getElementById("c-agree");
     var errorEl = document.getElementById("form-error");
     var statusEl = document.getElementById("form-status");
 
+    function val(id) { return document.getElementById(id).value.trim(); }
+    function showError(msg) { errorEl.textContent = msg; errorEl.style.display = msg ? "block" : "none"; }
     function setStatus(kind, text) {
       statusEl.className = kind || "";
       statusEl.textContent = text || "";
       statusEl.style.display = text ? "block" : "none";
     }
 
+    // 同意チェックが無いと送信ボタンを押せない（ログイン画面の新規登録と同じ考え方）
+    agree.addEventListener("change", function () { btn.disabled = !agree.checked; });
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var body = document.getElementById("c-body").value.trim();
-      if (!body) {
-        errorEl.style.display = "block";
-        return;
-      }
-      errorEl.style.display = "none";
+      showError("");
       setStatus("", "");
 
-      var name = document.getElementById("c-name").value.trim();
-      var type = document.getElementById("c-type").value;
-      var reply = document.getElementById("c-reply").value.trim();
+      var name = val("c-name");
+      var company = val("c-company");
+      var email = val("c-email");
+      var phone = val("c-phone");
+      var subject = val("c-subject");
+      var body = val("c-body");
       var honeypot = document.getElementById("c-hp").value;
+
+      if (!name) return showError("お名前を入力してください");
+      if (!email) return showError("メールアドレスを入力してください");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError("メールアドレスの形式が正しくありません");
+      if (!subject) return showError("件名を入力してください");
+      if (!body) return showError("お問い合わせ内容を入力してください");
+      // ボタンは無効化しているが、Enterキー経由でも通る入口なので二重に確認する
+      if (!agree.checked) return showError("プライバシーポリシーへの同意が必要です");
 
       // ハニーポットが埋まっている＝機械的な送信。実際には送らず、
       // 相手には成功したように見せておく（学習させて回避されるのを防ぐ）
       if (honeypot) {
         setStatus("success", "✅ 送信しました。ご連絡ありがとうございます。");
         form.reset();
+        btn.disabled = true;
+        return;
+      }
+
+      var submitFn;
+      try { submitFn = getSubmitFn(); }
+      catch (err) {
+        console.error("Firebase SDK unavailable", err);
+        setStatus("error", "⚠️ 送信機能を読み込めませんでした。通信環境をご確認いただくか、下のメールアドレスへ直接ご連絡ください。");
         return;
       }
 
       btn.disabled = true;
       setStatus("sending", "送信しています…");
 
-      submitFn({ name: name, type: type, replyTo: reply, message: body, hp: honeypot })
+      submitFn({ name: name, company: company, email: email, phone: phone, subject: subject, message: body, agreed: true, hp: honeypot })
         .then(function () {
           setStatus("success", "✅ 送信しました。ご連絡ありがとうございます。");
           form.reset();
-          btn.disabled = false;
+          btn.disabled = true; // reset で同意チェックも外れるので、ボタンも無効に戻す
         })
         .catch(function (err) {
           console.error("submitContactForm failed", err);

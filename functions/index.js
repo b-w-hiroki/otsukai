@@ -736,18 +736,32 @@ exports.submitContactForm = functions
       return { ok: true };
     }
     const name = String((data && data.name) || "").trim().slice(0, 100);
-    const type = String((data && data.type) || "その他のご質問").trim().slice(0, 40);
-    const replyTo = String((data && data.replyTo) || "").trim().slice(0, 200);
+    const company = String((data && data.company) || "").trim().slice(0, 200);
+    const email = String((data && data.email) || "").trim().slice(0, 200);
+    const phone = String((data && data.phone) || "").trim().slice(0, 40);
+    const subject = String((data && data.subject) || "").trim().slice(0, 120);
     const message = String((data && data.message) || "").trim().slice(0, 4000);
-    if (!message) {
-      throw new functions.https.HttpsError("invalid-argument", "お問い合わせ内容を入力してください");
+    const agreed = !!(data && data.agreed);
+    // 必須項目と同意はクライアント側でも見ているが、callable を直接叩かれる
+    // 前提でサーバー側でも検証する（会社名・電話番号は任意）
+    if (!name || !email || !subject || !message) {
+      throw new functions.https.HttpsError("invalid-argument", "お名前・メールアドレス・件名・お問い合わせ内容は必須です");
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new functions.https.HttpsError("invalid-argument", "メールアドレスの形式が正しくありません");
+    }
+    if (!agreed) {
+      throw new functions.https.HttpsError("failed-precondition", "プライバシーポリシーへの同意が必要です");
     }
 
     await admin.database().ref("contactMessages").push({
-      name: name || null,
-      type,
-      replyTo: replyTo || null,
+      name,
+      company: company || null,
+      email,
+      phone: phone || null,
+      subject,
       message,
+      agreed: true,
       createdAt: admin.database.ServerValue.TIMESTAMP,
     });
 
@@ -760,11 +774,17 @@ exports.submitContactForm = functions
       await transporter.sendMail({
         from: `おうちのおつかい <${process.env.CONTACT_GMAIL_USER}>`,
         to: process.env.CONTACT_GMAIL_USER,
-        replyTo: replyTo || undefined,
-        subject: `【おうちのおつかい】${type}`,
-        text: [name && `お名前: ${name}`, replyTo && `返信用: ${replyTo}`, "", message]
-          .filter(Boolean)
-          .join("\n"),
+        replyTo: email,
+        subject: `【おうちのおつかい】${subject}`,
+        text: [
+          `お名前: ${name}`,
+          company && `会社名・組織名: ${company}`,
+          `メールアドレス: ${email}`,
+          phone && `電話番号: ${phone}`,
+          `件名: ${subject}`,
+          "",
+          message,
+        ].filter(Boolean).join("\n"),
       });
     } catch (e) {
       // メール送信に失敗してもDBには記録済みのため、致命的エラーにはしない
