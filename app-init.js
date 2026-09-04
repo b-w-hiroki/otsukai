@@ -690,11 +690,11 @@ function injectImobileBanner(slotId, config) {
 // 広告枠: スポットタグを注入する。実際に表示するかどうか（.has-ad）は
 // injectImobileBanner 内の MutationObserver が、広告SDKが中身を描いた時点で判断する。
 function initAdSlots() {
-  // お買い物タブ末尾: i-mobile「トップページ バナー」
+  // お買い物タブ末尾: i-mobile「アプリ内画面」
   injectImobileBanner("ad-slot-requests", {
     pid: 84969,
-    sp: { mid: 593255, asid: 1932938, elementid: "im-d0dd8eaf34ba46fcaaa603b7f68e0acc" },
-    pc: { mid: 593254, asid: 1932937, elementid: "im-68455a797ff34316a29423d6979d3d15" },
+    sp: { mid: 593257, asid: 1943162, elementid: "im-7040bbe7847b4566a55b7d7c7a938df8" },
+    pc: { mid: 593256, asid: 1943160, elementid: "im-f608a24b4fb04fe5935a22b765b2ce42" },
   });
   // ログイン画面: i-mobile「ログイン画面 バナー」
   injectImobileBanner("ad-slot-auth", {
