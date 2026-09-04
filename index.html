@@ -73,7 +73,8 @@
     .hero { display: grid; gap: 32px; padding: 20px 0 48px; align-items: center; }
     @media (min-width: 768px) { .hero { grid-template-columns: 1.2fr 1fr; padding: 40px 0 72px; } }
     .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
-    .hero h1 { font-size: 32px; line-height: 1.45; margin: 0 0 16px; letter-spacing: -0.01em; font-weight: 900; }
+    .hero h1 { font-size: 32px; line-height: 1.45; margin: 0 0 16px; letter-spacing: -0.01em; font-weight: 900; text-wrap: balance; }
+    .hero h1 .mark { white-space: nowrap; }
     @media (min-width: 768px) { .hero h1 { font-size: 40px; } }
     .hero .lead { font-size: 16px; color: var(--ink-2); margin: 0 0 24px; max-width: 34em; }
     .hero .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
@@ -106,7 +107,9 @@
     .talk { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
     .msg { display: flex; align-items: flex-end; gap: 10px; }
     .msg.me { flex-direction: row-reverse; }
-    .avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; background: var(--pri-soft); display: flex; align-items: center; justify-content: center; font-size: 19px; }
+    .avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; background: var(--pri-soft); display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; }
+    /* 絵文字はフォントごとに字形の重心がずれるため、はみ出す個体だけ個別に微調整する */
+    .avatar.av-fox { font-size: 16px; transform: translate(-1px, -1px); }
     .msg > div { max-width: 80%; }
     .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 10px 14px; font-size: 15px; width: fit-content; }
     .msg.me > div { display: flex; flex-direction: column; align-items: flex-end; }
@@ -151,7 +154,11 @@
     .car::-webkit-scrollbar { display: none; }
     .car:focus-visible { box-shadow: inset 0 0 0 2px var(--pri); border-radius: 12px; }
     .car figure { flex: 0 0 min(236px, 68vw); margin: 0; scroll-snap-align: center; }
-    @media (min-width: 640px) { .car figure { scroll-snap-align: start; } }
+    @media (min-width: 640px) {
+      .car figure { scroll-snap-align: start; }
+      /* PC は左右に余白があり、中途半端に切れたカードが浮いて見えるため縁をフェードで隠す */
+      .car { mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); }
+    }
     .car img { display: block; width: 100%; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); }
     .car figcaption { margin-top: 8px; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.6; }
     .car-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
@@ -199,7 +206,7 @@
     <div class="hero">
       <div>
         <p class="eyebrow">家族の買い物リスト共有アプリ</p>
-        <h1 class="maru"><span class="mark">「あれ買ってきて」</span>を、<br>家族みんなのリストに。</h1>
+        <h1 class="maru"><span class="mark">「あれ買ってきて」</span>を、家族みんなのリストに。</h1>
         <p class="lead">
           頼みたいものを入れると、家族のスマホにそのまま届きます。
           誰が買いに行くかを宣言して、買えたら完了。それだけで「言った・言わない」と「二重買い」がなくなります。
@@ -232,7 +239,7 @@
         <div class="msg me"><div class="avatar">🧔</div><div><span class="who">おとうさん</span><div class="bubble">了解！</div></div></div>
         <div class="then">…その日の夜</div>
         <div class="msg"><div class="avatar">🧑</div><div><span class="who">おかあさん</span><div class="bubble">あれ、牛乳2本ある…私も買ってた</div></div></div>
-        <div class="msg me"><div class="avatar">🦊</div><div><span class="who">こども</span><div class="bubble">卵ないって言ったのに誰も買ってない！</div></div></div>
+        <div class="msg me"><div class="avatar av-fox">🦊</div><div><span class="who">こども</span><div class="bubble">卵ないって言ったのに誰も買ってない！</div></div></div>
       </div>
     </section>
 
