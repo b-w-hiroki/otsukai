@@ -314,9 +314,9 @@
       </div>
     </div>
 
-    <!-- 広告枠 (i-mobile「紹介ページ バナー」、要 新規スポット作成)
+    <!-- 広告枠 (i-mobile「トップ画面」スポット、設定済み)
          最後のCTAを読み終えた後・フッターの前という、操作の邪魔にならない位置に置く。
-         スポット作成後は下部のスクリプト内のコメントを外して mid/asid を設定すると表示される。 -->
+         SP/PC別タグの注入は下部のスクリプトを参照。 -->
     <div id="ad-slot-lp" class="ad-slot">
       <div class="ad-label">広告</div>
       <div class="ad-content"></div>
@@ -372,18 +372,17 @@
     })();
 
     // 広告枠 (#ad-slot-lp): i-mobile の新規スポット作成後、pid/sp/pc を実際の値に置き換えて
-    // このブロックのコメントを外すと有効化される。app-init.js の injectImobileBanner() と
-    // 同じ仕組み（SP/PC別タグを端末判定して片方だけ注入・広告SDKが描画するまで枠を隠す）。
-    // このページは app.html の JS を読み込まない独立した静的ページのため、ここに同等の処理を複製している。
-    /*
+    // app-init.js の injectImobileBanner() と同じ仕組み（SP/PC別タグを端末判定して
+    // 片方だけ注入・広告SDKが描画するまで枠を隠す）。このページは app.html の JS を
+    // 読み込まない独立した静的ページのため、ここに同等の処理を複製している。
     (function () {
       var slot = document.getElementById("ad-slot-lp");
       var content = slot && slot.querySelector(".ad-content");
       if (!content) return;
       var config = {
         pid: 84969,
-        sp: { mid: 0, asid: 0, elementid: "im-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }, // TODO: 新規スポット作成後に置き換え
-        pc: { mid: 0, asid: 0, elementid: "im-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }, // TODO: 新規スポット作成後に置き換え
+        sp: { mid: 593257, asid: 1943161, elementid: "im-0cbb5788df6149e2969fcd36d232c46e" },
+        pc: { mid: 593256, asid: 1943159, elementid: "im-7f9c5aa8861f4d08a3b363ff82f1ec61" },
       };
       var isMobile = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)
         || window.matchMedia("(max-width: 767px)").matches;
@@ -411,7 +410,6 @@
         + ',type:"banner",display:"inline",elementid:"' + variant.elementid + '"});';
       document.head.appendChild(pushScript);
     })();
-    */
   </script>
 </body>
 </html>
