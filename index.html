@@ -176,6 +176,12 @@
     .end .box p { margin: 0; font-size: 15px; }
     .end .box small { display: block; color: var(--muted); font-size: 12.5px; }
 
+    /* 広告枠（app.html の .ad-slot と同じ見た目。スポット未作成のため現状は空枠のまま） */
+    .ad-slot { display: none; margin: 32px auto 0; text-align: center; }
+    .ad-slot.has-ad { display: block; }
+    .ad-slot .ad-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 6px; font-weight: 600; }
+    .ad-slot .ad-content { display: flex; justify-content: center; align-items: center; min-height: 50px; }
+
     /* フッター */
     footer { border-top: 1px solid var(--border); margin-top: 36px; padding: 26px 0 44px; font-size: 13px; color: var(--muted); }
     footer .grid { display: grid; gap: 18px; }
@@ -308,6 +314,14 @@
       </div>
     </div>
 
+    <!-- 広告枠 (i-mobile「紹介ページ バナー」、要 新規スポット作成)
+         最後のCTAを読み終えた後・フッターの前という、操作の邪魔にならない位置に置く。
+         スポット作成後は下部のスクリプト内のコメントを外して mid/asid を設定すると表示される。 -->
+    <div id="ad-slot-lp" class="ad-slot">
+      <div class="ad-label">広告</div>
+      <div class="ad-content"></div>
+    </div>
+
     <footer>
       <div class="grid">
         <div>
@@ -356,6 +370,48 @@
       });
       update();
     })();
+
+    // 広告枠 (#ad-slot-lp): i-mobile の新規スポット作成後、pid/sp/pc を実際の値に置き換えて
+    // このブロックのコメントを外すと有効化される。app-init.js の injectImobileBanner() と
+    // 同じ仕組み（SP/PC別タグを端末判定して片方だけ注入・広告SDKが描画するまで枠を隠す）。
+    // このページは app.html の JS を読み込まない独立した静的ページのため、ここに同等の処理を複製している。
+    /*
+    (function () {
+      var slot = document.getElementById("ad-slot-lp");
+      var content = slot && slot.querySelector(".ad-content");
+      if (!content) return;
+      var config = {
+        pid: 84969,
+        sp: { mid: 0, asid: 0, elementid: "im-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }, // TODO: 新規スポット作成後に置き換え
+        pc: { mid: 0, asid: 0, elementid: "im-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }, // TODO: 新規スポット作成後に置き換え
+      };
+      var isMobile = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)
+        || window.matchMedia("(max-width: 767px)").matches;
+      var variant = isMobile ? config.sp : config.pc;
+      var adDiv = document.createElement("div");
+      adDiv.id = variant.elementid;
+      content.appendChild(adDiv);
+      var observer = new MutationObserver(function () {
+        if (adDiv.children.length > 0) {
+          slot.classList.add("has-ad");
+          observer.disconnect();
+        }
+      });
+      observer.observe(adDiv, { childList: true });
+      if (!document.querySelector('script[data-imobile-loader]')) {
+        var loader = document.createElement("script");
+        loader.async = true;
+        loader.src = "https://imp-adedge.i-mobile.co.jp/script/v1/spot.js?20220104";
+        loader.setAttribute("data-imobile-loader", "1");
+        document.head.appendChild(loader);
+      }
+      var pushScript = document.createElement("script");
+      pushScript.text = '(window.adsbyimobile=window.adsbyimobile||[]).push({pid:'
+        + config.pid + ',mid:' + variant.mid + ',asid:' + variant.asid
+        + ',type:"banner",display:"inline",elementid:"' + variant.elementid + '"});';
+      document.head.appendChild(pushScript);
+    })();
+    */
   </script>
 </body>
 </html>
