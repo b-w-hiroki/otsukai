@@ -73,7 +73,8 @@
     .hero { display: grid; gap: 32px; padding: 20px 0 48px; align-items: center; }
     @media (min-width: 768px) { .hero { grid-template-columns: 1.2fr 1fr; padding: 40px 0 72px; } }
     .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
-    .hero h1 { font-size: 32px; line-height: 1.45; margin: 0 0 16px; letter-spacing: -0.01em; font-weight: 900; }
+    .hero h1 { font-size: 32px; line-height: 1.45; margin: 0 0 16px; letter-spacing: -0.01em; font-weight: 900; text-wrap: balance; }
+    .hero h1 .mark { white-space: nowrap; }
     @media (min-width: 768px) { .hero h1 { font-size: 40px; } }
     .hero .lead { font-size: 16px; color: var(--ink-2); margin: 0 0 24px; max-width: 34em; }
     .hero .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
@@ -106,7 +107,9 @@
     .talk { display: flex; flex-direction: column; gap: 14px; max-width: 560px; }
     .msg { display: flex; align-items: flex-end; gap: 10px; }
     .msg.me { flex-direction: row-reverse; }
-    .avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; background: var(--pri-soft); display: flex; align-items: center; justify-content: center; font-size: 19px; }
+    .avatar { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; background: var(--pri-soft); display: flex; align-items: center; justify-content: center; font-size: 19px; line-height: 1; }
+    /* 絵文字はフォントごとに字形の重心がずれるため、はみ出す個体だけ個別に微調整する */
+    .avatar.av-fox { font-size: 16px; transform: translate(-1px, -1px); }
     .msg > div { max-width: 80%; }
     .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 10px 14px; font-size: 15px; width: fit-content; }
     .msg.me > div { display: flex; flex-direction: column; align-items: flex-end; }
@@ -151,7 +154,11 @@
     .car::-webkit-scrollbar { display: none; }
     .car:focus-visible { box-shadow: inset 0 0 0 2px var(--pri); border-radius: 12px; }
     .car figure { flex: 0 0 min(236px, 68vw); margin: 0; scroll-snap-align: center; }
-    @media (min-width: 640px) { .car figure { scroll-snap-align: start; } }
+    @media (min-width: 640px) {
+      .car figure { scroll-snap-align: start; }
+      /* PC は左右に余白があり、中途半端に切れたカードが浮いて見えるため縁をフェードで隠す */
+      .car { mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); }
+    }
     .car img { display: block; width: 100%; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); }
     .car figcaption { margin-top: 8px; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.6; }
     .car-dots { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
@@ -168,6 +175,12 @@
     .end .box { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
     .end .box p { margin: 0; font-size: 15px; }
     .end .box small { display: block; color: var(--muted); font-size: 12.5px; }
+
+    /* 広告枠（app.html の .ad-slot と同じ見た目。スポット未作成のため現状は空枠のまま） */
+    .ad-slot { display: none; margin: 32px auto 0; text-align: center; }
+    .ad-slot.has-ad { display: block; }
+    .ad-slot .ad-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 6px; font-weight: 600; }
+    .ad-slot .ad-content { display: flex; justify-content: center; align-items: center; min-height: 50px; }
 
     /* フッター */
     footer { border-top: 1px solid var(--border); margin-top: 36px; padding: 26px 0 44px; font-size: 13px; color: var(--muted); }
@@ -199,7 +212,7 @@
     <div class="hero">
       <div>
         <p class="eyebrow">家族の買い物リスト共有アプリ</p>
-        <h1 class="maru"><span class="mark">「あれ買ってきて」</span>を、<br>家族みんなのリストに。</h1>
+        <h1 class="maru"><span class="mark">「あれ買ってきて」</span>を、家族みんなのリストに。</h1>
         <p class="lead">
           頼みたいものを入れると、家族のスマホにそのまま届きます。
           誰が買いに行くかを宣言して、買えたら完了。それだけで「言った・言わない」と「二重買い」がなくなります。
@@ -232,7 +245,7 @@
         <div class="msg me"><div class="avatar">🧔</div><div><span class="who">おとうさん</span><div class="bubble">了解！</div></div></div>
         <div class="then">…その日の夜</div>
         <div class="msg"><div class="avatar">🧑</div><div><span class="who">おかあさん</span><div class="bubble">あれ、牛乳2本ある…私も買ってた</div></div></div>
-        <div class="msg me"><div class="avatar">🦊</div><div><span class="who">こども</span><div class="bubble">卵ないって言ったのに誰も買ってない！</div></div></div>
+        <div class="msg me"><div class="avatar av-fox">🦊</div><div><span class="who">こども</span><div class="bubble">卵ないって言ったのに誰も買ってない！</div></div></div>
       </div>
     </section>
 
@@ -301,6 +314,14 @@
       </div>
     </div>
 
+    <!-- 広告枠 (i-mobile「紹介ページ バナー」、要 新規スポット作成)
+         最後のCTAを読み終えた後・フッターの前という、操作の邪魔にならない位置に置く。
+         スポット作成後は下部のスクリプト内のコメントを外して mid/asid を設定すると表示される。 -->
+    <div id="ad-slot-lp" class="ad-slot">
+      <div class="ad-label">広告</div>
+      <div class="ad-content"></div>
+    </div>
+
     <footer>
       <div class="grid">
         <div>
@@ -349,6 +370,48 @@
       });
       update();
     })();
+
+    // 広告枠 (#ad-slot-lp): i-mobile の新規スポット作成後、pid/sp/pc を実際の値に置き換えて
+    // このブロックのコメントを外すと有効化される。app-init.js の injectImobileBanner() と
+    // 同じ仕組み（SP/PC別タグを端末判定して片方だけ注入・広告SDKが描画するまで枠を隠す）。
+    // このページは app.html の JS を読み込まない独立した静的ページのため、ここに同等の処理を複製している。
+    /*
+    (function () {
+      var slot = document.getElementById("ad-slot-lp");
+      var content = slot && slot.querySelector(".ad-content");
+      if (!content) return;
+      var config = {
+        pid: 84969,
+        sp: { mid: 0, asid: 0, elementid: "im-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }, // TODO: 新規スポット作成後に置き換え
+        pc: { mid: 0, asid: 0, elementid: "im-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" }, // TODO: 新規スポット作成後に置き換え
+      };
+      var isMobile = /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent)
+        || window.matchMedia("(max-width: 767px)").matches;
+      var variant = isMobile ? config.sp : config.pc;
+      var adDiv = document.createElement("div");
+      adDiv.id = variant.elementid;
+      content.appendChild(adDiv);
+      var observer = new MutationObserver(function () {
+        if (adDiv.children.length > 0) {
+          slot.classList.add("has-ad");
+          observer.disconnect();
+        }
+      });
+      observer.observe(adDiv, { childList: true });
+      if (!document.querySelector('script[data-imobile-loader]')) {
+        var loader = document.createElement("script");
+        loader.async = true;
+        loader.src = "https://imp-adedge.i-mobile.co.jp/script/v1/spot.js?20220104";
+        loader.setAttribute("data-imobile-loader", "1");
+        document.head.appendChild(loader);
+      }
+      var pushScript = document.createElement("script");
+      pushScript.text = '(window.adsbyimobile=window.adsbyimobile||[]).push({pid:'
+        + config.pid + ',mid:' + variant.mid + ',asid:' + variant.asid
+        + ',type:"banner",display:"inline",elementid:"' + variant.elementid + '"});';
+      document.head.appendChild(pushScript);
+    })();
+    */
   </script>
 </body>
 </html>
