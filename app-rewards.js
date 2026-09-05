@@ -21,6 +21,8 @@ async function completeRequest(id) {
     });
     if (!res.committed) return;
     bumpStat("completedCount");
+    const doneName = res.snapshot.val() && res.snapshot.val().name;
+    if (doneName) replenishMatchingStocks(doneName);
     showToast("✅ 完了！", { sound: false });
     celebrate();
   } catch (e) {

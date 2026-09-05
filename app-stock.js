@@ -142,6 +142,21 @@ async function updateStockLevel(id, level) {
   await dbOp(familyRef().child(`stocks/${id}`).update(patch), "変更できませんでした");
 }
 
+// 「買ったよ」完了時に、同名で切れている/少ないストックがあれば自動で🟢たっぷりに戻す。
+// これをしないと、買った後も「そろそろ切れるかも」に同じ品が出続けてしまう
+// （ストック側の残量記録と買い物リストの完了が別々に管理されているため）。
+// おまけの同期なので、失敗しても「買ったよ」自体は止めず、エラートーストも出さない
+// （bumpStat と同じ考え方）。
+async function replenishMatchingStocks(name) {
+  const matches = Object.entries(state.stocks || {})
+    .filter(([, s]) => s && s.name === name && (s.level === "low" || s.level === "out"));
+  if (!matches.length) return;
+  await Promise.all(matches.map(([id]) =>
+    familyRef().child(`stocks/${id}`).update({ level: "ok", updatedBy: state.uid, updatedAt: now(), lastFilledAt: now() })
+      .catch((e) => console.error("replenishMatchingStocks failed", e))
+  ));
+}
+
 // ストック詳細から「買う間隔（日）」を設定・解除する
 async function updateStockCycle(id, days) {
   const s = state.stocks[id];
