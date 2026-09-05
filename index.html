@@ -31,14 +31,14 @@
     :root {
       --ink:#1c1917; --ink-2:#44403c; --muted:#57534e; --border:#e7e5e1; --bg:#faf9f7; --surface:#fff; --paper:#fffdf5;
       --pri:#6366f1; --pri-dark:#4f46e5; --pri-soft:#eeecfb;
-      --marker:#fde68a;
+      --marker:#fde68a; --top-bg:rgba(250,249,247,0.9);
       --c-open:#3b82f6; --c-open-soft:#eff6ff; --c-claimed:#b45309; --c-claimed-soft:#fffbeb; --c-done:#047857; --c-done-soft:#ecfdf5; --c-thanks:#be185d; --c-thanks-soft:#fdf2f8;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --ink:#f5f4f2; --ink-2:#d6d3cd; --muted:#c4bfb8; --border:#35323f; --bg:#14131a; --surface:#1e1d26; --paper:#24222c;
         --pri:#a5b4fc; --pri-dark:#818cf8; --pri-soft:#262244;
-        --marker:#5b4a12;
+        --marker:#5b4a12; --top-bg:rgba(20,19,26,0.9);
         --c-open:#93c5fd; --c-open-soft:#1e2a44; --c-claimed:#fbbf24; --c-claimed-soft:#3a2f12; --c-done:#6ee7b7; --c-done-soft:#12342a; --c-thanks:#f9a8d4; --c-thanks-soft:#3b1f30;
       }
     }
@@ -54,8 +54,9 @@
     .maru { font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Noto Sans JP', sans-serif; }
     .mark { background: linear-gradient(transparent 58%, var(--marker) 58%); padding: 0 2px; }
 
-    /* ヘッダー */
-    .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; }
+    /* ヘッダー（固定。スクロールしても「アプリを開く」に届くように） */
+    .top { position: sticky; top: 0; z-index: 50; background: var(--top-bg); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+    .top-inner { max-width: 920px; margin: 0 auto; padding: 8px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .brand { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--ink); text-decoration: none; font-weight: 900; font-size: 17px; }
     .brand svg { width: 26px; height: 26px; }
     .top nav { display: flex; align-items: center; gap: 2px; }
@@ -70,7 +71,7 @@
     .textlink { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; font-weight: 700; color: var(--pri-dark); text-decoration: underline; text-underline-offset: 4px; }
 
     /* ヒーロー */
-    .hero { display: grid; gap: 32px; padding: 20px 0 48px; align-items: center; }
+    .hero { display: grid; gap: 32px; padding: 28px 0 48px; align-items: center; }
     @media (min-width: 768px) { .hero { grid-template-columns: 1.2fr 1fr; padding: 40px 0 72px; } }
     .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
     .hero h1 { font-size: 32px; line-height: 1.45; margin: 0 0 16px; letter-spacing: -0.01em; font-weight: 900; text-wrap: balance; }
@@ -196,8 +197,8 @@
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
+  <header class="top">
+    <div class="top-inner">
       <a class="brand maru" href="./" aria-label="おうちのおつかい トップ">
         <svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16l-1.4 9.3A2 2 0 0 1 16.6 20H7.4a2 2 0 0 1-2-1.7L4 9z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg>
         おうちのおつかい
@@ -207,7 +208,9 @@
         <a class="text" href="./contact.html">お問い合わせ</a>
         <a class="btn btn-solid btn-sm" href="./app.html">アプリを開く</a>
       </nav>
-    </header>
+    </div>
+  </header>
+  <div class="wrap">
 
     <div class="hero">
       <div>

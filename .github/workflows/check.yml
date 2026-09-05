@@ -25,7 +25,7 @@ jobs:
           node -e '
             const fs = require("fs");
             let errors = 0;
-            for (const file of ["app.html", "index.html", "contact.html", "news.html"]) {
+            for (const file of ["app.html", "index.html", "contact.html", "news.html", "news-item.html"]) {
               const html = fs.readFileSync(file, "utf8");
               const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
               let m, count = 0;

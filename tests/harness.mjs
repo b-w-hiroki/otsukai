@@ -18,6 +18,7 @@ import { readFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { extname, join, normalize, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -42,6 +43,9 @@ export async function startHarness(opts = {}) {
     // 配信するテキストを差し替えるフック。(相対パス, 中身) => 中身
     // 更新テストが「デプロイでバージョンが上がった状況」を作るのに使う。
     transform = null,
+    // 📣 新しいお知らせのモーダル（app-init.js の initNewsBadge）。既定では出さない
+    // （出るとオーバーレイが他の全テストの操作を邪魔する）。news-test だけ true にする。
+    newsModal = false,
   } = opts;
 
   const stub = await readFile(join(HERE, "fb-stub.js"), "utf8");
@@ -113,6 +117,15 @@ export async function startHarness(opts = {}) {
     if (dialogAction === "dismiss") d.dismiss();
     else d.accept(dialogAnswer ?? undefined);
   });
+
+  if (!newsModal) {
+    // news.js 先頭の id を「モーダルは表示済み」にしておく（赤丸の未読判定には触らない）
+    const newsSrc = readFileSync(join(HERE, "..", "news.js"), "utf8");
+    const firstId = (newsSrc.match(/id:\s*"([^"]+)"/) || [])[1];
+    if (firstId) {
+      await page.addInitScript((id) => { try { localStorage.setItem("newsModalShownId", id); } catch (e) {} }, firstId);
+    }
+  }
 
   if (noAnimation) {
     await page.addInitScript(() => {
