@@ -79,7 +79,7 @@
 |---|---|---|
 | アプリ本体 | **ルート直下**（`app.html` / `app-*.js`（機能ごとに10分割） / `styles.css` / `sw.js`） | 動かさない。移動するとPWAの配信パスが壊れる |
 | 紹介ページ（LP） | **ルート直下の `index.html`** | ログイン不要で読める静的ページ。PWA起動時は `app.html` へ転送 |
-| よく買うものの連想イラスト | `shortcut-icons/` | 英語名.svg（`app-requests.js` の `SHORTCUT_ICON_MATCH` から参照） |
+| よく買うものの連想イラスト | `shortcut-icons/` | 英語名.svg（`app-requests.js` の `ICON_LIBRARY` に1行足して参照。ピッカーの一覧と品名からの自動判定の両方に使われる） |
 | 説明用スクショ | `docs/screenshots/` | `NN-名前.png`（連番・480px幅・256色） |
 | ドキュメント | `docs/` | 小文字ハイフン区切り。`hub.html` から参照されているものはリネーム禁止 |
 | ルール | `docs/rules/` | 小文字1語（`ui` / `deploy` / `workflow`） |
