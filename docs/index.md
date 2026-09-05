@@ -26,6 +26,7 @@
 | **ストア配信の費用と手順** | `docs/release-plan.md` | — |
 | **ブランチ・テスト・PR の進め方** | `docs/rules/workflow.md` | — |
 | **機能の仕様（利用者向け）** | `docs/features.md` | — |
+| **お知らせ（アップデート履歴）の内容** | `news.js`（先頭に1件足す） | `news.html`（表示だけ）・設定タブのバッジ |
 | **利用規約** | `terms.html` | — |
 | **プライバシーポリシー** | `privacy.html` | — |
 | **お問い合わせ** | `contact.html` | — |
@@ -92,6 +93,7 @@
 | やること | 手順の場所 |
 |---|---|
 | リリースする | [`rules/deploy.md` §1](./rules/deploy.md) |
+| 📣 お知らせに1件足す | `news.js` の先頭に追記（書き方はファイル冒頭のコメント）→ [`rules/deploy.md` §1](./rules/deploy.md) |
 | DBルールを適用する | [`rules/deploy.md` §2](./rules/deploy.md) |
 | functions をデプロイする | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 回帰テストを回す | `node tests/run-all.mjs` → [`rules/workflow.md` §2](./rules/workflow.md) |
@@ -123,6 +125,7 @@
 | `app.html` | アプリ本体（ログイン画面から始まる） |
 | `hub.html` | プロジェクトハブ（メインアプリ / 旧版 / ドキュメント / ロードマップ） |
 | `guide.html` | 使い方ガイド（利用者向け・平易な説明） |
+| `news.html` | 📣 お知らせ（アップデート履歴）。`news.js` を読んで日付の新しい順に一覧表示。アプリの設定タブと紹介ページのフッターから開く |
 | `terms.html` | 利用規約 |
 | `privacy.html` | プライバシーポリシー（ストア申請に必須） |
 | `contact.html` | お問い合わせフォーム（Cloud Functions `submitContactForm` 経由で記録＋メール通知） |

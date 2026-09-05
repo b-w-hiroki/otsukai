@@ -624,6 +624,13 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   font-size: 12px; font-weight: 600;
 }
 
+/* ======= 📣 お知らせボタンの未読バッジ（設定タブ） ======= */
+.news-dot {
+  position: absolute; top: 10px; right: 12px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--c-urgent); border: 1.5px solid var(--surface);
+}
+
 /* ======= Destination chip（設定タブの行き先リスト） ======= */
 .dest-chip {
   display: inline-flex; align-items: center; gap: 6px;

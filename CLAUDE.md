@@ -102,6 +102,7 @@ GitHub Pages で配信し、Firebase（Auth / Realtime Database / Storage / FCM 
 - [ ] `sw.js` の `CACHE` を上げた
 - [ ] UI を変えたなら `docs/screenshots/` を撮り直した（480px・256色に最適化）
 - [ ] 機能を足したなら `docs/features.md` を更新した
+- [ ] 利用者に見える変更なら `news.js` の先頭に1件足した（📣お知らせに載る。書き方はファイル冒頭）
 - [ ] 決め事を変えたなら `docs/rules/` を更新し、**正本レジストリと矛盾していない**
 - [ ] ブランチを切ってコミットし、**ドラフト PR** を作った
 - [ ] PR 本文に「**デプロイ後にやること**」を書いた（functions / DBルールを触ったなら必須）

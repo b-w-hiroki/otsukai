@@ -690,6 +690,19 @@ function injectImobileBanner(slotId, config) {
   document.head.appendChild(pushScript);
 }
 
+// 📣 お知らせ（news.js）の「新しいお知らせ」バッジ。
+// news.js 先頭の id を端末ごとに localStorage で既読管理し、未読なら設定タブの
+// ボタンに赤丸を出す。押すと既読にして news.html を開く（リンクの既定動作）。
+const NEWS_SEEN_KEY = "newsSeenId";
+function initNewsBadge() {
+  const btn = $("btn-news"), dot = $("news-dot");
+  if (!btn || !dot || typeof NEWS === "undefined" || !NEWS.length) return;
+  const latestId = NEWS[0].id;
+  const refresh = () => { dot.style.display = localStorage.getItem(NEWS_SEEN_KEY) === latestId ? "none" : ""; };
+  refresh();
+  btn.addEventListener("click", () => { localStorage.setItem(NEWS_SEEN_KEY, latestId); refresh(); });
+}
+
 // 広告枠: スポットタグを注入する。実際に表示するかどうか（.has-ad）は
 // injectImobileBanner 内の MutationObserver が、広告SDKが中身を描いた時点で判断する。
 function initAdSlots() {
@@ -717,6 +730,7 @@ function init() {
   safely(wireGlobalEvents, "wireGlobalEvents");
   safely(wireTabs, "wireTabs");
   safely(initAdSlots, "initAdSlots");
+  safely(initNewsBadge, "initNewsBadge");
   if (!isConfigured) {
     showScreen("config");
     return;

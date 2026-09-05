@@ -16,7 +16,7 @@ jobs:
 
       - name: JS 構文チェック（単体ファイル）
         run: |
-          for f in app-*.js sw.js firebase-messaging-sw.js firebase-config.js functions/index.js; do
+          for f in app-*.js news.js sw.js firebase-messaging-sw.js firebase-config.js functions/index.js; do
             node --check "$f"
           done
 
@@ -25,7 +25,7 @@ jobs:
           node -e '
             const fs = require("fs");
             let errors = 0;
-            for (const file of ["app.html", "index.html", "contact.html"]) {
+            for (const file of ["app.html", "index.html", "contact.html", "news.html"]) {
               const html = fs.readFileSync(file, "utf8");
               const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
               let m, count = 0;
