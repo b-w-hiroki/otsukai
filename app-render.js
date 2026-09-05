@@ -130,6 +130,7 @@ function compactCard(r, i = 0) {
   // Extra info hints: budget / brand / memo / assignee
   const hintParts = [];
   if (r.category && CATEGORY[r.category]) hintParts.push(`${CATEGORY[r.category].emoji} ${CATEGORY[r.category].label}`);
+  if (destinationName(r)) hintParts.push(`🏬 ${escapeHtml(destinationName(r))}`);
   if (r.budget > 0) hintParts.push(`💰 ${Number(r.budget).toLocaleString()}円以下`);
   if (r.brand) hintParts.push(`🏷️ ${escapeHtml(r.brand)}`);
   if (r.memo) hintParts.push(`📝 ${escapeHtml(r.memo)}`);
@@ -239,6 +240,7 @@ function checkDetail(r) {
 
   const hintParts = [];
   if (r.category && CATEGORY[r.category]) hintParts.push(`${CATEGORY[r.category].emoji} ${CATEGORY[r.category].label}`);
+  if (destinationName(r)) hintParts.push(`🏬 ${escapeHtml(destinationName(r))}`);
   if (r.budget > 0) hintParts.push(`💰 ${Number(r.budget).toLocaleString()}円以下`);
   if (r.brand) hintParts.push(`🏷️ ${escapeHtml(r.brand)}`);
   if (r.memo) hintParts.push(`📝 ${escapeHtml(r.memo)}`);
@@ -348,12 +350,21 @@ const SECTION_DEFS = {
 function renderRequests() {
   const items = Object.entries(state.requests).map(([id, r]) => ({ id, ...r }));
 
-  // Group 1: unclaimed open items（急ぎ → カテゴリ → 追加順）
+  // Group 1: unclaimed open items（急ぎ → カテゴリ → 行き先 → 追加順）
+  // 行き先での並び替えは「急ぎ」セクションには適用しない（急ぎはすぐ買うものなので、
+  // 行き先ごとにさらに分けるとかえって見つけにくくなるため）。
   const openItems = items
     .filter(r => r.status === "open")
-    .sort((a, b) =>
-      SECTION_DEFS[sectionKeyOf(a)].order - SECTION_DEFS[sectionKeyOf(b)].order ||
-      a.requestedAt - b.requestedAt);
+    .sort((a, b) => {
+      const keyA = sectionKeyOf(a), keyB = sectionKeyOf(b);
+      const sa = SECTION_DEFS[keyA].order, sb = SECTION_DEFS[keyB].order;
+      if (sa !== sb) return sa - sb;
+      if (keyA !== "urgent") {
+        const da = destinationOrder(a), db = destinationOrder(b);
+        if (da !== db) return da - db;
+      }
+      return a.requestedAt - b.requestedAt;
+    });
 
   // Group 2: items someone declared they'll buy (claimed, in-progress).
   // 完了(done)はリストから外し「購入完了済み履歴」に格納する。
@@ -381,13 +392,24 @@ function renderRequests() {
     } else {
       // セクション見出しは、カテゴリ付き or 急ぎが1つでもあるときだけ出す
       const useSections = openItems.some(r => sectionKeyOf(r) !== "none");
-      let cur = null;
+      // 行き先の小見出しは、誰か1つでも行き先を設定していないと出さない
+      // （誰も使っていない家族には「行き先未設定」ばかりのノイズになるため）
+      const useDestGrouping = openItems.some(r => r.destination);
+      let cur = null, curDest;
       openBody = `<div class="check-list">` + openItems.map((r) => {
         let hdr = "";
         const key = sectionKeyOf(r);
         if (useSections && key !== cur) {
           cur = key;
-          hdr = `<div class="check-section-hdr">${SECTION_DEFS[key].label}</div>`;
+          curDest = undefined;
+          hdr += `<div class="check-section-hdr">${SECTION_DEFS[key].label}</div>`;
+        }
+        if (useDestGrouping && key !== "urgent") {
+          const dest = destinationName(r);
+          if (dest !== curDest) {
+            curDest = dest;
+            hdr += `<div class="check-dest-hdr">${dest ? "🏬 " + escapeHtml(dest) : "行き先未設定"}</div>`;
+          }
         }
         return hdr + checkRow(r);
       }).join("") + `</div>`;

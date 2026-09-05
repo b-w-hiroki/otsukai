@@ -25,6 +25,24 @@ function wireStockCategoryChips() {
     });
   });
 }
+// 行き先（任意。家族が設定タブで登録した分だけチップが出る）
+let stockAddDestination = null;
+function renderStockDestinationPicker() {
+  stockAddDestination = null;
+  const el = $("stock-destination");
+  const dests = sortedDestinations();
+  el.innerHTML = dests.length
+    ? dests.map((d) => `<button type="button" class="cat-chip" data-dest="${d.id}">🏬 ${escapeHtml(d.name)}</button>`).join("")
+    : `<p class="muted" style="font-size:11px;margin:0;">設定タブの「🏬 行き先」から登録すると、ここで選べるようになります（任意）。</p>`;
+  el.querySelectorAll(".cat-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      const willSelect = !b.classList.contains("selected");
+      el.querySelectorAll(".cat-chip").forEach((c) => c.classList.remove("selected"));
+      stockAddDestination = willSelect ? b.dataset.dest : null;
+      if (willSelect) b.classList.add("selected");
+    });
+  });
+}
 // 登録シートの写真。File（実写真をアップロード）／文字列（選んだイラストのパスをそのまま使う）／null
 let pendingStockPhoto = null;
 // 詳細シートで「写真を撮る・選ぶ」を選んだとき、どのストックが対象かを覚えておく
@@ -34,6 +52,7 @@ function openStockSheet() {
   stockAddLevel = "ok";
   document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
   setStockCategory(null);
+  renderStockDestinationPicker();
   $("stock-name").value = "";
   $("stock-memo").value = "";
   $("stock-budget").value = "";
@@ -128,6 +147,7 @@ async function addStock() {
   try {
     const id = familyRef().child("stocks").push().key;
     const item = { name, level: stockAddLevel, category: stockAddCategory, updatedBy: state.uid, updatedAt: now() };
+    if (stockAddDestination) item.destination = stockAddDestination;
     if (memo) item.memo = memo;
     if (budget > 0) item.budget = budget;
     if (cycleDays >= 1 && cycleDays <= 365) {
@@ -155,6 +175,9 @@ async function addStock() {
 async function updateStockCategory(id, cat) {
   if (!CATEGORY[cat]) return;
   await dbOp(familyRef().child(`stocks/${id}/category`).set(cat), "変更できませんでした");
+}
+async function updateStockDestination(id, destId) {
+  await dbOp(familyRef().child(`stocks/${id}/destination`).set(destId || null), "変更できませんでした");
 }
 async function updateStockLevel(id, level) {
   const patch = { level, updatedBy: state.uid, updatedAt: now() };
@@ -218,6 +241,7 @@ async function addStockToRequest(s) {
   if (s.memo) req.brand = s.memo;
   if (s.photoUrl) req.photoUrl = s.photoUrl;
   if (s.category) req.category = s.category;
+  if (s.destination) req.destination = s.destination;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
@@ -326,6 +350,13 @@ function openStockDetail(id) {
       <p class="muted" style="font-size:11px;margin-top:6px;">買い物リストに追加するときも、このカテゴリのまま引き継がれます。</p>
     </div>
     <div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">行き先（任意）</div>
+      <div class="cat-chips" id="stock-detail-dest">
+        ${sortedDestinations().map((d) => `<button type="button" class="cat-chip${s.destination === d.id ? " selected" : ""}" data-detail-dest="${d.id}" data-sid="${id}">🏬 ${escapeHtml(d.name)}</button>`).join("")
+          || `<p class="muted" style="font-size:11px;margin:0;">設定タブの「🏬 行き先」から登録すると、ここで選べるようになります。</p>`}
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
       <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">在庫レベルを変更</div>
       <div class="stock-level-picker">
         <button class="slp-btn${s.level === 'ok' ? ' active' : ''}" data-detail-lvl="ok" data-sid="${id}">🟢 たっぷり</button>
@@ -356,6 +387,13 @@ function openStockDetail(id) {
     btn.addEventListener("click", () => {
       updateStockCategory(btn.dataset.sid, btn.dataset.detailCat);
       $("stock-detail-body").querySelectorAll("[data-detail-cat]").forEach(b => b.classList.toggle("selected", b === btn));
+    });
+  });
+  $("stock-detail-body").querySelectorAll("[data-detail-dest]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const willSelect = !btn.classList.contains("selected");
+      updateStockDestination(btn.dataset.sid, willSelect ? btn.dataset.detailDest : null);
+      $("stock-detail-body").querySelectorAll("[data-detail-dest]").forEach(b => b.classList.toggle("selected", b === btn && willSelect));
     });
   });
   $("btn-stock-detail-rename").addEventListener("click", () => renameStock(id));

@@ -47,6 +47,7 @@
         "comments":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "stats":         { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "shortcuts":     { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "destinations":  { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "stocks":        { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "missions":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
         "missionLogs":   { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },

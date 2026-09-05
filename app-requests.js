@@ -32,6 +32,89 @@ function categoryOrder(r) {
   return r.category && CATEGORY[r.category] ? CATEGORY[r.category].order : CATEGORY_NONE_ORDER;
 }
 
+// ===== 行き先（家族共通の登録制。カテゴリと違い固定3種ではなく、設定タブで自由に追加/削除する） =====
+// 未設定でも困らない任意項目のため、カテゴリのような「必須タップ」は課さない。
+let selectedDestination = null;
+
+// 登録順そのまま（destinations は push キーなので createdAt で並べる）を「行き先の並び順」とする。
+// 買い物リストのグルーピング順も、設定タブの表示順もこれに合わせて一貫させる。
+function sortedDestinations() {
+  return Object.entries(state.destinations || {})
+    .map(([id, d]) => ({ id, ...d }))
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+}
+function destinationOrder(r) {
+  if (!r.destination) return Infinity; // 行き先未設定は各カテゴリの最後にまとめる
+  const idx = sortedDestinations().findIndex((d) => d.id === r.destination);
+  return idx === -1 ? Infinity : idx; // 削除済みの行き先を指していた場合も末尾扱い
+}
+function destinationName(r) {
+  const d = state.destinations && state.destinations[r.destination];
+  return d ? d.name : null;
+}
+
+// カテゴリ（#new-category）とは違い、行き先は家族ごとに件数も内容も変わるため、
+// シートを開くたびに現在の登録状況からチップを作り直し、その場で選択を配線する。
+function renderNewDestinationPicker() {
+  selectedDestination = null;
+  const el = $("new-destination");
+  const dests = sortedDestinations();
+  el.innerHTML = dests.length
+    ? dests.map((d) => `<button type="button" class="cat-chip" data-dest="${d.id}">🏬 ${escapeHtml(d.name)}</button>`).join("")
+    : `<p class="muted" style="font-size:11px;margin:0;">設定タブの「🏬 行き先」から登録すると、ここで選べるようになります（任意）。</p>`;
+  el.querySelectorAll(".cat-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      const willSelect = !b.classList.contains("selected");
+      el.querySelectorAll(".cat-chip").forEach((c) => c.classList.remove("selected"));
+      selectedDestination = willSelect ? b.dataset.dest : null;
+      if (willSelect) b.classList.add("selected");
+    });
+  });
+}
+// 編集シートを開いたときなど、既存の選択値を反映したい場合に呼ぶ
+function setSelectedDestination(id) {
+  selectedDestination = id && state.destinations[id] ? id : null;
+  $("new-destination").querySelectorAll(".cat-chip").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.dest === selectedDestination);
+  });
+}
+
+// 設定タブ: 行き先リストの表示（追加・削除）
+function renderDestinationSettings() {
+  const el = $("destination-list");
+  if (!el) return;
+  const dests = sortedDestinations();
+  el.innerHTML = dests.length
+    ? dests.map((d) => `<span class="dest-chip">🏬 ${escapeHtml(d.name)}<button data-del-dest="${d.id}" aria-label="「${escapeHtml(d.name)}」を削除">×</button></span>`).join("")
+    : `<p class="muted" style="font-size:12px;margin:0;">まだ行き先が登録されていません。</p>`;
+  el.querySelectorAll("[data-del-dest]").forEach((b) => {
+    b.addEventListener("click", () => deleteDestination(b.dataset.delDest));
+  });
+}
+async function addDestination() {
+  const input = $("new-destination-name");
+  const name = input.value.trim();
+  if (!name) return showToast("行き先の名前を入力してください");
+  if (Object.values(state.destinations || {}).some((d) => d && d.name === name)) {
+    showToast(`「${name}」はもう登録されています`, { sound: false });
+    return;
+  }
+  const ref = familyRef().child("destinations").push();
+  if (!(await dbOp(ref.set({ name, createdAt: now(), createdBy: state.uid }), "登録できませんでした"))) return;
+  input.value = "";
+  showToast(`🏬 「${name}」を登録しました`, { sound: false });
+}
+// 削除済みの行き先を使っていた依頼・ストック・よく買うものは「行き先未設定」扱いに
+// 戻るだけでデータ自体は消えないが、破壊的操作（削除）のルール（docs/rules/ui.md）に
+// 従い confirm を挟む。
+async function deleteDestination(id) {
+  const d = state.destinations[id];
+  if (!d) return;
+  if (!confirm(`「${d.name}」を削除しますか？\n\nこの行き先が設定されていた項目は「行き先未設定」に戻ります。`)) return;
+  await dbOp(familyRef().child("destinations/" + id).remove(), "削除できませんでした");
+  showToast(`「${d.name}」を削除しました`, { sound: false });
+}
+
 // ===== Bottom sheet =====
 function resetSheetToAddMode() {
   editingRequestId = null;
@@ -47,6 +130,7 @@ function resetSheetToAddMode() {
   $("new-diff").value = "normal";
   $("new-assignee").value = "";
   setSelectedCategory(null);
+  renderNewDestinationPicker();
   setReqPhotoPreview("");
   pendingReqPhoto = null;
   existingReqPhotoUrl = "";
@@ -168,6 +252,7 @@ async function addRequest() {
     if (brand) req.brand = brand;
     if (assignedTo) req.assignedTo = assignedTo;
     req.category = selectedCategory;
+    if (selectedDestination) req.destination = selectedDestination;
     if (pendingReqPhoto) {
       // File なら実写真としてアップロード、文字列なら選んだイラストのパスをそのまま使う
       const url = pendingReqPhoto instanceof File ? await uploadRequestPhoto(pendingReqPhoto, id) : pendingReqPhoto;
@@ -199,6 +284,8 @@ function openEditSheet(r) {
   $("new-brand").value = r.brand || "";
   $("new-assignee").value = r.assignedTo || "";
   setSelectedCategory(r.category || null);
+  renderNewDestinationPicker();
+  setSelectedDestination(r.destination || null);
   pendingReqPhoto = null;
   existingReqPhotoUrl = r.photoUrl || "";
   setReqPhotoPreview(existingReqPhotoUrl);
@@ -227,6 +314,7 @@ async function updateRequest() {
   updates.brand = brand || null;
   updates.assignedTo = assignedTo || null;
   updates.category = selectedCategory;
+  updates.destination = selectedDestination || null;
   if (pendingReqPhoto) {
     const url = pendingReqPhoto instanceof File ? await uploadRequestPhoto(pendingReqPhoto, editingRequestId) : pendingReqPhoto;
     if (url) updates.photoUrl = url;
@@ -248,7 +336,7 @@ function isShortcutRegistered(name) {
 // cycleDays ベースの「⏳ そろそろ切れるかも」予測（app-stock.js）がそのまま効くようにする。
 // 品によって持つ期間が違うので、cycleDays を指定すればここで反映される。
 // マッチングはストック本体と同じく品名の文字列一致（IDでの紐付けはしない）。
-async function ensureStockForShortcut(name, cycleDays, category) {
+async function ensureStockForShortcut(name, cycleDays, category, destination) {
   const existing = Object.entries(state.stocks || {}).find(([, s]) => s && s.name === name);
   if (existing) {
     // 既にストックにある品なら、買う間隔だけ反映する（在庫レベルは変えない）
@@ -257,6 +345,7 @@ async function ensureStockForShortcut(name, cycleDays, category) {
   }
   const item = { name, level: "ok", updatedBy: state.uid, updatedAt: now() };
   if (category) item.category = category;
+  if (destination) item.destination = destination;
   if (cycleDays > 0) { item.cycleDays = cycleDays; item.lastFilledAt = now(); }
   const id = familyRef().child("stocks").push().key;
   await dbOp(familyRef().child("stocks/" + id).set(item), "ストックへの登録に失敗しました");
@@ -276,9 +365,10 @@ async function addShortcutFromRequest(id) {
   if (r.brand) entry.brand = r.brand;
   if (r.assignedTo) entry.assignedTo = r.assignedTo;
   if (r.category) entry.category = r.category;
+  if (r.destination) entry.destination = r.destination;
   const ref = familyRef().child("shortcuts").push();
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
-  await ensureStockForShortcut(r.name, 0, r.category); // 買う間隔はここでは指定しない（ストックタブから後で設定可）
+  await ensureStockForShortcut(r.name, 0, r.category, r.destination); // 買う間隔はここでは指定しない（ストックタブから後で設定可）
   showToast(`⭐ 「${r.name}」をよく買うものに登録しました`, { sound: false });
   renderRequests();
   renderHistory();
@@ -305,6 +395,7 @@ async function addFromShortcut(s) {
   if (s.brand) req.brand = s.brand;
   if (s.assignedTo) req.assignedTo = s.assignedTo;
   if (s.category) req.category = s.category;
+  if (s.destination) req.destination = s.destination;
   if (s.photoUrl) req.photoUrl = s.photoUrl;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
@@ -347,13 +438,14 @@ async function addShortcutFromSheet() {
   if (brand) entry.brand = brand;
   if (assignedTo) entry.assignedTo = assignedTo;
   entry.category = selectedCategory;
+  if (selectedDestination) entry.destination = selectedDestination;
   const ref = familyRef().child("shortcuts").push();
   if (pendingReqPhoto) {
     const url = pendingReqPhoto instanceof File ? await uploadShortcutPhoto(pendingReqPhoto, ref.key) : pendingReqPhoto;
     if (url) entry.photoUrl = url;
   }
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
-  await ensureStockForShortcut(name, cycleDays, selectedCategory);
+  await ensureStockForShortcut(name, cycleDays, selectedCategory, selectedDestination);
   closeSheet();
   showToast(`⭐ 「${name}」をよく買うものに登録しました`);
 }
@@ -378,6 +470,8 @@ function openShortcutEditSheet(id) {
   $("new-brand").value = s.brand || "";
   $("new-assignee").value = s.assignedTo || "";
   setSelectedCategory(s.category || null);
+  renderNewDestinationPicker();
+  setSelectedDestination(s.destination || null);
   pendingReqPhoto = null;
   existingReqPhotoUrl = s.photoUrl || "";
   setReqPhotoPreview(existingReqPhotoUrl);
@@ -403,6 +497,7 @@ async function updateShortcut() {
   updates.budget = budget > 0 ? budget : null;
   updates.brand = brand || null;
   updates.assignedTo = assignedTo || null;
+  updates.destination = selectedDestination || null;
   if (pendingReqPhoto) {
     const url = pendingReqPhoto instanceof File ? await uploadShortcutPhoto(pendingReqPhoto, editingShortcutId) : pendingReqPhoto;
     if (url) updates.photoUrl = url;
@@ -572,6 +667,7 @@ function shortcutHintsHtml(s, cardStyle) {
   const hints = [];
   if (s.budget > 0) hints.push(`💰${Number(s.budget).toLocaleString()}円`);
   if (s.brand) hints.push(`🏷️${escapeHtml(s.brand)}`);
+  if (destinationName(s)) hints.push(`🏬${escapeHtml(destinationName(s))}`);
   if (s.assignedTo) {
     const m = (state.family && state.family.members && state.family.members[s.assignedTo]);
     if (m) hints.push(`👤${escapeHtml(m.name || '')}`);

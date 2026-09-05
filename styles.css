@@ -616,6 +616,19 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
   font-size: 12px; font-weight: 600;
 }
 
+/* ======= Destination chip（設定タブの行き先リスト） ======= */
+.dest-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1.5px solid var(--border);
+  padding: 6px 8px 6px 12px; border-radius: var(--r-full);
+  font-size: 13px; font-weight: 600;
+}
+.dest-chip button {
+  border: none; background: transparent; color: var(--muted);
+  font-size: 15px; line-height: 1; padding: 4px 6px; cursor: pointer;
+}
+.dest-chip button:hover { color: var(--c-urgent); }
+
 /* ======= Empty state ======= */
 .empty { text-align: center; color: var(--muted); padding: 36px 20px; font-size: 13px; line-height: 1.9; }
 
@@ -1502,6 +1515,12 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   padding: 8px 14px;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
+}
+/* カテゴリ見出しの内側で、行き先ごとにさらに分けるときの小見出し（親より控えめに） */
+.check-dest-hdr {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  padding: 6px 14px 4px;
+  background: var(--surface);
 }
 .check-row {
   display: flex; align-items: center; gap: 12px;

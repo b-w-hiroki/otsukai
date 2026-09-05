@@ -496,6 +496,8 @@ function wireGlobalEvents() {
   // ここでは配線しない（openPlayerSheet() 側で都度配線する）
   wireCategoryChips();
   wireStockCategoryChips();
+  $("btn-add-destination").addEventListener("click", addDestination);
+  $("new-destination-name").addEventListener("keydown", (e) => { if (e.key === "Enter") addDestination(); });
   wireMissionSubtabs();
   wireSettingsAccordion();
   $("btn-member-admin-toggle").addEventListener("click", () => {

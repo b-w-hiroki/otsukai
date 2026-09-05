@@ -186,6 +186,7 @@ function renderSuggestions() {
         brand: st && st.memo,
         photoUrl: st && st.photoUrl,
         category: st && st.category,
+        destination: st && st.destination,
       });
     });
   });
