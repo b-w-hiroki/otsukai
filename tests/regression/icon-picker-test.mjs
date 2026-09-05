@@ -103,7 +103,10 @@ await page.click("#btn-stock-detail-photo");
 await sleep(400);
 await page.click("#btn-icon-picker-camera");
 await pickPhoto("#stock-detail-photo-input");
-await sleep(800);
+// 完了トースト（「変更しました」）が出るまで待つ（固定待ちはCIの遅いランナーで前段の
+// 「アップロード中...」を掴んで落ちることがある）
+await page.waitForFunction(() => (document.getElementById("toasts")?.innerText || "").includes("写真を変更しました"), null, { timeout: 8000 }).catch(() => {});
+await sleep(200);
 const toast = await page.locator("#toasts").innerText().catch(() => "");
 check("「写真をセットする」からは実写真をアップロードできる", toast.includes("写真を変更しました"), toast);
 await page.click("#btn-stock-detail-close");

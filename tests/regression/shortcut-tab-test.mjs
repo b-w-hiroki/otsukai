@@ -156,7 +156,10 @@ check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isV
 check("「写真をセットする」ボタンがある", await page.locator("#btn-icon-picker-camera").isVisible());
 await page.click("#btn-icon-picker-camera");
 await pickPhoto("#shortcut-photo-replace-input");
-await sleep(800);
+// 「アップロード中...」→「変更しました」の2段階でトーストが出る。固定待ちだとCIの遅い
+// ランナーで前段のトーストを掴んでしまうため、完了トーストが出るまで待つ
+await page.waitForFunction(() => (document.getElementById("toasts")?.innerText || "").includes("写真を変更しました"), null, { timeout: 8000 }).catch(() => {});
+await sleep(200);
 check("差し替え後もカードに写真が表示される（プレースホルダーに戻らない）",
   (await targetCard.locator(".shortcut-card-photo img").count()) === 1);
 const toast = await page.locator("#toasts").innerText().catch(() => "");
