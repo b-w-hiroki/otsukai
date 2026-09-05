@@ -10,6 +10,39 @@ const STOCK_LEVEL = {
 };
 const STOCK_NEXT = { ok: "low", low: "out", out: "ok" };
 let stockAddLevel = "ok";
+// カテゴリ（買い物リストと同じ CATEGORY を使う。買い物リストに追加するときそのまま引き継ぐため）
+let stockAddCategory = null;
+function setStockCategory(cat) {
+  stockAddCategory = cat && CATEGORY[cat] ? cat : null;
+  document.querySelectorAll("#stock-category .cat-chip").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.cat === stockAddCategory);
+  });
+}
+function wireStockCategoryChips() {
+  document.querySelectorAll("#stock-category .cat-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      setStockCategory(b.dataset.cat === stockAddCategory ? null : b.dataset.cat);
+    });
+  });
+}
+// 行き先（任意。家族が設定タブで登録した分だけチップが出る）
+let stockAddDestination = null;
+function renderStockDestinationPicker() {
+  stockAddDestination = null;
+  const el = $("stock-destination");
+  const dests = sortedDestinations();
+  // 行き先を1件も登録していない家族には、行ごと出さない
+  $("stock-destination-wrap").style.display = dests.length ? "" : "none";
+  el.innerHTML = dests.map((d) => `<button type="button" class="cat-chip" data-dest="${d.id}">🏬 ${escapeHtml(d.name)}</button>`).join("");
+  el.querySelectorAll(".cat-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      const willSelect = !b.classList.contains("selected");
+      el.querySelectorAll(".cat-chip").forEach((c) => c.classList.remove("selected"));
+      stockAddDestination = willSelect ? b.dataset.dest : null;
+      if (willSelect) b.classList.add("selected");
+    });
+  });
+}
 // 登録シートの写真。File（実写真をアップロード）／文字列（選んだイラストのパスをそのまま使う）／null
 let pendingStockPhoto = null;
 // 詳細シートで「写真を撮る・選ぶ」を選んだとき、どのストックが対象かを覚えておく
@@ -18,6 +51,8 @@ let stockPhotoTargetId = null;
 function openStockSheet() {
   stockAddLevel = "ok";
   document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
+  setStockCategory(null);
+  renderStockDestinationPicker();
   $("stock-name").value = "";
   $("stock-memo").value = "";
   $("stock-budget").value = "";
@@ -102,6 +137,7 @@ async function setStockIllustration(stockId, path) {
 async function addStock() {
   const name = $("stock-name").value.trim();
   if (!name) return showToast("商品名を入力してください");
+  if (!stockAddCategory) return showToast("カテゴリを選んでください");
   const memo = $("stock-memo").value.trim();
   const budget = parseInt($("stock-budget").value, 10);
   const cycleDays = parseInt($("stock-cycle").value, 10);
@@ -110,7 +146,8 @@ async function addStock() {
   if (addBtn) addBtn.disabled = true;
   try {
     const id = familyRef().child("stocks").push().key;
-    const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
+    const item = { name, level: stockAddLevel, category: stockAddCategory, updatedBy: state.uid, updatedAt: now() };
+    if (stockAddDestination) item.destination = stockAddDestination;
     if (memo) item.memo = memo;
     if (budget > 0) item.budget = budget;
     if (cycleDays >= 1 && cycleDays <= 365) {
@@ -135,11 +172,33 @@ async function addStock() {
     if (addBtn) addBtn.disabled = false;
   }
 }
+async function updateStockCategory(id, cat) {
+  if (!CATEGORY[cat]) return;
+  await dbOp(familyRef().child(`stocks/${id}/category`).set(cat), "変更できませんでした");
+}
+async function updateStockDestination(id, destId) {
+  await dbOp(familyRef().child(`stocks/${id}/destination`).set(destId || null), "変更できませんでした");
+}
 async function updateStockLevel(id, level) {
   const patch = { level, updatedBy: state.uid, updatedAt: now() };
   // 🟢 に戻した＝補充した日。手入力した「買う間隔」の起点になる。
   if (level === "ok") patch.lastFilledAt = now();
   await dbOp(familyRef().child(`stocks/${id}`).update(patch), "変更できませんでした");
+}
+
+// 「買ったよ」完了時に、同名で切れている/少ないストックがあれば自動で🟢たっぷりに戻す。
+// これをしないと、買った後も「そろそろ切れるかも」に同じ品が出続けてしまう
+// （ストック側の残量記録と買い物リストの完了が別々に管理されているため）。
+// おまけの同期なので、失敗しても「買ったよ」自体は止めず、エラートーストも出さない
+// （bumpStat と同じ考え方）。
+async function replenishMatchingStocks(name) {
+  const matches = Object.entries(state.stocks || {})
+    .filter(([, s]) => s && s.name === name && (s.level === "low" || s.level === "out"));
+  if (!matches.length) return;
+  await Promise.all(matches.map(([id]) =>
+    familyRef().child(`stocks/${id}`).update({ level: "ok", updatedBy: state.uid, updatedAt: now(), lastFilledAt: now() })
+      .catch((e) => console.error("replenishMatchingStocks failed", e))
+  ));
 }
 
 // ストック詳細から「買う間隔（日）」を設定・解除する
@@ -151,6 +210,22 @@ async function updateStockCycle(id, days) {
   if (days && !s.lastFilledAt) patch.lastFilledAt = now();
   if (!(await dbOp(familyRef().child(`stocks/${id}`).update(patch), "変更できませんでした"))) return;
   showToast(days ? `🔄 「${s.name}」を${days}日ごとに設定しました` : "🔄 買う間隔の設定を外しました", { sound: false });
+}
+// タイプミスなどで後から商品名を直したいという要望への対応。
+// 名前はストック↔買い物リストの突き合わせ（そろそろ切れるかも等）に使われるが、
+// 過去の履歴は旧名のまま残るため、学習済みの周期予測は名前変更後リセットされる
+// （新しい名前で3回買うと再学習される。詳細は docs/features.md 参照）。
+async function renameStock(id) {
+  const s = state.stocks[id];
+  if (!s) return;
+  const input = prompt("商品名を変更", s.name);
+  if (input === null) return;
+  const name = input.trim();
+  if (!name) return showToast("商品名を入力してください");
+  if (name === s.name) return;
+  if (!(await dbOp(familyRef().child(`stocks/${id}/name`).set(name), "変更できませんでした"))) return;
+  showToast(`「${name}」に変更しました`, { sound: false });
+  openStockDetail(id); // 詳細シートの表示も更新する
 }
 async function deleteStock(id) {
   const s = state.stocks[id];
@@ -164,6 +239,9 @@ async function addStockToRequest(s) {
   const req = { name: s.name, diff: "normal", urgent: s.level === "out", status: "open", requestedBy: state.uid, requestedAt: now() };
   if (s.budget > 0) req.budget = s.budget;
   if (s.memo) req.brand = s.memo;
+  if (s.photoUrl) req.photoUrl = s.photoUrl;
+  if (s.category) req.category = s.category;
+  if (s.destination) req.destination = s.destination;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
@@ -251,10 +329,11 @@ function openStockDetail(id) {
     </button>
     <div class="row" style="gap:14px;margin-bottom:14px;align-items:center;">
       <div style="font-size:36px;line-height:1;">${lvl.emoji}</div>
-      <div>
+      <div style="flex:1;">
         <div style="font-size:18px;font-weight:800;letter-spacing:-0.4px;">${escapeHtml(s.name)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600;">${lvl.label}</div>
       </div>
+      <button type="button" id="btn-stock-detail-rename" class="ghost tiny-btn" aria-label="名前を変更">✏️ 名前</button>
     </div>
     ${s.memo || s.budget > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
       ${s.budget > 0 ? `<span class="req-hint">💰 ${Number(s.budget).toLocaleString()}円以下</span>` : ""}
@@ -268,25 +347,66 @@ function openStockDetail(id) {
         <button class="slp-btn${s.level === 'out' ? ' active' : ''}" data-detail-lvl="out" data-sid="${id}">🔴 切れた</button>
       </div>
     </div>
-    <div style="margin-bottom:16px;">
-      <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">買う間隔</div>
-      <div class="row" style="gap:6px;">
-        <input id="stock-detail-cycle" type="number" min="1" max="365" inputmode="numeric"
-               placeholder="例: 7" value="${s.cycleDays > 0 ? Number(s.cycleDays) : ""}" style="flex:1;" />
-        <span style="font-size:13px;font-weight:700;white-space:nowrap;">日ごと</span>
-        <button id="btn-stock-detail-cycle" class="ghost tiny-btn" style="white-space:nowrap;">保存</button>
+    <!-- カテゴリ・行き先・買う間隔は毎回いじるものではないので折りたたんでおき、
+         日常で使う「残量」「買い物リストに追加」だけを最初から見せる（見た目を軽くする） -->
+    <button type="button" id="btn-stock-detail-more" class="section-toggle-btn" aria-expanded="false" style="margin-bottom:12px;">⚙️ 詳細設定 <span class="toggle-chevron">▾</span></button>
+    <div id="stock-detail-more" style="display:none;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">カテゴリ</div>
+        <div class="cat-chips">
+          <button type="button" class="cat-chip${s.category === "food" ? " selected" : ""}" data-detail-cat="food" data-sid="${id}">🍎 食品</button>
+          <button type="button" class="cat-chip${s.category === "daily" ? " selected" : ""}" data-detail-cat="daily" data-sid="${id}">🧻 日用品</button>
+          <button type="button" class="cat-chip${s.category === "other" ? " selected" : ""}" data-detail-cat="other" data-sid="${id}">📦 その他</button>
+        </div>
       </div>
-      <p class="muted" style="font-size:11px;margin-top:6px;">${cycleHintHtml(s)}</p>
+      ${sortedDestinations().length ? `<div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">行き先（任意）</div>
+        <div class="cat-chips" id="stock-detail-dest">
+          ${sortedDestinations().map((d) => `<button type="button" class="cat-chip${s.destination === d.id ? " selected" : ""}" data-detail-dest="${d.id}" data-sid="${id}">🏬 ${escapeHtml(d.name)}</button>`).join("")}
+        </div>
+      </div>` : ""}
+      <div style="margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">買う間隔</div>
+        <div class="row" style="gap:6px;">
+          <input id="stock-detail-cycle" type="number" min="1" max="365" inputmode="numeric"
+                 placeholder="例: 7" value="${s.cycleDays > 0 ? Number(s.cycleDays) : ""}" style="flex:1;" />
+          <span style="font-size:13px;font-weight:700;white-space:nowrap;">日ごと</span>
+          <button id="btn-stock-detail-cycle" class="ghost tiny-btn" style="white-space:nowrap;">保存</button>
+        </div>
+        <p class="muted" style="font-size:11px;margin-top:6px;">${cycleHintHtml(s)}</p>
+      </div>
     </div>
     <button id="btn-stock-detail-add" class="success" style="width:100%;margin-bottom:8px;">🛒 買い物リストに追加</button>
     <button id="btn-stock-detail-delete" class="danger" style="width:100%;">🗑️ ストックから削除</button>
   `;
+  $("btn-stock-detail-more").addEventListener("click", () => {
+    const btn = $("btn-stock-detail-more");
+    const open = $("stock-detail-more").style.display === "none";
+    $("stock-detail-more").style.display = open ? "" : "none";
+    btn.classList.toggle("open", open);
+    btn.setAttribute("aria-expanded", String(open));
+    btn.innerHTML = `⚙️ 詳細設定${open ? "（閉じる）" : ""} <span class="toggle-chevron">${open ? "▴" : "▾"}</span>`;
+  });
   $("stock-detail-body").querySelectorAll("[data-detail-lvl]").forEach(btn => {
     btn.addEventListener("click", () => {
       updateStockLevel(btn.dataset.sid, btn.dataset.detailLvl);
       $("stock-detail-body").querySelectorAll("[data-detail-lvl]").forEach(b => b.classList.toggle("active", b === btn));
     });
   });
+  $("stock-detail-body").querySelectorAll("[data-detail-cat]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      updateStockCategory(btn.dataset.sid, btn.dataset.detailCat);
+      $("stock-detail-body").querySelectorAll("[data-detail-cat]").forEach(b => b.classList.toggle("selected", b === btn));
+    });
+  });
+  $("stock-detail-body").querySelectorAll("[data-detail-dest]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const willSelect = !btn.classList.contains("selected");
+      updateStockDestination(btn.dataset.sid, willSelect ? btn.dataset.detailDest : null);
+      $("stock-detail-body").querySelectorAll("[data-detail-dest]").forEach(b => b.classList.toggle("selected", b === btn && willSelect));
+    });
+  });
+  $("btn-stock-detail-rename").addEventListener("click", () => renameStock(id));
   $("btn-stock-detail-photo").addEventListener("click", () => {
     openIconPicker({
       onCamera: () => { stockPhotoTargetId = id; $("stock-detail-photo-input").click(); },

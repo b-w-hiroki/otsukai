@@ -25,7 +25,8 @@ const EMOJI_CHOICES = [
   "🐻","🐼","🦊","🐯","🦁","🐸","🐵","🦄",
   "👨","👩","👦","👧","👴","👵","🧑","🧒"
 ];
-const DIFF_LABEL = { normal: "ふつう", hard: "💪 ちょっと大変", extreme: "😅 めちゃ大変" };
+// 担当者アイコン（顔文字）と見分けづらいという指摘があったため、extreme は顔文字を避ける
+const DIFF_LABEL = { normal: "ふつう", hard: "💪 ちょっと大変", extreme: "💪💪 めちゃ大変" };
 const STATUS_LABEL = { open: "未受託", claimed: "買いに行く", done: "完了" };
 
 // ===== State =====
@@ -275,7 +276,7 @@ async function signOut() {
   await unregisterPushToken(state.familyId); // この端末への通知を止める
   detachListeners();
   state.uid = null; state.profile = null; state.familyId = null; state.family = null;
-  state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
+  state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {}; state.destinations = {};
   state.missions = {}; state.missionLogs = {}; state.myRole = null;
   state.points = {}; state.rewards = {}; state.rewardLogs = {};
   await auth.signOut();
@@ -401,7 +402,7 @@ async function adminDeleteAccount() {
     detachListeners();
     localStorage.removeItem("pushToken");
     state.uid = null; state.profile = null; state.familyId = null; state.family = null;
-    state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {};
+    state.requests = {}; state.stats = {}; state.prevRequests = {}; state.shortcuts = {}; state.stocks = {}; state.destinations = {};
     state.missions = {}; state.missionLogs = {}; state.myRole = null;
     state.points = {}; state.rewards = {}; state.rewardLogs = {};
     showScreen("auth");
@@ -529,7 +530,7 @@ async function handleFamilyAccessLost(err) {
   detachListeners();
   try { await db.ref("users/" + state.uid + "/familyId").remove(); } catch (e) {}
   state.familyId = null; state.family = null; state.myRole = null;
-  state.requests = {}; state.stats = {}; state.shortcuts = {}; state.stocks = {}; state.missions = {}; state.missionLogs = {};
+  state.requests = {}; state.stats = {}; state.shortcuts = {}; state.stocks = {}; state.destinations = {}; state.missions = {}; state.missionLogs = {};
   state.familySettings = {};
   state.points = {}; state.rewards = {}; state.rewardLogs = {};
   showScreen("family");
@@ -657,6 +658,12 @@ function attachFamilyListeners() {
     renderStocks();
     renderStockBadge();
     renderSuggestions(); // 「そろそろ切れるかも」にストックの残量が効くため
+  });
+  // 行き先（設定タブで家族共通に登録するお店リスト。おつかいの「行き先」指定に使う）
+  attach(familyRef().child("destinations"), "value", (s) => {
+    state.destinations = s.val() || {};
+    renderDestinationSettings();
+    renderRequests(); // 買い物リストの行き先グルーピング・表示名に効く
   });
   // Missions
   attach(familyRef().child("missions"), "value", (s) => {

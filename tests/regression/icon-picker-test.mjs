@@ -1,4 +1,4 @@
-// 「イラストから選ぶ」ピッカーの検証。写真アップロードの代わりに、用意した20種の
+// 「イラストから選ぶ」ピッカーの検証。写真アップロードの代わりに、用意した201種の
 // イラストから明示的に選べる機能（おつかい/よく買うもの/ストックの写真欄で共通）。
 // 選んだイラストは photoUrl にパスをそのまま入れる（Storageへのアップロードは発生しない）。
 import { startHarness } from "../harness.mjs";
@@ -25,7 +25,29 @@ await sleep(500);
 check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isVisible());
 check("「写真をセットする」ボタンは出ない（新規追加時は写真ラベルが既に主導線のため）",
   !(await page.locator("#btn-icon-picker-camera").isVisible()));
-check("20種のイラストが並ぶ", (await page.locator('#icon-picker-grid .icon-picker-tile[data-file]').count()) === 20);
+const libCount = await page.evaluate(() => ICON_LIBRARY.length);
+const tileCount = await page.locator('#icon-picker-grid .icon-picker-tile[data-file]').count();
+check("ライブラリの全件がタイルとして並ぶ", tileCount === libCount && libCount >= 100, `${tileCount}/${libCount}`);
+check("分類の見出しが付く", (await page.locator('#icon-picker-grid .icon-picker-group-hdr').count()) >= 5);
+check("日用品のイラストもある", (await page.locator('#icon-picker-grid .icon-picker-tile[data-file="toiletpaper"]').count()) === 1);
+// 品名からの自動判定は「いちばん長いキーワード」を優先する
+const auto = await page.evaluate(() => [matchShortcutIcon("フライパン"), matchShortcutIcon("パンツ"), matchShortcutIcon("食器用洗剤"), matchShortcutIcon("食パン")]);
+check("フライパン→キッチン用品（パンに化けない）", auto[0].endsWith("/kitchen.svg"), auto[0]);
+check("パンツ→下着（パンに化けない）", auto[1].endsWith("/underwear.svg"), auto[1]);
+// 検索欄で絞り込める（ラベルだけでなくキーワードでも当たる）
+await page.fill("#icon-picker-search", "醤油");
+await sleep(200);
+const visibleAfterSearch = await page.locator('#icon-picker-grid .icon-picker-tile:visible').count();
+check("検索で絞り込める（醤油→調味料タイルだけ）", visibleAfterSearch === 1 && (await page.locator('#icon-picker-grid .icon-picker-tile:visible').getAttribute("data-file")) === "seasoning", String(visibleAfterSearch));
+check("該当が無い分類の見出しは隠れる", (await page.locator('#icon-picker-grid .icon-picker-group-hdr:visible').count()) === 1);
+await page.fill("#icon-picker-search", "zzzz");
+await sleep(200);
+check("見つからないときは案内が出る", await page.locator("#icon-picker-empty").isVisible());
+await page.fill("#icon-picker-search", "");
+await sleep(200);
+check("空にすると全件に戻る", (await page.locator('#icon-picker-grid .icon-picker-tile:visible').count()) === libCount);
+check("食器用洗剤→食器用洗剤（洗濯洗剤に化けない）", auto[2].endsWith("/dishsoap.svg"), auto[2]);
+check("食パン→パン", auto[3].endsWith("/bread.svg"), auto[3]);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="cabbage"]');
 await sleep(400);
 check("ピッカーが閉じる", !(await page.locator("#icon-picker-sheet.open").count()));
@@ -48,6 +70,7 @@ await sleep(500);
 await page.click("#btn-stock-register");
 await sleep(500);
 await page.fill("#stock-name", "サラダ油");
+await page.click('#stock-category .cat-chip[data-cat="food"]');
 await page.click("#btn-stock-photo-icon");
 await sleep(400);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="onion"]');
@@ -92,7 +115,10 @@ await page.click("#btn-stock-detail-photo");
 await sleep(400);
 await page.click("#btn-icon-picker-camera");
 await pickPhoto("#stock-detail-photo-input");
-await sleep(800);
+// 完了トースト（「変更しました」）が出るまで待つ（固定待ちはCIの遅いランナーで前段の
+// 「アップロード中...」を掴んで落ちることがある）
+await page.waitForFunction(() => (document.getElementById("toasts")?.innerText || "").includes("写真を変更しました"), null, { timeout: 8000 }).catch(() => {});
+await sleep(200);
 const toast = await page.locator("#toasts").innerText().catch(() => "");
 check("「写真をセットする」からは実写真をアップロードできる", toast.includes("写真を変更しました"), toast);
 await page.click("#btn-stock-detail-close");

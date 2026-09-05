@@ -61,6 +61,7 @@ await page.click('[data-tab="missions"]'); await sleep(800); await shot("10-miss
 await page.click('[data-tab="stock"]'); await sleep(800); await shot("11-stock");
 // 品目ごとの「買う間隔」
 await page.locator(".stock-item").filter({hasText:"しょうゆ"}).first().click(); await sleep(700);
+await page.click("#btn-stock-detail-more"); await sleep(400); // 買う間隔は「⚙️ 詳細設定」の中なので開いて撮る
 await shot("16-stock-cycle");
 await page.click("#stock-detail-sheet .sheet-close").catch(()=>{});
 await page.click("#sheet-backdrop").catch(()=>{}); await sleep(500);

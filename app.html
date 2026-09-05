@@ -314,6 +314,23 @@
             <div id="member-list" class="row wrap"></div>
           </div>
         </div>
+        <div class="card settings-acc closed" data-acc="destinations">
+          <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
+            <h2>🏬 行き先</h2>
+            <span class="settings-acc-chevron">▼</span>
+          </button>
+          <div class="settings-acc-body">
+            <p class="muted" style="font-size:12px;margin:0 0 10px;">
+              スーパー・薬局など、よく行くお店を登録しておくと、おつかいに「行き先」を指定できます。
+              買い物リストは行き先ごとにもまとまるので、どこで何を買うか分かりやすくなります（任意）。
+            </p>
+            <div id="destination-list" class="row wrap" style="margin-bottom:10px;"></div>
+            <div class="row" style="gap:8px;">
+              <input id="new-destination-name" placeholder="行き先の名前（例: スーパー）" maxlength="20" style="flex:1;" />
+              <button id="btn-add-destination" class="ghost tiny-btn" style="white-space:nowrap;">＋ 追加</button>
+            </div>
+          </div>
+        </div>
         <div id="member-admin-card" class="card settings-acc closed" data-acc="member-admin" style="display:none;">
           <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
             <h2>🛡️ メンバー管理（保護者）</h2>
@@ -385,6 +402,8 @@
         <div class="card">
           <p style="font-weight:800;margin:0;">📄 その他</p>
           <div class="btn-stack">
+            <!-- お知らせ（news.js の先頭が未読なら赤丸。押すと既読にする。配線は app-init.js の initNewsBadge） -->
+            <a id="btn-news" href="./news.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;position:relative;">📣 お知らせ<span id="news-dot" class="news-dot" style="display:none;" aria-label="新しいお知らせがあります"></span></a>
             <a href="./guide.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">💡 使い方ガイド</a>
             <a href="./terms.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">📜 利用規約</a>
             <a href="./privacy.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">🔒 プライバシーポリシー</a>
@@ -596,13 +615,18 @@
               <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
             </div>
           </div>
+          <!-- 行き先が1件も登録されていない家族には行ごと出さない（JS で display を切り替える） -->
+          <div id="new-destination-wrap" style="display:none;">
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">行き先（任意）</label>
+            <div id="new-destination" class="cat-chips"></div>
+          </div>
           <div class="row" style="gap:8px;">
             <div style="flex:1;">
               <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">手間</label>
               <select id="new-diff" style="width:100%;">
                 <option value="normal">ふつう</option>
                 <option value="hard">💪 ちょっと大変</option>
-                <option value="extreme">😅 めちゃ大変</option>
+                <option value="extreme">💪💪 めちゃ大変</option>
               </select>
             </div>
             <label class="row" style="white-space:nowrap;align-self:flex-end;padding-bottom:11px;">
@@ -676,6 +700,19 @@
         </div>
         <div class="setup-form">
           <input id="stock-name" placeholder="商品名（例: シャンプー、醤油）" maxlength="40" />
+          <div>
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">カテゴリ（必須・いずれか1つをタップ）</label>
+            <div id="stock-category" class="cat-chips">
+              <button type="button" class="cat-chip" data-cat="food">🍎 食品</button>
+              <button type="button" class="cat-chip" data-cat="daily">🧻 日用品</button>
+              <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
+            </div>
+          </div>
+          <!-- 行き先が1件も登録されていない家族には行ごと出さない（JS で display を切り替える） -->
+          <div id="stock-destination-wrap" style="display:none;">
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">行き先（任意）</label>
+            <div id="stock-destination" class="cat-chips"></div>
+          </div>
           <input id="stock-memo" placeholder="こだわり・メモ（任意）例: 国産・無添加" maxlength="60" />
           <div style="position:relative;">
             <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
@@ -847,6 +884,9 @@
              「写真をセットする」を別の選択肢として並べる（onCamera 未指定なら非表示のまま）。 -->
         <button type="button" id="btn-icon-picker-camera" class="ghost tiny-btn" style="width:100%;margin-bottom:14px;display:none;">写真をセットする（撮影・ライブラリから選ぶ）</button>
         <div id="icon-picker-grid-label" class="muted" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:none;">🎨 イラストを選ぶ</div>
+        <!-- 200種を超えたので、名前やキーワード（例: 醤油→調味料）で絞り込める検索欄を置く -->
+        <input type="search" id="icon-picker-search" placeholder="🔍 名前で探す（例: ティッシュ、醤油）" autocomplete="off" style="width:100%;margin-bottom:6px;" />
+        <p id="icon-picker-empty" class="muted" style="display:none;font-size:12px;text-align:center;padding:16px 0;">見つかりませんでした。別の言い方で探してみてください</p>
         <p class="muted" style="font-size:11px;margin:0 0 8px;">用意したイラストです。実物の写真ではありません。</p>
         <div id="icon-picker-grid" class="icon-picker-grid"></div>
       </div>
@@ -869,6 +909,8 @@
   <!-- app.js を機能単位で分割（旧: 単一の app.js 3,758行）。
        クラシックスクリプトのままなのでグローバルスコープを共有し、挙動は分割前と同一。
        読み込み順はこの並び順で保証される（後続ファイルは先行ファイルの関数・状態を参照できる）。 -->
+  <!-- お知らせのデータ（news.html と共通）。依存なしなので app-*.js より前でよい -->
+  <script src="./news.js"></script>
   <script src="./app-core.js"></script>
   <script src="./app-requests.js"></script>
   <script src="./app-rewards.js"></script>

@@ -49,8 +49,12 @@ const hoverColor = await page.locator(".shortcut-card").last().evaluate(async (e
 });
 check("hover時も紫グラデに化けない", hoverColor.bgImage === "none", JSON.stringify(hoverColor));
 
-// --- 写真が無いカードはプレースホルダーが出る ---
-check("写真未設定のカードはプレースホルダーが出る", (await page.locator(".shortcut-card-placeholder").count()) > 0);
+// --- 写真が無いカードでも、日用品を含めよくある品名なら連想イラストが出る
+//     （ライブラリ拡充後は初期データの4品すべてに絵が付く。一致しない品名の
+//      プレースホルダーは後段の「謎の食材X」で確認する） ---
+const tpIcon = await page.locator(".shortcut-card").filter({ hasText: "トイレットペーパー" }).first()
+  .locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("日用品（トイレットペーパー）にも連想イラストが出る", tpIcon === "./shortcut-icons/toiletpaper.svg", tpIcon);
 
 // --- 品名がよくある品と一致すると、写真の代わりに用意したイラストが出る ---
 await page.evaluate(async () => {
@@ -152,7 +156,10 @@ check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isV
 check("「写真をセットする」ボタンがある", await page.locator("#btn-icon-picker-camera").isVisible());
 await page.click("#btn-icon-picker-camera");
 await pickPhoto("#shortcut-photo-replace-input");
-await sleep(800);
+// 「アップロード中...」→「変更しました」の2段階でトーストが出る。固定待ちだとCIの遅い
+// ランナーで前段のトーストを掴んでしまうため、完了トーストが出るまで待つ
+await page.waitForFunction(() => (document.getElementById("toasts")?.innerText || "").includes("写真を変更しました"), null, { timeout: 8000 }).catch(() => {});
+await sleep(200);
 check("差し替え後もカードに写真が表示される（プレースホルダーに戻らない）",
   (await targetCard.locator(".shortcut-card-photo img").count()) === 1);
 const toast = await page.locator("#toasts").innerText().catch(() => "");

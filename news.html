@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>お知らせ — おうちのおつかい</title>
+  <meta name="description" content="おうちのおつかい（家族向け買い物リスト共有アプリ）のアップデート履歴。いただいた声と、それをどう直したかを日付ごとにまとめています。" />
+  <meta name="theme-color" content="#6366f1" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" />
+  <style>
+    /* 配色はアプリ本体（styles.css の :root）と同じトークン名・値に合わせる */
+    :root {
+      --bg:#faf9f7; --surface:#ffffff; --surface-2:#f4f3f0;
+      --ink:#1c1917; --ink-2:#44403c; --muted:#8a847c; --border:#e7e5e1;
+      --pri:#6366f1; --pri-soft:#eeecfb; --pri-ink:#4f46e5;
+      --fix:#b91c1c; --fix-soft:#fff1f2;
+      --improve:#b45309; --improve-soft:#fffbeb;
+      --new:#047857; --new-soft:#ecfdf5;
+      --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.07);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:#16140f; --surface:#211e19; --surface-2:#2a2621;
+        --ink:#f4f1ec; --ink-2:#d6d0c8; --muted:#8f887f; --border:#38332c;
+        --pri:#8b8cf7; --pri-soft:#2a2952; --pri-ink:#b4b3ff;
+        --fix:#fca5a5; --fix-soft:#3a2224;
+        --improve:#fcd34d; --improve-soft:#3a2f14;
+        --new:#6ee7b7; --new-soft:#12302a;
+        --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.35);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: 'Noto Sans JP', system-ui, -apple-system, 'Hiragino Kaku Gothic ProN', sans-serif;
+      font-size: 15px; line-height: 1.85; -webkit-font-smoothing: antialiased;
+      padding-bottom: 96px;
+    }
+    .maru { font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Noto Sans JP', sans-serif; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 36px 20px 40px; }
+    header { margin-bottom: 22px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--pri-ink); background: var(--pri-soft); padding: 4px 12px; border-radius: 999px; }
+    h1 { font-size: 26px; line-height: 1.35; margin: 14px 0 8px; text-wrap: balance; letter-spacing: -.01em; }
+    .lead { margin: 0; color: var(--ink-2); max-width: 40em; }
+
+    /* 更新ごとの区切り（左に日付の縦ライン） */
+    .timeline { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
+    details.update { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; }
+    details.update > summary {
+      list-style: none; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+      padding: 16px 20px; min-height: 44px;
+    }
+    details.update > summary::-webkit-details-marker { display: none; }
+    details.update > summary:focus-visible { outline: 2px solid var(--pri); outline-offset: -2px; }
+    .date { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 700; color: var(--pri-ink); background: var(--pri-soft); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .update-title { margin: 0; font-size: 17px; line-height: 1.5; text-wrap: balance; }
+    .update-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .chev { display: inline-block; transition: transform .15s ease; margin-left: 6px; color: var(--muted); }
+    details[open] .chev { transform: rotate(180deg); }
+    .update-body { padding: 0 20px 20px; border-top: 1px solid var(--border); }
+    .update-lead { margin: 14px 0 0; color: var(--ink-2); font-size: 14px; }
+
+    .items { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+    .item { background: var(--surface-2); border-radius: 16px; padding: 16px 18px; }
+    .tag { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; padding: 3px 10px; border-radius: 999px; margin-bottom: 8px; }
+    .fix .tag { color: var(--fix); background: var(--fix-soft); }
+    .improve .tag { color: var(--improve); background: var(--improve-soft); }
+    .new .tag { color: var(--new); background: var(--new-soft); }
+    h3 { font-size: 16px; line-height: 1.5; margin: 0 0 10px; text-wrap: balance; }
+    .item-body { display: grid; grid-template-columns: 1fr 180px; gap: 16px; align-items: start; }
+    .item-body.wide { grid-template-columns: 1fr; }
+    .voice { margin: 0; padding: 8px 12px; background: var(--surface); border-left: 3px solid var(--pri); border-radius: 0 10px 10px 0; font-size: 13px; color: var(--ink-2); }
+    .voice-label { display: block; font-size: 11px; letter-spacing: .08em; color: var(--pri-ink); font-weight: 700; margin-bottom: 2px; }
+    .text p { margin: 10px 0 0; color: var(--ink-2); font-size: 14px; }
+    .shots { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .item-body.wide .shots { justify-content: flex-start; margin-top: 12px; }
+    .shot { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--surface); line-height: 0; }
+    .shot img { display: block; width: 170px; height: auto; }
+    .shot.strip { width: 100%; }
+    .shot.strip img { width: 100%; }
+
+    .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+    footer { margin-top: 28px; padding: 16px 20px; border-radius: 16px; background: var(--pri-soft); color: var(--ink-2); font-size: 13.5px; }
+    footer b { color: var(--pri-ink); }
+    footer p { margin: 6px 0; }
+    /* 外部からこのページだけ開いたときに迷わないよう、常に見える「戻る」を置く（guide.html と同じ） */
+    .back-float {
+      position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 44px; padding: 0 24px;
+      background: linear-gradient(135deg, var(--pri) 0%, #4f46e5 100%);
+      color: #fff; font-weight: 700; font-size: 14px; line-height: 1;
+      border-radius: 999px; text-decoration: none; white-space: nowrap;
+      box-shadow: 0 4px 18px rgba(99,102,241,0.4); z-index: 50;
+    }
+    @media (max-width: 640px) {
+      .item-body { grid-template-columns: 1fr; }
+      .shots { justify-content: flex-start; margin-top: 12px; }
+      .shot img { width: 150px; }
+      details.update > summary { grid-template-columns: auto 1fr; }
+      .update-meta { grid-column: 2; }
+      h1 { font-size: 23px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="eyebrow">📣 お知らせ</span>
+      <h1 class="maru">アップデート履歴</h1>
+      <p class="lead">みなさんからいただいた声と、それをどう直したかを、更新ごとにまとめています。新しいものが上に来ます。</p>
+    </header>
+    <main id="timeline" class="timeline" aria-live="polite"></main>
+    <footer>
+      <p><b>更新の反映について</b></p>
+      <p>アプリを開き直すと「新しいバージョンがあります」と出るので、<b>「更新する」</b>を押してください。出ない場合は、設定タブ → 🔧メンテナンス →「更新を確認」から反映できます。</p>
+      <p style="margin-top:10px;color:var(--muted)">画面はテスト用のサンプルデータで撮影したものです。イラストは絵文字を使っているため、端末によって見え方が少し変わります。</p>
+    </footer>
+  </div>
+  <a class="back-float" href="./app.html">🧺 アプリに戻る</a>
+
+  <script src="./news.js"></script>
+  <script>
+    // news.js の NEWS を日付の新しい順に並べ、1更新 = 1つの <details> として描く。
+    // 最新の更新だけ開いた状態にする。URL の #id があればその更新を開いて位置を合わせる。
+    (function () {
+      var esc = function (s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+      };
+      var fmtDate = function (iso) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
+        return m ? Number(m[1]) + "年" + Number(m[2]) + "月" + Number(m[3]) + "日" : esc(iso);
+      };
+      var KIND_LABEL = { fix: "不具合修正", improve: "改善", new: "新機能" };
+      var root = document.getElementById("timeline");
+      var list = (typeof NEWS !== "undefined" && Array.isArray(NEWS) ? NEWS.slice() : [])
+        .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+      if (!list.length) {
+        root.innerHTML = '<p class="empty">まだお知らせはありません。</p>';
+        return;
+      }
+      var wanted = decodeURIComponent((location.hash || "").slice(1));
+      root.innerHTML = list.map(function (u, idx) {
+        var open = wanted ? u.id === wanted : idx === 0;
+        var items = (u.items || []).map(function (it) {
+          var kind = KIND_LABEL[it.kind] ? it.kind : "improve";
+          var shots = (it.shots || []).map(function (src) {
+            var strip = /\/(diff|photo)\.png$/.test(src); // 横長の「行」のスクショは全幅で
+            return '<figure class="shot' + (strip ? " strip" : "") + '"><img src="' + esc(src) + '" alt="" loading="lazy" /></figure>';
+          }).join("");
+          var wide = (it.shots || []).length >= 2 || /\/(diff|photo)\.png$/.test((it.shots || [])[0] || "");
+          return '<article class="item ' + kind + '">' +
+            '<span class="tag">' + esc(it.label || KIND_LABEL[kind]) + '</span>' +
+            '<h3>' + esc(it.title) + '</h3>' +
+            '<div class="item-body' + (wide ? " wide" : "") + '">' +
+              '<div class="text">' +
+                (it.voice ? '<blockquote class="voice"><span class="voice-label">きっかけになった声</span>「' + esc(it.voice) + '」</blockquote>' : "") +
+                '<p>' + (it.body || "") + '</p>' +   // body は自分たちで書く文なので <b> など最小限のHTMLを許す
+              '</div>' +
+              (shots ? '<div class="shots">' + shots + '</div>' : "") +
+            '</div>' +
+          '</article>';
+        }).join("");
+        var n = (u.items || []).length;
+        return '<details class="update" id="' + esc(u.id) + '"' + (open ? " open" : "") + '>' +
+          '<summary>' +
+            '<span class="date">' + fmtDate(u.date) + '</span>' +
+            '<h2 class="update-title maru">' + esc(u.title) + '</h2>' +
+            '<span class="update-meta">' + n + '件<span class="chev" aria-hidden="true">▾</span></span>' +
+          '</summary>' +
+          '<div class="update-body">' +
+            (u.lead ? '<p class="update-lead">' + esc(u.lead) + '</p>' : "") +
+            '<div class="items">' + items + '</div>' +
+          '</div>' +
+        '</details>';
+      }).join("");
+      if (wanted) {
+        var el = document.getElementById(wanted);
+        if (el) el.scrollIntoView({ block: "start" });
+      }
+    })();
+  </script>
+</body>
+</html>

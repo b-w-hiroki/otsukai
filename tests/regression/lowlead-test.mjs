@@ -69,6 +69,9 @@ const soy = page.locator(".stock-item").filter({hasText:"しょうゆ"}).first()
 check("しょうゆのストックがある", (await soy.count())===1);
 await soy.click();
 await sleep(600);
+// カテゴリ・行き先・買う間隔は「⚙️ 詳細設定」の中に折りたたまれている
+check("詳細設定は既定で閉じている", !(await page.locator("#stock-detail-more").isVisible()));
+await page.click("#btn-stock-detail-more"); await sleep(300);
 check("詳細に買う間隔の入力がある", (await page.locator("#stock-detail-cycle").count())===1);
 const hint = await page.locator("#stock-detail-body").innerText();
 check("履歴が無い品は学習待ちの案内が出る", hint.includes("3回買うと自動で学習"), "");
@@ -92,6 +95,7 @@ await page.click('[data-tab="stock"]');
 await sleep(700);
 await page.locator(".stock-item").filter({hasText:"しょうゆ"}).first().click();
 await sleep(600);
+await page.click("#btn-stock-detail-more"); await sleep(300);
 check("保存した値が入力欄に戻ってくる", (await page.locator("#stock-detail-cycle").inputValue())==="1");
 await page.fill("#stock-detail-cycle","");
 await page.click("#btn-stock-detail-cycle");

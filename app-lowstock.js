@@ -184,6 +184,9 @@ function renderSuggestions() {
         urgent: st && st.level === "out",
         budget: st && st.budget,
         brand: st && st.memo,
+        photoUrl: st && st.photoUrl,
+        category: st && st.category,
+        destination: st && st.destination,
       });
     });
   });
