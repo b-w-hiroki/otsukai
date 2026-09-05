@@ -53,6 +53,8 @@
     .fix .tag { color: var(--fix); background: var(--fix-soft); }
     .improve .tag { color: var(--improve); background: var(--improve-soft); }
     .new .tag { color: var(--new); background: var(--new-soft); }
+    .info .tag { color: var(--pri-ink); background: var(--pri-soft); }
+    .text a { color: var(--pri-ink); }
     h2 { font-size: 17px; line-height: 1.5; margin: 0 0 10px; text-wrap: balance; }
     .item-body { display: grid; grid-template-columns: 1fr 180px; gap: 16px; align-items: start; }
     .item-body.wide { grid-template-columns: 1fr; }
@@ -126,7 +128,7 @@
         var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
         return m ? Number(m[1]) + "年" + Number(m[2]) + "月" + Number(m[3]) + "日" : esc(iso);
       };
-      var KIND_LABEL = { fix: "不具合修正", improve: "改善", new: "新機能" };
+      var KIND_LABEL = { fix: "不具合修正", improve: "改善", new: "新機能", info: "お知らせ" };
       var head = document.getElementById("head"), main = document.getElementById("items"), pager = document.getElementById("pager");
       var list = (typeof NEWS !== "undefined" && Array.isArray(NEWS) ? NEWS.slice() : [])
         .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });

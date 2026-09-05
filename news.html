@@ -64,6 +64,7 @@
     .tag.fix { color: var(--fix); background: var(--fix-soft); }
     .tag.improve { color: var(--improve); background: var(--improve-soft); }
     .tag.new { color: var(--new); background: var(--new-soft); }
+    .tag.info { color: var(--pri-ink); background: var(--pri-soft); }
     .entry-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
     .entry-meta .arrow { color: var(--pri); font-weight: 700; margin-left: 6px; }
     .empty { text-align: center; color: var(--muted); padding: 40px 20px; }
@@ -119,7 +120,7 @@
         var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
         return m ? Number(m[1]) + "年" + Number(m[2]) + "月" + Number(m[3]) + "日" : esc(iso);
       };
-      var KIND_LABEL = { fix: "不具合修正", improve: "改善", new: "新機能" };
+      var KIND_LABEL = { fix: "不具合修正", improve: "改善", new: "新機能", info: "お知らせ" };
       var root = document.getElementById("list");
       var list = (typeof NEWS !== "undefined" && Array.isArray(NEWS) ? NEWS.slice() : [])
         .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
@@ -132,7 +133,7 @@
         // 種類ごとの件数をタグで（不具合修正 2 ・ 改善 5 ・ 新機能 2 のように）
         var counts = {};
         items.forEach(function (it) { var k = KIND_LABEL[it.kind] ? it.kind : "improve"; counts[k] = (counts[k] || 0) + 1; });
-        var tags = ["fix", "improve", "new"].filter(function (k) { return counts[k]; })
+        var tags = ["fix", "improve", "new", "info"].filter(function (k) { return counts[k]; })
           .map(function (k) { return '<span class="tag ' + k + '">' + KIND_LABEL[k] + " " + counts[k] + '</span>'; }).join("");
         return '<a class="entry" href="./news-item.html?id=' + encodeURIComponent(u.id) + '">' +
           '<span class="date">' + fmtDate(u.date) + '</span>' +

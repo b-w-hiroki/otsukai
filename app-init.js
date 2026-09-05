@@ -693,14 +693,49 @@ function injectImobileBanner(slotId, config) {
 // 📣 お知らせ（news.js）の「新しいお知らせ」バッジ。
 // news.js 先頭の id を端末ごとに localStorage で既読管理し、未読なら設定タブの
 // ボタンに赤丸を出す。押すと既読にして news.html を開く（リンクの既定動作）。
+// あわせて、未読かつまだ見せていないお知らせがあれば、メイン画面に入った直後に1回だけ
+// モーダル（#news-modal）で知らせる。「読む」= news.html を開いて既読、「あとで」= 閉じるだけ
+// （赤丸は残す）。同じお知らせで2回は出さない（newsModalShownId）。
+// 強制アップデートのモーダルが出ているときは重ねない（そちらが優先）。
 const NEWS_SEEN_KEY = "newsSeenId";
+const NEWS_MODAL_KEY = "newsModalShownId";
 function initNewsBadge() {
   const btn = $("btn-news"), dot = $("news-dot");
   if (!btn || !dot || typeof NEWS === "undefined" || !NEWS.length) return;
-  const latestId = NEWS[0].id;
-  const refresh = () => { dot.style.display = localStorage.getItem(NEWS_SEEN_KEY) === latestId ? "none" : ""; };
+  const latest = NEWS[0];
+  const refresh = () => { dot.style.display = localStorage.getItem(NEWS_SEEN_KEY) === latest.id ? "none" : ""; };
+  const markSeen = () => { localStorage.setItem(NEWS_SEEN_KEY, latest.id); refresh(); };
   refresh();
-  btn.addEventListener("click", () => { localStorage.setItem(NEWS_SEEN_KEY, latestId); refresh(); });
+  btn.addEventListener("click", markSeen);
+
+  const modal = $("news-modal");
+  if (!modal) return;
+  $("news-modal-title").textContent = latest.title || "";
+  $("news-modal-text").textContent = latest.lead || "";
+  $("news-modal-date").textContent = (latest.date || "").replace(/^(\d{4})-(\d{2})-(\d{2})$/, (_, y, m, d) => `${Number(y)}年${Number(m)}月${Number(d)}日`);
+  const close = () => { modal.classList.remove("open"); localStorage.setItem(NEWS_MODAL_KEY, latest.id); };
+  $("btn-news-modal-read").addEventListener("click", () => { markSeen(); close(); });
+  $("btn-news-modal-later").addEventListener("click", close);
+  const shouldShow = () =>
+    localStorage.getItem(NEWS_SEEN_KEY) !== latest.id &&
+    localStorage.getItem(NEWS_MODAL_KEY) !== latest.id &&
+    !$("update-modal").classList.contains("open");
+  // 初回オンボーディング（カード／スポットライト）が出ている間は重ねない。閉じたら出す
+  const onboardingOpen = () => !!document.querySelector("#onboarding-backdrop.open, #onboarding-spot-backdrop.open");
+  const tryShow = () => {
+    if (!shouldShow()) return true; // 出す必要なし → 監視も終わり
+    if (!$("screen-main").classList.contains("active") || onboardingOpen()) return false;
+    modal.classList.add("open");
+    return true;
+  };
+  if (!tryShow()) {
+    // ログイン→プロフィール→家族→メイン、と画面が進み、オンボーディングも終わってから出す
+    const mo = new MutationObserver(() => { if (tryShow()) mo.disconnect(); });
+    ["screen-main", "onboarding-backdrop", "onboarding-spot-backdrop"].forEach((id) => {
+      const el = $(id);
+      if (el) mo.observe(el, { attributes: true, attributeFilter: ["class"] });
+    });
+  }
 }
 
 // 広告枠: スポットタグを注入する。実際に表示するかどうか（.has-ad）は

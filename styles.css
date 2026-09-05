@@ -1785,6 +1785,32 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 .update-modal-title { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
 .update-modal-text { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
 
+/* ======= 📣 新しいお知らせのモーダル（update-modal と同じ作り。強制更新より下に重ねる） ======= */
+.news-modal {
+  position: fixed; inset: 0; z-index: 69;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(20,19,26,0.6);
+  padding: 24px;
+}
+.news-modal.open { display: flex; }
+.news-modal-card {
+  background: var(--surface); color: var(--ink);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-deep);
+  padding: 26px 24px 22px; max-width: 320px; width: 100%; text-align: center;
+}
+.news-modal-icon { font-size: 40px; line-height: 1; margin-bottom: 10px; }
+.news-modal-kicker { font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--pri); margin-bottom: 6px; }
+.news-modal-title { font-size: 17px; font-weight: 800; line-height: 1.45; margin-bottom: 8px; text-wrap: balance; }
+.news-modal-text { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 0 0 18px; }
+/* 「読む」は別タブで一覧を開くリンク（<a>）なので、グローバルの button 装飾が当たらない。主ボタンと同じ見た目にそろえる */
+.news-modal-read {
+  display: flex; align-items: center; justify-content: center; min-height: 44px;
+  border-radius: var(--r-sm); text-decoration: none;
+  background: linear-gradient(135deg, var(--pri-vivid) 0%, var(--pri-dark) 100%);
+  color: #fff; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-btn);
+}
+.news-modal-read:active { transform: scale(0.97); }
+
 /* ======= スライドで更新 ======= */
 .ptr-indicator {
   position: fixed; top: 6px; left: 50%;

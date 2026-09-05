@@ -2,13 +2,27 @@
 // 右上のボタンと未読バッジ（先頭の id を localStorage で既読管理）、
 // news.html が一覧を新しい順に描き、行から news-item.html の記事に飛べること。
 import { startHarness } from "../harness.mjs";
-const t = await startHarness({ noAnimation: true });
+const t = await startHarness({ noAnimation: true, newsModal: true });
 const { url, page, errs, sleep } = t;
 const check = t.check;
 
 await page.goto(url, { waitUntil: "domcontentloaded" });
 await page.waitForSelector("#screen-main", { state: "visible", timeout: 20000 });
 await sleep(700);
+
+// --- メイン画面に入った直後、未読のお知らせが1回だけモーダルで出る ---
+const latest = await page.evaluate(() => NEWS[0]);
+check("新しいお知らせのモーダルが出る", await page.locator("#news-modal.open").isVisible());
+check("モーダルに最新のタイトルが出る", (await page.locator("#news-modal-title").innerText()) === latest.title);
+check("モーダルの「読む」は一覧（news.html）へ", (await page.locator("#btn-news-modal-read").getAttribute("href")) === "./news.html");
+await page.click("#btn-news-modal-later"); await sleep(200);
+check("「あとで」で閉じる", !(await page.locator("#news-modal.open").isVisible()));
+check("「あとで」では赤丸が残る（未読のまま）", await page.locator("#news-dot").isVisible());
+check("表示済みの id を覚える", (await page.evaluate(() => localStorage.getItem("newsModalShownId"))) === latest.id);
+await page.reload({ waitUntil: "domcontentloaded" });
+await page.waitForSelector("#screen-main", { state: "visible", timeout: 20000 });
+await sleep(700);
+check("同じお知らせでモーダルは2回出ない", !(await page.locator("#news-modal.open").isVisible()));
 
 // --- 右上: 🏆 📣 ？ の並びと未読バッジ ---
 const btn = page.locator("#btn-news");
@@ -68,8 +82,10 @@ const brokenImgs = await page.evaluate(async () => {
 });
 check("スクショの画像が全部読み込める（パス切れなし）", brokenImgs === 0, String(brokenImgs));
 check("一覧へ戻るリンクがある", (await page.locator('a.crumb[href="./news.html"]').count()) === 1);
+// 最新の記事なので「前の（古い）更新」だけがある（他に更新があれば1本、無ければ0本）
 const pagerLinks = await page.locator("#pager a").count();
-check("前後の更新リンクは存在する分だけ出る", pagerLinks === Math.min(total - 1, 2), String(pagerLinks));
+check("前後の更新リンクは存在する分だけ出る", pagerLinks === (total > 1 ? 1 : 0), String(pagerLinks));
+if (total > 1) check("最新の記事には「次の更新」は出ない", (await page.locator("#pager a.next").count()) === 0);
 
 // --- 存在しない id は最新にフォールバック ---
 await page.goto(url + "news-item.html?id=no-such-id", { waitUntil: "domcontentloaded" });

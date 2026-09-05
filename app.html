@@ -39,6 +39,19 @@
     </div>
   </div>
 
+  <!-- 📣 新しいお知らせ（news.js の先頭が未読かつ未表示のとき、メイン画面に入った直後に1回だけ出す。
+       「読む」で news.html を開いて既読に、「あとで」なら閉じるだけ（右上の赤丸は残る）。配線は app-init.js の initNewsBadge） -->
+  <div id="news-modal" class="news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title">
+    <div class="news-modal-card">
+      <div class="news-modal-icon">📣</div>
+      <div class="news-modal-kicker">新しいお知らせ ・ <span id="news-modal-date"></span></div>
+      <div id="news-modal-title" class="news-modal-title"></div>
+      <p id="news-modal-text" class="news-modal-text"></p>
+      <a id="btn-news-modal-read" class="news-modal-read btn-block" href="./news.html" target="_blank" rel="noopener">読む</a>
+      <button id="btn-news-modal-later" class="ghost btn-block" style="margin-top:8px;">あとで</button>
+    </div>
+  </div>
+
   <!-- Screen: Loading -->
   <div id="screen-loading" class="screen active">
     <div class="loading-screen">
