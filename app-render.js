@@ -95,7 +95,7 @@ function compactCard(r, i = 0) {
   let pillsHtml = "";
   if (!isDone) {
     if (r.urgent) pillsHtml += `<span class="pill urgent" style="font-size:12px;padding:2px 8px;">🔥</span>`;
-    if (r.diff && r.diff !== "normal") pillsHtml += `<span class="pill diff-${r.diff}" style="font-size:12px;padding:2px 8px;">${r.diff === "hard" ? "💪" : "😅"}</span>`;
+    if (r.diff && r.diff !== "normal") pillsHtml += `<span class="pill diff-${r.diff}" style="font-size:12px;padding:2px 8px;">${r.diff === "hard" ? "💪" : "💪💪"}</span>`;
   } else {
     pillsHtml = `<span class="pill s-done" style="font-size:12px;padding:2px 8px;">✅</span>`;
   }
@@ -202,7 +202,7 @@ function checkRow(r) {
 
   const badges = [];
   if (r.urgent) badges.push(`<span class="check-badge urgent">🔥</span>`);
-  if (r.diff && r.diff !== "normal") badges.push(`<span class="check-badge">${r.diff === "hard" ? "💪" : "😅"}</span>`);
+  if (r.diff && r.diff !== "normal") badges.push(`<span class="check-badge">${r.diff === "hard" ? "💪" : "💪💪"}</span>`);
   if (r.assignedTo && r.status === "open") badges.push(`<span class="check-badge">📌${memberEmoji(r.assignedTo)}</span>`);
   if (commentCount > 0 || hasUnread) badges.push(`<span class="check-badge${hasUnread ? " unread" : ""}">💬${commentCount || ""}</span>`);
   const hasExtra = r.memo || r.budget > 0 || r.brand;
@@ -253,6 +253,10 @@ function checkDetail(r) {
   if (own) {
     actHtml += `<button class="rc-comment-btn" data-edit-btn="${r.id}" aria-label="編集">✏️</button>`;
     actHtml += `<button class="rc-comment-btn rc-danger-btn" data-act="delete" data-id="${r.id}" aria-label="削除">×</button>`;
+  } else {
+    // 自分が追加したものではなくても、買う人への申し送りとしてメモだけは足せるようにする
+    // （名前や写真など他の項目は追加者以外が変えられると混乱するため、メモに限定）
+    actHtml += `<button class="rc-comment-btn" data-memo-btn="${r.id}" aria-label="メモを書く">📝</button>`;
   }
 
   // イラストは行のサムネイル（photo-thumb）で十分伝わり、この横長の大きな枠に
@@ -275,6 +279,18 @@ function completeFromUi(id) {
     if (!confirm(`「${r.name}」は ${memberName(r.claimedBy)}さんが買いに行く予定です。\n\n買ったことにしますか？`)) return;
   }
   completeRequest(id);
+}
+
+// 自分が追加したものでなくても、買う人への申し送りとしてメモを追記できるようにする
+// （📝 ボタン。名前・カテゴリ等の編集は追加者本人の✏️編集に限定したまま）
+async function promptMemo(id) {
+  const r = state.requests[id];
+  if (!r) return;
+  const input = prompt(`「${r.name}」へのメモ`, r.memo || "");
+  if (input === null) return;
+  const memo = input.trim();
+  if (!(await dbOp(familyRef().child(`requests/${id}/memo`).set(memo || null), "更新できませんでした"))) return;
+  showToast(memo ? "📝 メモを追記しました" : "📝 メモを消しました", { sound: false });
 }
 
 // 実際に支払った金額を記録（履歴カードの 💴 ボタン）。空入力で記録を消す。
@@ -494,6 +510,9 @@ function wireRequestButtons(root = document) {
   });
   root.querySelectorAll("[data-star]").forEach((b) => {
     b.addEventListener("click", () => addShortcutFromRequest(b.dataset.star));
+  });
+  root.querySelectorAll("[data-memo-btn]").forEach((b) => {
+    b.addEventListener("click", () => promptMemo(b.dataset.memoBtn));
   });
   root.querySelectorAll("[data-cost]").forEach((b) => {
     b.addEventListener("click", () => recordActualCost(b.dataset.cost));

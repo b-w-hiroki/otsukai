@@ -217,6 +217,11 @@
 
       <!-- Tab: Stock -->
       <section id="tab-stock" class="tab">
+        <!-- 「ストック」と「⚡よく買うもの」の違いが分かりにくいという指摘への対応。
+             ストック=在庫の残量記録、よく買うもの=ワンタップ追加のショートカット、と一言で区別する -->
+        <p class="muted" style="font-size:11px;margin:0 0 10px;">
+          📦 家にある物の残量を🟢🟡🔴で記録する場所です。買い物リストへのワンタップ追加は⚡よく買うものへ。
+        </p>
         <div class="card settings-acc closed" data-acc="lowlead">
           <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
             <h2>⏳ そろそろ切れるかも</h2>
@@ -602,7 +607,7 @@
               <select id="new-diff" style="width:100%;">
                 <option value="normal">ふつう</option>
                 <option value="hard">💪 ちょっと大変</option>
-                <option value="extreme">😅 めちゃ大変</option>
+                <option value="extreme">💪💪 めちゃ大変</option>
               </select>
             </div>
             <label class="row" style="white-space:nowrap;align-self:flex-end;padding-bottom:11px;">
@@ -654,7 +659,7 @@
           <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="card" role="tab">🖼️ カード</button>
           <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="list" role="tab">☰ リスト</button>
         </div>
-        <p class="muted" style="font-size:11px;margin:8px 0 10px;">「✏️ 編集」中は写真をタップすると差し替えられます。</p>
+        <p class="muted" style="font-size:11px;margin:8px 0 10px;">ワンタップで買い物リストに追加できるショートカット集です（在庫の残量記録は📦ストックタブへ）。「✏️ 編集」中は写真をタップすると差し替えられます。</p>
         <div id="shortcut-sheet-chips" class="shortcut-chips"></div>
         <div class="btn-stack" style="margin-top:10px;">
           <button id="btn-shortcut-register" class="ghost btn-block">＋ 新しく登録する</button>

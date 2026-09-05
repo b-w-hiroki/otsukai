@@ -304,6 +304,7 @@ async function addFromShortcut(s) {
   if (s.brand) req.brand = s.brand;
   if (s.assignedTo) req.assignedTo = s.assignedTo;
   if (s.category) req.category = s.category;
+  if (s.photoUrl) req.photoUrl = s.photoUrl;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」を追加しました`);

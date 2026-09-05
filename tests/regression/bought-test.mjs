@@ -55,7 +55,9 @@ await eggRow.locator(".check-main").click();
 await sleep(500);
 check("詳細を開いても行の「買ったよ」はそのまま押せる", await eggRow.locator(".check-done-btn").count()===1);
 check("詳細内には「買ったよ」を重複させない", await page.locator(".check-detail [data-complete]").count()===0);
-check("詳細には💬とよく買うもの登録は出る", await page.locator(".check-detail-actions .rc-comment-btn").count()===2);
+// 卵は自分（uid-parent）以外が追加したもの（requestedBy: uid-mom）なので、
+// 💬・⭐に加えて、追加者以外でも使える📝メモボタンが出る（✏️編集の代わり）
+check("詳細には💬・⭐・📝が出る（自分以外の追加なので✏️編集は出ない）", await page.locator(".check-detail-actions .rc-comment-btn").count()===3);
 await eggRow.locator(".check-done-btn").click();
 await sleep(800);
 check("行から「買ったよ」を押すと完了になる", await page.locator("#list-open .check-row",{hasText:"卵"}).count()===0);

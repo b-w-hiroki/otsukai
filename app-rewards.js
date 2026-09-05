@@ -148,7 +148,7 @@ function renderRewards() {
   let html = `<div class="card">
     <h2>🎁 ごほうび</h2>
     <div class="reward-balance">🪙 じぶんのポイント：<b>${myPts}</b> pt</div>
-    <p class="muted" style="font-size:11px;margin:4px 0 10px;">おつかい完了でポイントが貯まります（ふつう1pt・💪2pt・😅3pt、🔥急ぎは+1pt）</p>`;
+    <p class="muted" style="font-size:11px;margin:4px 0 10px;">おつかい完了でポイントが貯まります（ふつう1pt・💪2pt・💪💪3pt、🔥急ぎは+1pt）</p>`;
   if (!rewards.length) {
     html += `<p class="muted" style="font-size:12px;">${isParent
       ? "「ごほうびを編集」から、ポイントと交換できるごほうびを登録しましょう。"

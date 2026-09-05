@@ -167,6 +167,22 @@ async function updateStockCycle(id, days) {
   if (!(await dbOp(familyRef().child(`stocks/${id}`).update(patch), "変更できませんでした"))) return;
   showToast(days ? `🔄 「${s.name}」を${days}日ごとに設定しました` : "🔄 買う間隔の設定を外しました", { sound: false });
 }
+// タイプミスなどで後から商品名を直したいという要望への対応。
+// 名前はストック↔買い物リストの突き合わせ（そろそろ切れるかも等）に使われるが、
+// 過去の履歴は旧名のまま残るため、学習済みの周期予測は名前変更後リセットされる
+// （新しい名前で3回買うと再学習される。詳細は docs/features.md 参照）。
+async function renameStock(id) {
+  const s = state.stocks[id];
+  if (!s) return;
+  const input = prompt("商品名を変更", s.name);
+  if (input === null) return;
+  const name = input.trim();
+  if (!name) return showToast("商品名を入力してください");
+  if (name === s.name) return;
+  if (!(await dbOp(familyRef().child(`stocks/${id}/name`).set(name), "変更できませんでした"))) return;
+  showToast(`「${name}」に変更しました`, { sound: false });
+  openStockDetail(id); // 詳細シートの表示も更新する
+}
 async function deleteStock(id) {
   const s = state.stocks[id];
   if (!s) return;
@@ -179,6 +195,7 @@ async function addStockToRequest(s) {
   const req = { name: s.name, diff: "normal", urgent: s.level === "out", status: "open", requestedBy: state.uid, requestedAt: now() };
   if (s.budget > 0) req.budget = s.budget;
   if (s.memo) req.brand = s.memo;
+  if (s.photoUrl) req.photoUrl = s.photoUrl;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
@@ -266,10 +283,11 @@ function openStockDetail(id) {
     </button>
     <div class="row" style="gap:14px;margin-bottom:14px;align-items:center;">
       <div style="font-size:36px;line-height:1;">${lvl.emoji}</div>
-      <div>
+      <div style="flex:1;">
         <div style="font-size:18px;font-weight:800;letter-spacing:-0.4px;">${escapeHtml(s.name)}</div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600;">${lvl.label}</div>
       </div>
+      <button type="button" id="btn-stock-detail-rename" class="ghost tiny-btn" aria-label="名前を変更">✏️ 名前</button>
     </div>
     ${s.memo || s.budget > 0 ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
       ${s.budget > 0 ? `<span class="req-hint">💰 ${Number(s.budget).toLocaleString()}円以下</span>` : ""}
@@ -302,6 +320,7 @@ function openStockDetail(id) {
       $("stock-detail-body").querySelectorAll("[data-detail-lvl]").forEach(b => b.classList.toggle("active", b === btn));
     });
   });
+  $("btn-stock-detail-rename").addEventListener("click", () => renameStock(id));
   $("btn-stock-detail-photo").addEventListener("click", () => {
     openIconPicker({
       onCamera: () => { stockPhotoTargetId = id; $("stock-detail-photo-input").click(); },

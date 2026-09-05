@@ -25,7 +25,8 @@ const EMOJI_CHOICES = [
   "🐻","🐼","🦊","🐯","🦁","🐸","🐵","🦄",
   "👨","👩","👦","👧","👴","👵","🧑","🧒"
 ];
-const DIFF_LABEL = { normal: "ふつう", hard: "💪 ちょっと大変", extreme: "😅 めちゃ大変" };
+// 担当者アイコン（顔文字）と見分けづらいという指摘があったため、extreme は顔文字を避ける
+const DIFF_LABEL = { normal: "ふつう", hard: "💪 ちょっと大変", extreme: "💪💪 めちゃ大変" };
 const STATUS_LABEL = { open: "未受託", claimed: "買いに行く", done: "完了" };
 
 // ===== State =====
