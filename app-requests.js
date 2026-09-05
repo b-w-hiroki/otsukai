@@ -546,16 +546,20 @@ let shortcutPhotoTargetId = null;
 // 絵の実体は shortcut-icons/<file>.svg（薄い丸の中に絵文字1文字を置いたSVG）。
 // 追加するときは: ①SVG を置く ②ここに1行足す ③sw.js の PRECACHE に足す。
 // group は ICON_GROUPS のキー。ピッカーでは group ごとに見出しを付けて並べる。
+// 絵文字は古い端末でも出やすいよう Unicode 13 以前を中心に選んでいる。
 const ICON_GROUPS = {
   veg: "🥬 野菜",
   fruit: "🍎 果物",
   meat: "🍖 肉・魚・卵",
   dairy: "🥛 乳製品・パン・主食",
   ready: "🍱 調味料・加工食品",
-  drink: "🧃 飲み物・おやつ",
+  drink: "🧃 飲み物",
+  sweet: "🍪 おやつ",
   daily: "🧻 日用品",
+  care: "💊 健康・美容・ベビー",
   clean: "🧹 掃除・洗濯",
-  other: "🎁 その他",
+  home: "🏠 暮らし・衣類・文具",
+  hobby: "🎈 行事・趣味・おでかけ",
 };
 const ICON_LIBRARY = [
   { file: "tomato", label: "トマト", group: "veg", keywords: ["トマト"] },
@@ -577,6 +581,13 @@ const ICON_LIBRARY = [
   { file: "chili", label: "とうがらし", group: "veg", keywords: ["唐辛子", "とうがらし", "鷹の爪", "一味", "七味"] },
   { file: "salad", label: "サラダ", group: "veg", keywords: ["サラダ", "カット野菜", "もやし", "モヤシ", "豆苗"] },
   { file: "daikon", label: "大根", group: "veg", keywords: ["大根", "だいこん", "ダイコン", "かぶ", "カブ", "ごぼう", "ゴボウ", "れんこん", "レンコン", "長ねぎ", "ねぎ", "ネギ"] },
+  { file: "hakusai", label: "白菜", group: "veg", keywords: ["白菜", "はくさい", "ハクサイ", "チンゲン菜", "青梗菜"] },
+  { file: "pumpkin", label: "かぼちゃ", group: "veg", keywords: ["かぼちゃ", "カボチャ", "南瓜"] },
+  { file: "herb", label: "ハーブ・香味野菜", group: "veg", keywords: ["ハーブ", "バジル", "パクチー", "大葉", "しそ", "シソ", "ミント", "パセリ", "ローズマリー", "三つ葉", "みょうが"] },
+  { file: "chestnut", label: "栗・ぎんなん", group: "veg", keywords: ["栗", "くり", "クリ", "マロン", "ぎんなん", "銀杏"] },
+  { file: "olive", label: "オリーブ", group: "veg", keywords: ["オリーブ", "ピクルス"] },
+  { file: "nuts", label: "ナッツ", group: "veg", keywords: ["ナッツ", "ピーナッツ", "アーモンド", "落花生", "くるみ", "カシューナッツ", "ミックスナッツ"] },
+  { file: "seaweed", label: "海藻", group: "veg", keywords: ["わかめ", "ワカメ", "昆布", "こんぶ", "ひじき", "もずく", "めかぶ", "海藻", "とろろ昆布"] },
   { file: "apple", label: "りんご", group: "fruit", keywords: ["りんご", "リンゴ", "林檎"] },
   { file: "banana", label: "バナナ", group: "fruit", keywords: ["バナナ"] },
   { file: "strawberry", label: "いちご", group: "fruit", keywords: ["いちご", "イチゴ", "苺"] },
@@ -593,6 +604,9 @@ const ICON_LIBRARY = [
   { file: "mango", label: "マンゴー", group: "fruit", keywords: ["マンゴー"] },
   { file: "blueberry", label: "ブルーベリー", group: "fruit", keywords: ["ブルーベリー", "ラズベリー"] },
   { file: "persimmon", label: "柿", group: "fruit", keywords: ["柿", "かき", "カキ"] },
+  { file: "coconut", label: "ココナッツ", group: "fruit", keywords: ["ココナッツ"] },
+  { file: "driedfruit", label: "ドライフルーツ", group: "fruit", keywords: ["ドライフルーツ", "レーズン", "干し柿", "プルーン", "干しいも"] },
+  { file: "fruitmix", label: "フルーツ", group: "fruit", keywords: ["フルーツ", "果物", "くだもの", "カットフルーツ", "フルーツ缶"] },
   { file: "chicken", label: "鶏肉", group: "meat", keywords: ["鶏肉", "とり肉", "鳥肉", "チキン", "鶏もも", "とりもも", "鶏むね", "とりむね", "ささみ", "手羽先", "手羽元", "手羽中", "鶏ひき肉", "唐揚げ", "からあげ"] },
   { file: "beef", label: "牛肉", group: "meat", keywords: ["牛肉", "ビーフ", "牛もも", "牛バラ", "牛ロース", "牛ひき肉", "牛タン", "牛すね", "牛こま", "ステーキ"] },
   { file: "pork", label: "豚肉", group: "meat", keywords: ["豚肉", "ぶた肉", "ポーク", "豚バラ", "豚ロース", "豚もも", "豚ひき肉", "豚こま", "とんかつ", "トンカツ"] },
@@ -603,30 +617,48 @@ const ICON_LIBRARY = [
   { file: "fish", label: "魚", group: "meat", keywords: ["魚", "さかな", "サバ", "鯖", "さんま", "秋刀魚", "アジ", "鯵", "ぶり", "ブリ", "たら", "タラ", "鱈", "イワシ", "鰯", "マグロ", "まぐろ", "鮪", "かつお", "カツオ", "鰹", "しらす", "ちりめん", "干物", "ししゃも"] },
   { file: "shrimp", label: "えび", group: "meat", keywords: ["えび", "エビ", "海老"] },
   { file: "squid", label: "いか・たこ", group: "meat", keywords: ["イカ", "烏賊", "たこ", "タコ", "蛸"] },
-  { file: "crab", label: "かに", group: "meat", keywords: ["カニ", "蟹", "ホタテ", "ほたて", "帆立", "あさり", "アサリ", "しじみ", "シジミ", "牡蠣", "かき", "カキ"] },
+  { file: "crab", label: "かに", group: "meat", keywords: ["カニ", "蟹", "ホタテ", "ほたて", "帆立", "あさり", "アサリ", "しじみ", "シジミ"] },
   { file: "sushi", label: "刺身・寿司", group: "meat", keywords: ["刺身", "さしみ", "寿司", "すし", "お寿司"] },
   { file: "egg", label: "卵", group: "meat", keywords: ["卵", "たまご", "玉子"] },
+  { file: "lamb", label: "ラム・骨付き肉", group: "meat", keywords: ["ラム", "羊", "ジンギスカン", "骨付き", "スペアリブ", "手羽"] },
+  { file: "oyster", label: "牡蠣・貝", group: "meat", keywords: ["牡蠣", "かき", "カキ", "ホタテ", "ほたて", "帆立", "あさり", "アサリ", "しじみ", "シジミ", "はまぐり", "ムール貝", "貝"] },
+  { file: "friedfood", label: "揚げ物", group: "meat", keywords: ["エビフライ", "フライ", "揚げ物", "天ぷら", "コロッケ", "メンチ", "とんかつ", "唐揚げ", "からあげ", "唐揚"] },
+  { file: "nerimono", label: "練り物", group: "meat", keywords: ["ちくわ", "かまぼこ", "はんぺん", "練り物", "さつま揚げ", "おでん", "つみれ", "カニカマ", "魚肉ソーセージ"] },
+  { file: "roe", label: "たらこ・いくら", group: "meat", keywords: ["たらこ", "明太子", "いくら", "数の子", "ししゃも", "うに"] },
   { file: "milk", label: "牛乳", group: "dairy", keywords: ["牛乳", "ミルク", "豆乳", "低脂肪乳"] },
   { file: "yogurt", label: "ヨーグルト", group: "dairy", keywords: ["ヨーグルト", "飲むヨーグルト", "R-1", "R1"] },
   { file: "cheese", label: "チーズ", group: "dairy", keywords: ["チーズ"] },
   { file: "butter", label: "バター", group: "dairy", keywords: ["バター", "マーガリン", "生クリーム"] },
-  { file: "bread", label: "パン", group: "dairy", keywords: ["パン", "食パン", "ロールパン", "ベーグル"] },
+  { file: "bread", label: "パン", group: "dairy", keywords: ["パン", "食パン", "ロールパン"] },
   { file: "croissant", label: "菓子パン", group: "dairy", keywords: ["クロワッサン", "菓子パン", "メロンパン", "あんパン", "デニッシュ"] },
   { file: "rice", label: "米", group: "dairy", keywords: ["米", "こめ", "コメ", "ごはん", "ご飯", "パックご飯", "もち", "餅"] },
   { file: "riceball", label: "おにぎり", group: "dairy", keywords: ["おにぎり", "おむすび", "海苔", "のり", "ノリ"] },
-  { file: "noodle", label: "麺類", group: "dairy", keywords: ["ラーメン", "うどん", "そば", "蕎麦", "麺", "パスタ", "スパゲッティ", "スパゲティ", "そうめん", "素麺", "焼きそば", "中華麺", "カップ麺", "カップヌードル", "インスタント"] },
+  { file: "noodle", label: "麺類", group: "dairy", keywords: ["ラーメン", "うどん", "そば", "蕎麦", "麺", "そうめん", "素麺", "焼きそば", "中華麺", "カップ麺", "カップヌードル", "インスタント"] },
   { file: "cereal", label: "シリアル", group: "dairy", keywords: ["シリアル", "グラノーラ", "コーンフレーク", "オートミール"] },
   { file: "flour", label: "粉類", group: "dairy", keywords: ["小麦粉", "薄力粉", "強力粉", "片栗粉", "パン粉", "天ぷら粉", "ホットケーキミックス", "ホットケーキ", "お好み焼き粉", "米粉"] },
+  { file: "baguette", label: "バゲット", group: "dairy", keywords: ["バゲット", "フランスパン", "バタール"] },
+  { file: "bagel", label: "ベーグル", group: "dairy", keywords: ["ベーグル", "プレッツェル"] },
+  { file: "sandwich", label: "サンドイッチ", group: "dairy", keywords: ["サンドイッチ", "サンド", "ホットドッグ"] },
+  { file: "burger", label: "ハンバーグ", group: "dairy", keywords: ["ハンバーグ", "ハンバーガー", "ミートボール"] },
+  { file: "pasta", label: "パスタ", group: "dairy", keywords: ["パスタ", "スパゲッティ", "スパゲティ", "マカロニ", "ペンネ", "パスタソース"] },
+  { file: "pancake", label: "ホットケーキ", group: "dairy", keywords: ["ホットケーキ", "パンケーキ", "ワッフル", "フレンチトースト"] },
+  { file: "flatbread", label: "ナン・トルティーヤ", group: "dairy", keywords: ["ナン", "トルティーヤ", "ピタ", "タコス"] },
+  { file: "cream", label: "生クリーム・練乳", group: "dairy", keywords: ["生クリーム", "ホイップ", "練乳", "コンデンスミルク", "スキムミルク"] },
   { file: "seasoning", label: "調味料", group: "ready", keywords: ["塩", "しお", "こしょう", "胡椒", "砂糖", "しょうゆ", "醤油", "味噌", "みそ", "みりん", "酢", "ソース", "ケチャップ", "マヨネーズ", "ドレッシング", "だし", "出汁", "つゆ", "めんつゆ", "ポン酢", "焼肉のたれ", "たれ", "タレ", "コンソメ", "鶏ガラ", "ごま油", "オリーブオイル", "サラダ油", "油", "調味料", "スパイス", "ふりかけ", "わさび", "からし", "しょうが"] },
   { file: "canned", label: "缶詰", group: "ready", keywords: ["缶詰", "ツナ缶", "トマト缶", "サバ缶", "缶"] },
-  { file: "honey", label: "はちみつ・ジャム", group: "ready", keywords: ["はちみつ", "ハチミツ", "蜂蜜", "ジャム", "メープル", "シロップ"] },
-  { file: "bento", label: "お弁当・惣菜", group: "ready", keywords: ["弁当", "惣菜", "お惣菜", "お総菜", "コロッケ", "唐揚", "天ぷら"] },
+  { file: "bento", label: "お弁当・惣菜", group: "ready", keywords: ["弁当", "惣菜", "お惣菜", "お総菜", "コロッケ", "唐揚"] },
   { file: "dumpling", label: "餃子・点心", group: "ready", keywords: ["餃子", "ぎょうざ", "ギョウザ", "シュウマイ", "焼売", "春巻き", "肉まん"] },
   { file: "curry", label: "カレー・ルウ", group: "ready", keywords: ["カレー", "ルウ", "ルー", "シチュー", "ハヤシ"] },
   { file: "pizza", label: "ピザ", group: "ready", keywords: ["ピザ"] },
   { file: "frozen", label: "冷凍食品", group: "ready", keywords: ["冷凍", "冷食", "氷"] },
   { file: "tofu", label: "豆腐・納豆", group: "ready", keywords: ["豆腐", "とうふ", "納豆", "なっとう", "油揚げ", "厚揚げ", "こんにゃく", "しらたき", "豆"] },
-  { file: "retort", label: "レトルト・スープ", group: "ready", keywords: ["レトルト", "スープ", "味噌汁", "みそ汁", "お吸い物", "おでん", "鍋の素", "鍋つゆ"] },
+  { file: "retort", label: "レトルト・スープ", group: "ready", keywords: ["レトルト", "スープ", "味噌汁", "みそ汁", "お吸い物", "鍋の素", "鍋つゆ"] },
+  { file: "soup", label: "スープの素", group: "ready", keywords: ["スープの素", "ブイヨン", "鍋", "鍋の素", "鍋つゆ", "ポトフ"] },
+  { file: "pickles", label: "漬物", group: "ready", keywords: ["漬物", "つけもの", "キムチ", "梅干し", "たくあん", "ザーサイ", "らっきょう", "しば漬け"] },
+  { file: "instant", label: "インスタント・レトルト", group: "ready", keywords: ["カップ麺", "カップヌードル", "インスタント", "レトルト", "パックご飯", "即席"] },
+  { file: "spread", label: "ジャム・スプレッド", group: "ready", keywords: ["ジャム", "ピーナッツバター", "チョコスプレッド", "ヌテラ", "あんこ", "こしあん"] },
+  { file: "mayo", label: "マヨ・ケチャップ", group: "ready", keywords: ["マヨネーズ", "マヨ", "ケチャップ", "マスタード", "タルタル", "ソース"] },
+  { file: "oil", label: "油", group: "ready", keywords: ["サラダ油", "油", "オリーブオイル", "ごま油", "オイル", "ラード"] },
   { file: "water", label: "水", group: "drink", keywords: ["水", "ミネラルウォーター", "天然水", "炭酸水"] },
   { file: "juice", label: "ジュース", group: "drink", keywords: ["ジュース", "野菜ジュース", "カルピス"] },
   { file: "tea", label: "お茶", group: "drink", keywords: ["お茶", "麦茶", "緑茶", "茶", "紅茶", "烏龍茶", "ウーロン茶", "ほうじ茶", "ティーバッグ"] },
@@ -635,29 +667,64 @@ const ICON_LIBRARY = [
   { file: "beer", label: "ビール", group: "drink", keywords: ["ビール", "発泡酒"] },
   { file: "wine", label: "ワイン", group: "drink", keywords: ["ワイン", "シャンパン", "スパークリング"] },
   { file: "sake", label: "お酒", group: "drink", keywords: ["日本酒", "酎ハイ", "チューハイ", "焼酎", "ハイボール", "ウイスキー", "お酒", "酒", "梅酒"] },
-  { file: "snack", label: "おやつ・お菓子", group: "drink", keywords: ["おやつ", "お菓子", "おかし", "クッキー", "ビスケット", "せんべい", "煎餅", "菓子", "ラスク"] },
-  { file: "chocolate", label: "チョコ", group: "drink", keywords: ["チョコ"] },
-  { file: "candy", label: "あめ・グミ", group: "drink", keywords: ["あめ", "飴", "キャンディ", "グミ", "ガム", "ラムネ"] },
-  { file: "chips", label: "スナック", group: "drink", keywords: ["ポテチ", "ポテトチップス", "スナック", "じゃがりこ", "柿の種", "ナッツ", "ポップコーン"] },
-  { file: "icecream", label: "アイス", group: "drink", keywords: ["アイス"] },
-  { file: "cake", label: "ケーキ・デザート", group: "drink", keywords: ["ケーキ", "シュークリーム", "プリン", "ゼリー", "ドーナツ", "パフェ", "デザート"] },
-  { file: "dango", label: "和菓子", group: "drink", keywords: ["団子", "だんご", "大福", "和菓子", "まんじゅう", "饅頭", "どら焼き", "ようかん", "羊羹"] },
+  { file: "bubbletea", label: "ミルクティー", group: "drink", keywords: ["タピオカ", "ミルクティー", "ミルクティ", "抹茶ラテ", "ラテ"] },
+  { file: "energydrink", label: "エナジードリンク", group: "drink", keywords: ["エナジードリンク", "レッドブル", "モンスター", "リポビタン", "栄養ドリンク"] },
+  { file: "sparkling", label: "シャンパン・スパークリング", group: "drink", keywords: ["シャンパン", "スパークリング", "シードル"] },
+  { file: "cocktail", label: "カクテル・サワー", group: "drink", keywords: ["カクテル", "サワー", "レモンサワー", "梅酒", "カシス"] },
+  { file: "babytea", label: "麦茶パック", group: "drink", keywords: ["麦茶パック", "ティーパック", "ティーバッグ", "水出し"] },
+  { file: "honey", label: "はちみつ・ジャム", group: "sweet", keywords: ["はちみつ", "ハチミツ", "蜂蜜", "ジャム", "メープル", "シロップ"] },
+  { file: "snack", label: "おやつ・お菓子", group: "sweet", keywords: ["おやつ", "お菓子", "おかし", "クッキー", "ビスケット", "菓子", "ラスク"] },
+  { file: "chocolate", label: "チョコ", group: "sweet", keywords: ["チョコ"] },
+  { file: "candy", label: "あめ・グミ", group: "sweet", keywords: ["あめ", "飴", "キャンディ", "グミ", "ガム", "ラムネ"] },
+  { file: "chips", label: "スナック", group: "sweet", keywords: ["ポテチ", "ポテトチップス", "スナック", "じゃがりこ", "柿の種"] },
+  { file: "icecream", label: "アイス", group: "sweet", keywords: ["アイス"] },
+  { file: "cake", label: "ケーキ・デザート", group: "sweet", keywords: ["ケーキ", "シュークリーム", "ゼリー", "パフェ", "デザート"] },
+  { file: "dango", label: "和菓子", group: "sweet", keywords: ["団子", "だんご", "大福", "和菓子", "まんじゅう", "饅頭", "どら焼き", "ようかん", "羊羹"] },
+  { file: "senbei", label: "せんべい", group: "sweet", keywords: ["せんべい", "煎餅", "おかき", "あられ", "柿の種", "歌舞伎揚"] },
+  { file: "pudding", label: "プリン", group: "sweet", keywords: ["プリン", "ババロア", "パンナコッタ", "杏仁"] },
+  { file: "donut", label: "ドーナツ", group: "sweet", keywords: ["ドーナツ", "ミスド", "チュロス"] },
+  { file: "popcorn", label: "ポップコーン", group: "sweet", keywords: ["ポップコーン"] },
+  { file: "shavedice", label: "かき氷", group: "sweet", keywords: ["かき氷", "氷菓", "ガリガリ君", "シャーベット"] },
+  { file: "pie", label: "パイ・タルト", group: "sweet", keywords: ["パイ", "タルト", "アップルパイ"] },
+  { file: "muffin", label: "マフィン", group: "sweet", keywords: ["マフィン", "カップケーキ", "スコーン", "フィナンシェ", "マドレーヌ"] },
+  { file: "gum", label: "ガム・ラムネ", group: "sweet", keywords: ["ガム", "ラムネ", "ミンティア", "フリスク", "タブレット"] },
+  { file: "lollipop", label: "キャンディ", group: "sweet", keywords: ["キャンディ", "ペロペロ", "棒付き"] },
   { file: "toiletpaper", label: "トイレットペーパー", group: "daily", keywords: ["トイレットペーパー", "トイペ", "キッチンペーパー", "ペーパータオル"] },
   { file: "tissue", label: "ティッシュ", group: "daily", keywords: ["ティッシュ", "ティシュ", "ウェットティッシュ", "鼻セレブ"] },
-  { file: "soap", label: "せっけん", group: "daily", keywords: ["石けん", "せっけん", "石鹸", "ハンドソープ", "ボディソープ", "ボディーソープ", "洗顔"] },
-  { file: "shampoo", label: "シャンプー", group: "daily", keywords: ["シャンプー", "リンス", "コンディショナー", "トリートメント", "ヘアオイル", "整髪"] },
-  { file: "cosmetics", label: "化粧品", group: "daily", keywords: ["化粧水", "乳液", "コスメ", "化粧", "ファンデ", "リップ", "日焼け止め", "クレンジング", "美容液", "ハンドクリーム"] },
-  { file: "toothbrush", label: "歯ブラシ", group: "daily", keywords: ["歯ブラシ", "歯みがき", "歯磨き", "はみがき", "マウスウォッシュ", "フロス", "歯間"] },
-  { file: "razor", label: "カミソリ", group: "daily", keywords: ["カミソリ", "かみそり", "髭剃り", "ヒゲ", "シェーバー", "替刃"] },
-  { file: "mask", label: "マスク", group: "daily", keywords: ["マスク"] },
-  { file: "medicine", label: "くすり", group: "daily", keywords: ["薬", "くすり", "風邪薬", "胃薬", "目薬", "絆創膏", "ばんそうこう", "バンドエイド", "湿布", "サプリ", "ビタミン", "体温計", "のど飴", "龍角散"] },
-  { file: "contact", label: "コンタクト", group: "daily", keywords: ["コンタクト", "洗浄液", "保存液"] },
   { file: "battery", label: "電池", group: "daily", keywords: ["電池", "バッテリー", "充電器", "充電"] },
   { file: "bulb", label: "電球", group: "daily", keywords: ["電球", "蛍光灯", "LED"] },
   { file: "wrap", label: "ラップ・ホイル", group: "daily", keywords: ["ラップ", "アルミホイル", "ホイル", "クッキングシート", "ジップロック", "保存袋", "ポリ袋", "フリーザーバッグ"] },
-  { file: "sanitary", label: "生理用品", group: "daily", keywords: ["生理用品", "ナプキン", "タンポン", "おりもの"] },
-  { file: "baby", label: "ベビー用品", group: "daily", keywords: ["おむつ", "オムツ", "おしりふき", "粉ミルク", "離乳食", "ベビー", "哺乳瓶"] },
   { file: "pet", label: "ペット用品", group: "daily", keywords: ["ペット", "キャットフード", "ドッグフード", "猫砂", "ネコ砂", "ちゅーる", "えさ", "エサ", "餌", "ペットシーツ"] },
+  { file: "bucket", label: "バケツ・洗面器", group: "daily", keywords: ["バケツ", "洗面器", "たらい", "洗い桶"] },
+  { file: "candle", label: "ろうそく・線香", group: "daily", keywords: ["ろうそく", "キャンドル", "ローソク", "線香", "お線香", "マッチ"] },
+  { file: "cable", label: "ケーブル・充電", group: "daily", keywords: ["延長コード", "ケーブル", "充電ケーブル", "コード", "電源タップ", "アダプター"] },
+  { file: "phone", label: "スマホ用品", group: "daily", keywords: ["スマホ", "イヤホン", "USB", "SDカード", "フィルム", "スマホケース"] },
+  { file: "tools", label: "工具・DIY", group: "daily", keywords: ["工具", "ドライバー", "ネジ", "釘", "接着剤", "ボンド", "ガムテープ", "養生テープ", "結束バンド", "ペンチ", "電動"] },
+  { file: "flashlight", label: "懐中電灯・ライト", group: "daily", keywords: ["懐中電灯", "ライト", "ランタン", "非常用", "防災"] },
+  { file: "scissors", label: "はさみ・爪切り", group: "daily", keywords: ["はさみ", "ハサミ", "カッター", "爪切り", "つめきり", "毛抜き", "耳かき"] },
+  { file: "ink", label: "インク・用紙", group: "daily", keywords: ["インク", "プリンター", "コピー用紙", "用紙", "トナー", "写真用紙"] },
+  { file: "sewing", label: "裁縫", group: "daily", keywords: ["裁縫", "糸", "針", "ボタン", "ミシン", "毛糸", "手芸"] },
+  { file: "toilet", label: "トイレ用品", group: "daily", keywords: ["トイレ洗剤", "トイレクリーナー", "トイレマジックリン", "トイレ", "芳香剤", "消臭剤", "ブルーレット", "サンポール"] },
+  { file: "bath", label: "入浴剤", group: "daily", keywords: ["入浴剤", "バスソルト", "バブ", "バスボム", "バスタオル", "風呂"] },
+  { file: "newspaper", label: "新聞・チラシ", group: "daily", keywords: ["新聞", "チラシ", "フリーペーパー"] },
+  { file: "soap", label: "せっけん", group: "care", keywords: ["石けん", "せっけん", "石鹸", "ハンドソープ", "ボディソープ", "ボディーソープ", "洗顔"] },
+  { file: "shampoo", label: "シャンプー", group: "care", keywords: ["シャンプー", "リンス", "コンディショナー", "トリートメント", "ヘアオイル", "整髪"] },
+  { file: "cosmetics", label: "化粧品", group: "care", keywords: ["化粧水", "乳液", "コスメ", "化粧", "ファンデ", "リップ", "日焼け止め", "クレンジング", "美容液", "ハンドクリーム"] },
+  { file: "toothbrush", label: "歯ブラシ", group: "care", keywords: ["歯ブラシ", "歯みがき", "歯磨き", "はみがき", "マウスウォッシュ", "フロス", "歯間"] },
+  { file: "razor", label: "カミソリ", group: "care", keywords: ["カミソリ", "かみそり", "髭剃り", "ヒゲ", "シェーバー", "替刃"] },
+  { file: "mask", label: "マスク", group: "care", keywords: ["マスク"] },
+  { file: "medicine", label: "くすり", group: "care", keywords: ["薬", "くすり", "風邪薬", "胃薬", "目薬", "サプリ", "ビタミン", "のど飴", "龍角散"] },
+  { file: "contact", label: "コンタクト", group: "care", keywords: ["コンタクト", "洗浄液", "保存液"] },
+  { file: "sanitary", label: "生理用品", group: "care", keywords: ["生理用品", "ナプキン", "タンポン", "おりもの"] },
+  { file: "baby", label: "ベビー用品", group: "care", keywords: ["おむつ", "オムツ", "おしりふき", "離乳食", "ベビー"] },
+  { file: "bandage", label: "絆創膏・ガーゼ", group: "care", keywords: ["絆創膏", "ばんそうこう", "バンドエイド", "ガーゼ", "包帯", "湿布", "テーピング", "キズパワーパッド"] },
+  { file: "thermometer", label: "体温計・血圧計", group: "care", keywords: ["体温計", "血圧計", "パルスオキシメーター"] },
+  { file: "glasses", label: "メガネ", group: "care", keywords: ["メガネ", "眼鏡", "めがね", "老眼鏡", "サングラス", "メガネクリーナー", "メガネ拭き"] },
+  { file: "nail", label: "ネイル", group: "care", keywords: ["ネイル", "マニキュア", "除光液", "ネイルオイル"] },
+  { file: "bottle", label: "粉ミルク・哺乳瓶", group: "care", keywords: ["粉ミルク", "哺乳瓶", "ミルク缶", "液体ミルク", "ほ乳瓶"] },
+  { file: "sunscreen", label: "日焼け止め・虫よけ", group: "care", keywords: ["日焼け止め", "サンスクリーン", "UV", "虫よけスプレー"] },
+  { file: "haircare", label: "ヘアケア", group: "care", keywords: ["ヘアケア", "ヘアスプレー", "ワックス", "ヘアカラー", "白髪染め", "染め", "ヘアブラシ", "くし", "コーム"] },
+  { file: "supplement", label: "サプリ・プロテイン", group: "care", keywords: ["サプリ", "ビタミン", "プロテイン", "青汁", "DHA", "鉄分", "葉酸"] },
   { file: "laundry", label: "洗濯洗剤", group: "clean", keywords: ["洗濯洗剤", "柔軟剤", "漂白剤", "洗濯", "おしゃれ着", "ハンガー"] },
   { file: "dishsoap", label: "食器用洗剤", group: "clean", keywords: ["食器用洗剤", "食器洗剤", "キュキュット", "ジョイ", "食洗機"] },
   { file: "detergent", label: "洗剤", group: "clean", keywords: ["洗剤", "クリーナー", "カビキラー", "除菌", "アルコール", "消臭", "ファブリーズ"] },
@@ -665,14 +732,37 @@ const ICON_LIBRARY = [
   { file: "broom", label: "掃除用具", group: "clean", keywords: ["ほうき", "掃除", "クイックル", "ワイパー", "モップ", "コロコロ", "粘着", "フロア"] },
   { file: "trash", label: "ゴミ袋", group: "clean", keywords: ["ゴミ袋", "ごみ袋", "ゴミ", "ごみ", "レジ袋"] },
   { file: "bugspray", label: "虫よけ・殺虫", group: "clean", keywords: ["虫よけ", "虫除け", "殺虫", "蚊取り", "キンチョール", "ゴキブリ", "ホウ酸"] },
-  { file: "kitchen", label: "キッチン用品", group: "other", keywords: ["フライパン", "鍋", "包丁", "まな板", "ボウル", "菜箸", "おたま", "タッパー", "弁当箱", "水筒", "コップ", "皿"] },
-  { file: "clothes", label: "衣類", group: "other", keywords: ["靴下", "くつ下", "下着", "Tシャツ", "パンツ", "シャツ", "肌着", "ストッキング", "タイツ", "手袋", "タオル"] },
-  { file: "stationery", label: "文房具", group: "other", keywords: ["ノート", "鉛筆", "えんぴつ", "ペン", "消しゴム", "文房具", "のり", "テープ", "ハガキ", "はがき", "封筒", "年賀状", "クレヨン", "折り紙", "切手"] },
-  { file: "flower", label: "花", group: "other", keywords: ["花", "お花", "仏花", "線香"] },
-  { file: "gift", label: "プレゼント", group: "other", keywords: ["プレゼント", "ギフト", "手土産", "お土産", "おみやげ"] },
-  { file: "umbrella", label: "傘・雨具", group: "other", keywords: ["傘", "かさ", "レインコート", "長靴"] },
-  { file: "toy", label: "おもちゃ・本", group: "other", keywords: ["おもちゃ", "絵本", "本", "雑誌", "ゲーム", "付録"] },
-  { file: "cigarette", label: "たばこ", group: "other", keywords: ["たばこ", "タバコ", "煙草", "ライター"] },
+  { file: "kitchen", label: "キッチン用品", group: "home", keywords: ["フライパン", "鍋", "包丁", "まな板", "ボウル", "菜箸", "おたま", "タッパー", "弁当箱", "水筒", "コップ", "皿"] },
+  { file: "clothes", label: "衣類", group: "home", keywords: ["Tシャツ", "シャツ", "タオル"] },
+  { file: "stationery", label: "文房具", group: "home", keywords: ["ノート", "鉛筆", "えんぴつ", "ペン", "消しゴム", "文房具", "のり", "テープ", "ハガキ", "はがき", "封筒", "年賀状", "クレヨン", "折り紙", "切手"] },
+  { file: "flower", label: "花", group: "home", keywords: ["花", "お花", "仏花", "線香"] },
+  { file: "gift", label: "プレゼント", group: "home", keywords: ["プレゼント", "ギフト", "手土産", "お土産", "おみやげ"] },
+  { file: "umbrella", label: "傘・雨具", group: "home", keywords: ["傘", "かさ", "レインコート", "長靴"] },
+  { file: "cigarette", label: "たばこ", group: "home", keywords: ["たばこ", "タバコ", "煙草", "ライター"] },
+  { file: "socks", label: "靴下", group: "home", keywords: ["靴下", "くつ下", "ソックス", "ストッキング", "タイツ", "レギンス"] },
+  { file: "shoes", label: "靴", group: "home", keywords: ["靴", "くつ", "スニーカー", "サンダル", "上履き", "うわばき", "中敷き", "インソール"] },
+  { file: "underwear", label: "下着", group: "home", keywords: ["下着", "パンツ", "肌着", "ブラ", "インナー", "ヒートテック", "ステテコ"] },
+  { file: "hat", label: "帽子", group: "home", keywords: ["帽子", "キャップ", "ニット帽", "ハット"] },
+  { file: "gloves", label: "手袋・マフラー", group: "home", keywords: ["手袋", "グローブ", "ミトン", "マフラー", "ネックウォーマー", "カイロ"] },
+  { file: "books", label: "本・雑誌", group: "home", keywords: ["本", "雑誌", "漫画", "マンガ", "参考書", "ドリル", "問題集", "単行本", "文庫"] },
+  { file: "ribbon", label: "ラッピング", group: "home", keywords: ["ラッピング", "リボン", "包装", "のし", "熨斗", "ご祝儀袋", "祝儀袋", "ポチ袋"] },
+  { file: "mail", label: "郵便・切手", group: "home", keywords: ["切手", "ハガキ", "はがき", "封筒", "年賀状", "レターパック", "宅急便", "段ボール", "ダンボール"] },
+  { file: "battery2", label: "電池（ボタン）", group: "home", keywords: ["ボタン電池", "リチウム電池", "時計電池"] },
+  { file: "toy", label: "おもちゃ・本", group: "hobby", keywords: ["おもちゃ", "絵本", "付録"] },
+  { file: "game", label: "ゲーム", group: "hobby", keywords: ["ゲーム", "ソフト", "コントローラー", "Switch", "スイッチ", "プレステ"] },
+  { file: "party", label: "パーティー", group: "hobby", keywords: ["風船", "パーティー", "飾り", "クラッカー", "紙皿", "紙コップ", "割り箸", "わりばし", "使い捨て"] },
+  { file: "birthday", label: "誕生日", group: "hobby", keywords: ["誕生日", "バースデー", "ろうそく（ケーキ用）", "数字キャンドル"] },
+  { file: "xmas", label: "クリスマス", group: "hobby", keywords: ["クリスマス", "ツリー", "オーナメント", "サンタ", "イルミネーション"] },
+  { file: "newyear", label: "お正月", group: "hobby", keywords: ["正月", "お正月", "しめ縄", "門松", "鏡餅", "おせち", "お年玉"] },
+  { file: "halloween", label: "ハロウィン・節分", group: "hobby", keywords: ["ハロウィン", "節分", "豆まき", "恵方巻", "ひな祭り", "こどもの日", "柏餅", "ちまき", "七夕"] },
+  { file: "garden", label: "園芸", group: "hobby", keywords: ["園芸", "肥料", "土", "種", "苗", "プランター", "植木", "ガーデニング", "じょうろ", "培養土"] },
+  { file: "car", label: "車用品", group: "hobby", keywords: ["ガソリン", "洗車", "車用", "カー用品", "タイヤ", "ウォッシャー液", "ETC"] },
+  { file: "bike", label: "自転車", group: "hobby", keywords: ["自転車", "空気入れ", "パンク修理", "ヘルメット", "チャイルドシート"] },
+  { file: "outdoor", label: "アウトドア・レジャー", group: "hobby", keywords: ["キャンプ", "アウトドア", "炭", "バーベキュー", "BBQ", "レジャーシート", "水着", "浮き輪", "テント", "クーラーボックス", "保冷剤"] },
+  { file: "sports", label: "スポーツ用品", group: "hobby", keywords: ["ボール", "サッカー", "野球", "バット", "グローブ（野球）", "縄跳び", "水泳", "ゴーグル", "スポーツ"] },
+  { file: "music", label: "楽器・音楽", group: "hobby", keywords: ["楽器", "ピアノ", "ギター", "弦", "リコーダー", "CD", "DVD", "ブルーレイ"] },
+  { file: "school", label: "学用品", group: "hobby", keywords: ["ランドセル", "学用品", "給食", "体操服", "上靴", "名札", "雑巾（学校）", "絵の具", "習字", "習字道具", "リコーダー", "水筒（学校）"] },
+  { file: "travel", label: "旅行", group: "hobby", keywords: ["旅行", "トラベル", "スーツケース", "お土産", "おみやげ", "パスポート", "トラベルセット"] },
 ];
 // 写真が未設定のカードでも、品名からよくある品だとわかるものは
 // あらかじめ用意したイラスト（shortcut-icons/）を代わりに表示する。
@@ -702,7 +792,9 @@ function openIconPicker({ onSelect, onCamera } = {}) {
   // onCamera が無い場面（登録シート）は、写真の欄が既に別にあるのでこのボタンは出さない。
   $("btn-icon-picker-camera").style.display = iconPickerOnCamera ? "" : "none";
   $("icon-picker-grid-label").style.display = iconPickerOnCamera ? "" : "none";
+  $("icon-picker-search").value = "";
   renderIconPickerGrid();
+  applyIconPickerFilter();
   $("icon-picker-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
 }
@@ -720,7 +812,7 @@ function renderIconPickerGrid() {
     const items = ICON_LIBRARY.filter((it) => it.group === g);
     if (!items.length) return "";
     return `<div class="icon-picker-group-hdr">${escapeHtml(gLabel)}</div>` + items.map((it) => `
-    <button type="button" class="icon-picker-tile" data-file="${it.file}">
+    <button type="button" class="icon-picker-tile" data-file="${it.file}" data-search="${escapeHtml([it.label, ...it.keywords].join(" ").toLowerCase())}">
       <img src="./shortcut-icons/${it.file}.svg" alt="" loading="lazy" />
       <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
     </button>`).join("");
@@ -733,6 +825,30 @@ function renderIconPickerGrid() {
       if (cb) cb(path);
     });
   });
+  // 検索欄（開くたびにタイルを作り直すので、代入で毎回同じハンドラを付け直す）
+  $("icon-picker-search").oninput = applyIconPickerFilter;
+  $("icon-picker-search").onsearch = applyIconPickerFilter;
+}
+// 200種を超えて目で探しにくいため、ラベルと自動判定キーワードの両方で絞り込む
+// （「醤油」で「調味料」タイルが当たる）。該当タイルが無い分類の見出しは隠す。
+function applyIconPickerFilter() {
+  const q = ($("icon-picker-search").value || "").trim().toLowerCase();
+  const grid = $("icon-picker-grid");
+  let any = false;
+  grid.querySelectorAll(".icon-picker-tile").forEach((b) => {
+    const hit = !q || (b.dataset.search || "").includes(q);
+    b.style.display = hit ? "" : "none";
+    if (hit) any = true;
+  });
+  grid.querySelectorAll(".icon-picker-group-hdr").forEach((h) => {
+    let el = h.nextElementSibling, show = false;
+    while (el && !el.classList.contains("icon-picker-group-hdr")) {
+      if (el.style.display !== "none") { show = true; break; }
+      el = el.nextElementSibling;
+    }
+    h.style.display = show ? "" : "none";
+  });
+  $("icon-picker-empty").style.display = any ? "none" : "";
 }
 // ===== カード形式 / リスト形式の切り替え =====
 // カードは写真中心で見やすく、リストは1行が小さく詰まった分いちどに多く見渡せる

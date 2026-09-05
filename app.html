@@ -882,6 +882,9 @@
              「写真をセットする」を別の選択肢として並べる（onCamera 未指定なら非表示のまま）。 -->
         <button type="button" id="btn-icon-picker-camera" class="ghost tiny-btn" style="width:100%;margin-bottom:14px;display:none;">写真をセットする（撮影・ライブラリから選ぶ）</button>
         <div id="icon-picker-grid-label" class="muted" style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;display:none;">🎨 イラストを選ぶ</div>
+        <!-- 200種を超えたので、名前やキーワード（例: 醤油→調味料）で絞り込める検索欄を置く -->
+        <input type="search" id="icon-picker-search" placeholder="🔍 名前で探す（例: ティッシュ、醤油）" autocomplete="off" style="width:100%;margin-bottom:6px;" />
+        <p id="icon-picker-empty" class="muted" style="display:none;font-size:12px;text-align:center;padding:16px 0;">見つかりませんでした。別の言い方で探してみてください</p>
         <p class="muted" style="font-size:11px;margin:0 0 8px;">用意したイラストです。実物の写真ではありません。</p>
         <div id="icon-picker-grid" class="icon-picker-grid"></div>
       </div>
