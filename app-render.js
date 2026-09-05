@@ -392,9 +392,9 @@ function renderRequests() {
     } else {
       // セクション見出しは、カテゴリ付き or 急ぎが1つでもあるときだけ出す
       const useSections = openItems.some(r => sectionKeyOf(r) !== "none");
-      // 行き先の小見出しは、誰か1つでも行き先を設定していないと出さない
-      // （誰も使っていない家族には「行き先未設定」ばかりのノイズになるため）
-      const useDestGrouping = openItems.some(r => r.destination);
+      // 行き先の小見出しは、そのカテゴリの中に行き先ありの品が1つでもあるときだけ出す
+      // （全部未設定のカテゴリに「行き先未設定」だけの見出しを出すとノイズになるため）
+      const destSections = new Set(openItems.filter(r => destinationName(r)).map(sectionKeyOf));
       let cur = null, curDest;
       openBody = `<div class="check-list">` + openItems.map((r) => {
         let hdr = "";
@@ -404,7 +404,7 @@ function renderRequests() {
           curDest = undefined;
           hdr += `<div class="check-section-hdr">${SECTION_DEFS[key].label}</div>`;
         }
-        if (useDestGrouping && key !== "urgent") {
+        if (destSections.has(key) && key !== "urgent") {
           const dest = destinationName(r);
           if (dest !== curDest) {
             curDest = dest;

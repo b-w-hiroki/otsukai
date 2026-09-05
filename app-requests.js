@@ -59,9 +59,9 @@ function renderNewDestinationPicker() {
   selectedDestination = null;
   const el = $("new-destination");
   const dests = sortedDestinations();
-  el.innerHTML = dests.length
-    ? dests.map((d) => `<button type="button" class="cat-chip" data-dest="${d.id}">🏬 ${escapeHtml(d.name)}</button>`).join("")
-    : `<p class="muted" style="font-size:11px;margin:0;">設定タブの「🏬 行き先」から登録すると、ここで選べるようになります（任意）。</p>`;
+  // 行き先を1件も登録していない家族には、行ごと出さない（説明文だけの行を増やさない）
+  $("new-destination-wrap").style.display = dests.length ? "" : "none";
+  el.innerHTML = dests.map((d) => `<button type="button" class="cat-chip" data-dest="${d.id}">🏬 ${escapeHtml(d.name)}</button>`).join("");
   el.querySelectorAll(".cat-chip").forEach((b) => {
     b.addEventListener("click", () => {
       const willSelect = !b.classList.contains("selected");

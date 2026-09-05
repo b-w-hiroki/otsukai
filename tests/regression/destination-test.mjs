@@ -67,6 +67,7 @@ check("ストック登録シートにも行き先チップが出る", (await pag
 await page.click('#stock-destination .cat-chip:has-text("スーパー")');
 await page.click("#btn-add-stock"); await sleep(600);
 await page.locator(".stock-item", { hasText: "アイス" }).first().click(); await sleep(400);
+await page.click("#btn-stock-detail-more"); await sleep(300); // 行き先は「⚙️ 詳細設定」の中
 check("ストック詳細にも選択済みの行き先が反映される", await page.locator('#stock-detail-dest .cat-chip.selected').innerText().then(t=>t.includes("スーパー")));
 await page.click("#btn-stock-detail-add"); await sleep(600);
 await page.click('[data-tab="requests"]'); await sleep(500);

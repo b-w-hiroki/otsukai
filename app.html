@@ -217,11 +217,6 @@
 
       <!-- Tab: Stock -->
       <section id="tab-stock" class="tab">
-        <!-- 「ストック」と「⚡よく買うもの」の違いが分かりにくいという指摘への対応。
-             ストック=在庫の残量記録、よく買うもの=ワンタップ追加のショートカット、と一言で区別する -->
-        <p class="muted" style="font-size:11px;margin:0 0 10px;">
-          📦 家にある物の残量を🟢🟡🔴で記録する場所です。買い物リストへのワンタップ追加は⚡よく買うものへ。
-        </p>
         <div class="card settings-acc closed" data-acc="lowlead">
           <button class="settings-acc-hdr" data-acc-toggle aria-expanded="false">
             <h2>⏳ そろそろ切れるかも</h2>
@@ -618,7 +613,8 @@
               <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
             </div>
           </div>
-          <div>
+          <!-- 行き先が1件も登録されていない家族には行ごと出さない（JS で display を切り替える） -->
+          <div id="new-destination-wrap" style="display:none;">
             <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">行き先（任意）</label>
             <div id="new-destination" class="cat-chips"></div>
           </div>
@@ -680,7 +676,7 @@
           <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="card" role="tab">🖼️ カード</button>
           <button type="button" class="seg-btn shortcut-viewmode-btn" data-viewmode="list" role="tab">☰ リスト</button>
         </div>
-        <p class="muted" style="font-size:11px;margin:8px 0 10px;">ワンタップで買い物リストに追加できるショートカット集です（在庫の残量記録は📦ストックタブへ）。「✏️ 編集」中は写真をタップすると差し替えられます。</p>
+        <p class="muted" style="font-size:11px;margin:8px 0 10px;">「✏️ 編集」中は写真をタップすると差し替えられます。</p>
         <div id="shortcut-sheet-chips" class="shortcut-chips"></div>
         <div class="btn-stack" style="margin-top:10px;">
           <button id="btn-shortcut-register" class="ghost btn-block">＋ 新しく登録する</button>
@@ -709,9 +705,9 @@
               <button type="button" class="cat-chip" data-cat="daily">🧻 日用品</button>
               <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
             </div>
-            <p class="muted" style="font-size:11px;margin-top:4px;">買い物リストに追加するときも、このカテゴリのまま引き継がれます。</p>
           </div>
-          <div>
+          <!-- 行き先が1件も登録されていない家族には行ごと出さない（JS で display を切り替える） -->
+          <div id="stock-destination-wrap" style="display:none;">
             <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">行き先（任意）</label>
             <div id="stock-destination" class="cat-chips"></div>
           </div>
