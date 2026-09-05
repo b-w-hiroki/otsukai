@@ -495,6 +495,7 @@ function wireGlobalEvents() {
   // btn-open-expense-sheet はプレイヤー情報シートの中身として毎回作り直されるため、
   // ここでは配線しない（openPlayerSheet() 側で都度配線する）
   wireCategoryChips();
+  wireStockCategoryChips();
   wireMissionSubtabs();
   wireSettingsAccordion();
   $("btn-member-admin-toggle").addEventListener("click", () => {

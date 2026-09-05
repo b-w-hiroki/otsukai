@@ -12,6 +12,7 @@ await sleep(900);
 await page.click('[data-tab="stock"]'); await sleep(500);
 await page.click("#btn-stock-register"); await sleep(400);
 await page.fill("#stock-name", "牛乳");
+await page.click('#stock-category .cat-chip[data-cat="food"]');
 await page.click('.slp-btn[data-lvl="out"]');
 await page.click("#btn-add-stock"); await sleep(600);
 check("ストック「牛乳」が🔴切れてるに入る", (await page.locator("#stock-out-section").innerText()).includes("牛乳"));

@@ -48,6 +48,7 @@ await sleep(500);
 await page.click("#btn-stock-register");
 await sleep(500);
 await page.fill("#stock-name", "サラダ油");
+await page.click('#stock-category .cat-chip[data-cat="food"]');
 await page.click("#btn-stock-photo-icon");
 await sleep(400);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="onion"]');

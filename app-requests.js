@@ -248,7 +248,7 @@ function isShortcutRegistered(name) {
 // cycleDays ベースの「⏳ そろそろ切れるかも」予測（app-stock.js）がそのまま効くようにする。
 // 品によって持つ期間が違うので、cycleDays を指定すればここで反映される。
 // マッチングはストック本体と同じく品名の文字列一致（IDでの紐付けはしない）。
-async function ensureStockForShortcut(name, cycleDays) {
+async function ensureStockForShortcut(name, cycleDays, category) {
   const existing = Object.entries(state.stocks || {}).find(([, s]) => s && s.name === name);
   if (existing) {
     // 既にストックにある品なら、買う間隔だけ反映する（在庫レベルは変えない）
@@ -256,6 +256,7 @@ async function ensureStockForShortcut(name, cycleDays) {
     return;
   }
   const item = { name, level: "ok", updatedBy: state.uid, updatedAt: now() };
+  if (category) item.category = category;
   if (cycleDays > 0) { item.cycleDays = cycleDays; item.lastFilledAt = now(); }
   const id = familyRef().child("stocks").push().key;
   await dbOp(familyRef().child("stocks/" + id).set(item), "ストックへの登録に失敗しました");
@@ -277,7 +278,7 @@ async function addShortcutFromRequest(id) {
   if (r.category) entry.category = r.category;
   const ref = familyRef().child("shortcuts").push();
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
-  await ensureStockForShortcut(r.name); // 買う間隔はここでは指定しない（ストックタブから後で設定可）
+  await ensureStockForShortcut(r.name, 0, r.category); // 買う間隔はここでは指定しない（ストックタブから後で設定可）
   showToast(`⭐ 「${r.name}」をよく買うものに登録しました`, { sound: false });
   renderRequests();
   renderHistory();
@@ -352,7 +353,7 @@ async function addShortcutFromSheet() {
     if (url) entry.photoUrl = url;
   }
   if (!(await dbOp(ref.set(entry), "登録できませんでした"))) return;
-  await ensureStockForShortcut(name, cycleDays);
+  await ensureStockForShortcut(name, cycleDays, selectedCategory);
   closeSheet();
   showToast(`⭐ 「${name}」をよく買うものに登録しました`);
 }

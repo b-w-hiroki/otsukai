@@ -10,6 +10,21 @@ const STOCK_LEVEL = {
 };
 const STOCK_NEXT = { ok: "low", low: "out", out: "ok" };
 let stockAddLevel = "ok";
+// カテゴリ（買い物リストと同じ CATEGORY を使う。買い物リストに追加するときそのまま引き継ぐため）
+let stockAddCategory = null;
+function setStockCategory(cat) {
+  stockAddCategory = cat && CATEGORY[cat] ? cat : null;
+  document.querySelectorAll("#stock-category .cat-chip").forEach((b) => {
+    b.classList.toggle("selected", b.dataset.cat === stockAddCategory);
+  });
+}
+function wireStockCategoryChips() {
+  document.querySelectorAll("#stock-category .cat-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      setStockCategory(b.dataset.cat === stockAddCategory ? null : b.dataset.cat);
+    });
+  });
+}
 // 登録シートの写真。File（実写真をアップロード）／文字列（選んだイラストのパスをそのまま使う）／null
 let pendingStockPhoto = null;
 // 詳細シートで「写真を撮る・選ぶ」を選んだとき、どのストックが対象かを覚えておく
@@ -18,6 +33,7 @@ let stockPhotoTargetId = null;
 function openStockSheet() {
   stockAddLevel = "ok";
   document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
+  setStockCategory(null);
   $("stock-name").value = "";
   $("stock-memo").value = "";
   $("stock-budget").value = "";
@@ -102,6 +118,7 @@ async function setStockIllustration(stockId, path) {
 async function addStock() {
   const name = $("stock-name").value.trim();
   if (!name) return showToast("商品名を入力してください");
+  if (!stockAddCategory) return showToast("カテゴリを選んでください");
   const memo = $("stock-memo").value.trim();
   const budget = parseInt($("stock-budget").value, 10);
   const cycleDays = parseInt($("stock-cycle").value, 10);
@@ -110,7 +127,7 @@ async function addStock() {
   if (addBtn) addBtn.disabled = true;
   try {
     const id = familyRef().child("stocks").push().key;
-    const item = { name, level: stockAddLevel, updatedBy: state.uid, updatedAt: now() };
+    const item = { name, level: stockAddLevel, category: stockAddCategory, updatedBy: state.uid, updatedAt: now() };
     if (memo) item.memo = memo;
     if (budget > 0) item.budget = budget;
     if (cycleDays >= 1 && cycleDays <= 365) {
@@ -134,6 +151,10 @@ async function addStock() {
   } finally {
     if (addBtn) addBtn.disabled = false;
   }
+}
+async function updateStockCategory(id, cat) {
+  if (!CATEGORY[cat]) return;
+  await dbOp(familyRef().child(`stocks/${id}/category`).set(cat), "変更できませんでした");
 }
 async function updateStockLevel(id, level) {
   const patch = { level, updatedBy: state.uid, updatedAt: now() };
@@ -196,6 +217,7 @@ async function addStockToRequest(s) {
   if (s.budget > 0) req.budget = s.budget;
   if (s.memo) req.brand = s.memo;
   if (s.photoUrl) req.photoUrl = s.photoUrl;
+  if (s.category) req.category = s.category;
   if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
   bumpStat("requestedCount");
   showToast(`🛒 「${s.name}」をお買い物リストに追加しました`);
@@ -203,6 +225,7 @@ async function addStockToRequest(s) {
 function stockCard(s, i) {
   const lvl = STOCK_LEVEL[s.level] || STOCK_LEVEL.ok;
   const metaChips = [];
+  if (s.category && CATEGORY[s.category]) metaChips.push(`${CATEGORY[s.category].emoji} ${CATEGORY[s.category].label}`);
   if (s.budget > 0) metaChips.push(`💰 ${Number(s.budget).toLocaleString()}円以下`);
   if (s.memo) metaChips.push(`📝 ${escapeHtml(s.memo)}`);
   // 周期が分かるものは「あと何日で切れそうか」を添える（手入力＞履歴からの学習）
@@ -294,6 +317,15 @@ function openStockDetail(id) {
       ${s.memo ? `<span class="req-hint">📝 ${escapeHtml(s.memo)}</span>` : ""}
     </div>` : ""}
     <div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">カテゴリ</div>
+      <div class="cat-chips">
+        <button type="button" class="cat-chip${s.category === "food" ? " selected" : ""}" data-detail-cat="food" data-sid="${id}">🍎 食品</button>
+        <button type="button" class="cat-chip${s.category === "daily" ? " selected" : ""}" data-detail-cat="daily" data-sid="${id}">🧻 日用品</button>
+        <button type="button" class="cat-chip${s.category === "other" ? " selected" : ""}" data-detail-cat="other" data-sid="${id}">📦 その他</button>
+      </div>
+      <p class="muted" style="font-size:11px;margin-top:6px;">買い物リストに追加するときも、このカテゴリのまま引き継がれます。</p>
+    </div>
+    <div style="margin-bottom:16px;">
       <div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">在庫レベルを変更</div>
       <div class="stock-level-picker">
         <button class="slp-btn${s.level === 'ok' ? ' active' : ''}" data-detail-lvl="ok" data-sid="${id}">🟢 たっぷり</button>
@@ -318,6 +350,12 @@ function openStockDetail(id) {
     btn.addEventListener("click", () => {
       updateStockLevel(btn.dataset.sid, btn.dataset.detailLvl);
       $("stock-detail-body").querySelectorAll("[data-detail-lvl]").forEach(b => b.classList.toggle("active", b === btn));
+    });
+  });
+  $("stock-detail-body").querySelectorAll("[data-detail-cat]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      updateStockCategory(btn.dataset.sid, btn.dataset.detailCat);
+      $("stock-detail-body").querySelectorAll("[data-detail-cat]").forEach(b => b.classList.toggle("selected", b === btn));
     });
   });
   $("btn-stock-detail-rename").addEventListener("click", () => renameStock(id));

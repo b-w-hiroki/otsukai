@@ -681,6 +681,15 @@
         </div>
         <div class="setup-form">
           <input id="stock-name" placeholder="商品名（例: シャンプー、醤油）" maxlength="40" />
+          <div>
+            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">カテゴリ（必須・いずれか1つをタップ）</label>
+            <div id="stock-category" class="cat-chips">
+              <button type="button" class="cat-chip" data-cat="food">🍎 食品</button>
+              <button type="button" class="cat-chip" data-cat="daily">🧻 日用品</button>
+              <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
+            </div>
+            <p class="muted" style="font-size:11px;margin-top:4px;">買い物リストに追加するときも、このカテゴリのまま引き継がれます。</p>
+          </div>
           <input id="stock-memo" placeholder="こだわり・メモ（任意）例: 国産・無添加" maxlength="60" />
           <div style="position:relative;">
             <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
