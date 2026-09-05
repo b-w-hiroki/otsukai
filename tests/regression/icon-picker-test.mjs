@@ -1,4 +1,4 @@
-// 「イラストから選ぶ」ピッカーの検証。写真アップロードの代わりに、用意した20種の
+// 「イラストから選ぶ」ピッカーの検証。写真アップロードの代わりに、用意した115種の
 // イラストから明示的に選べる機能（おつかい/よく買うもの/ストックの写真欄で共通）。
 // 選んだイラストは photoUrl にパスをそのまま入れる（Storageへのアップロードは発生しない）。
 import { startHarness } from "../harness.mjs";
@@ -25,7 +25,17 @@ await sleep(500);
 check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isVisible());
 check("「写真をセットする」ボタンは出ない（新規追加時は写真ラベルが既に主導線のため）",
   !(await page.locator("#btn-icon-picker-camera").isVisible()));
-check("20種のイラストが並ぶ", (await page.locator('#icon-picker-grid .icon-picker-tile[data-file]').count()) === 20);
+const libCount = await page.evaluate(() => ICON_LIBRARY.length);
+const tileCount = await page.locator('#icon-picker-grid .icon-picker-tile[data-file]').count();
+check("ライブラリの全件がタイルとして並ぶ", tileCount === libCount && libCount >= 100, `${tileCount}/${libCount}`);
+check("分類の見出しが付く", (await page.locator('#icon-picker-grid .icon-picker-group-hdr').count()) >= 5);
+check("日用品のイラストもある", (await page.locator('#icon-picker-grid .icon-picker-tile[data-file="toiletpaper"]').count()) === 1);
+// 品名からの自動判定は「いちばん長いキーワード」を優先する
+const auto = await page.evaluate(() => [matchShortcutIcon("フライパン"), matchShortcutIcon("パンツ"), matchShortcutIcon("食器用洗剤"), matchShortcutIcon("食パン")]);
+check("フライパン→キッチン用品（パンに化けない）", auto[0].endsWith("/kitchen.svg"), auto[0]);
+check("パンツ→衣類", auto[1].endsWith("/clothes.svg"), auto[1]);
+check("食器用洗剤→食器用洗剤（洗濯洗剤に化けない）", auto[2].endsWith("/dishsoap.svg"), auto[2]);
+check("食パン→パン", auto[3].endsWith("/bread.svg"), auto[3]);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="cabbage"]');
 await sleep(400);
 check("ピッカーが閉じる", !(await page.locator("#icon-picker-sheet.open").count()));

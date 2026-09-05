@@ -49,8 +49,12 @@ const hoverColor = await page.locator(".shortcut-card").last().evaluate(async (e
 });
 check("hover時も紫グラデに化けない", hoverColor.bgImage === "none", JSON.stringify(hoverColor));
 
-// --- 写真が無いカードはプレースホルダーが出る ---
-check("写真未設定のカードはプレースホルダーが出る", (await page.locator(".shortcut-card-placeholder").count()) > 0);
+// --- 写真が無いカードでも、日用品を含めよくある品名なら連想イラストが出る
+//     （ライブラリ拡充後は初期データの4品すべてに絵が付く。一致しない品名の
+//      プレースホルダーは後段の「謎の食材X」で確認する） ---
+const tpIcon = await page.locator(".shortcut-card").filter({ hasText: "トイレットペーパー" }).first()
+  .locator(".shortcut-card-icon").getAttribute("src").catch(() => null);
+check("日用品（トイレットペーパー）にも連想イラストが出る", tpIcon === "./shortcut-icons/toiletpaper.svg", tpIcon);
 
 // --- 品名がよくある品と一致すると、写真の代わりに用意したイラストが出る ---
 await page.evaluate(async () => {
