@@ -256,6 +256,9 @@ function renderEmojiPicker(elId, stateKey) {
       });
     });
   }
+  // タブの列は横スクロールする（4分類でも「のりもの・すきなもの」のような長いラベルだと
+  // 1画面に収まらない）。選ばれているタブが途中で切れて見えることがないよう、
+  // 開いた直後・タップ直後の両方でスクロール位置を合わせる。
   function renderTabs() {
     if (!tabsWrap) return;
     tabsWrap.innerHTML = EMOJI_GROUPS.map((g) => `
@@ -266,8 +269,10 @@ function renderEmojiPicker(elId, stateKey) {
         active = btn.dataset.group;
         renderTabs();
         renderGrid();
+        btn.scrollIntoView({ inline: "nearest", block: "nearest" });
       });
     });
+    tabsWrap.querySelector(".icon-picker-tab.selected")?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }
   renderTabs();
   renderGrid();
