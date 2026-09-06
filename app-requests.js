@@ -118,19 +118,18 @@ async function deleteDestination(id) {
 // ===== Bottom sheet =====
 // 任意項目の折りたたみ。開くたびに閉じた状態から始める（ファーストビューに品名・カテゴリ・
 // 追加ボタンを収めるため）。編集で任意項目に値が入っているときだけ自動で開く。
+// 写真は基本の位置（カテゴリの下）に出すため、開閉判定・要約からは外している
 function hasOptionalFieldValues() {
   return !!(
-    existingReqPhotoUrl || pendingReqPhoto ||
     $("new-budget").value.trim() || $("new-brand").value.trim() || $("new-memo").value.trim() ||
     $("new-assignee").value ||
     document.querySelector("#new-destination .cat-chip.selected") ||
     ($("new-cycle-wrap").style.display !== "none" && $("new-cycle-days").value.trim())
   );
 }
-// 閉じているときに「何が設定済みか」を1行で見せる（設定あり: 写真・メモ）
+// 閉じているときに「何が設定済みか」を1行で見せる（設定あり: 行き先・メモ）
 function updateMoreFieldsSummary() {
   const set = [];
-  if (existingReqPhotoUrl || pendingReqPhoto) set.push("写真");
   if (document.querySelector("#new-destination .cat-chip.selected")) set.push("行き先");
   if ($("new-budget").value.trim()) set.push("予算");
   if ($("new-brand").value.trim()) set.push("ブランド");
@@ -145,7 +144,7 @@ function setMoreFieldsOpen(open) {
   const btn = $("btn-more-fields");
   btn.setAttribute("aria-expanded", open ? "true" : "false");
   btn.querySelector(".fold-toggle-mark").textContent = open ? "－" : "＋";
-  $("more-fields-label").textContent = open ? "くわしい設定を閉じる" : "くわしく設定（写真・メモ・予算など）";
+  $("more-fields-label").textContent = open ? "くわしい設定を閉じる" : "くわしく設定（行き先・メモ・予算など）";
   updateMoreFieldsSummary();
 }
 function toggleMoreFields() { setMoreFieldsOpen(!$("more-fields").classList.contains("open")); }
