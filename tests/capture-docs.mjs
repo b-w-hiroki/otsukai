@@ -42,7 +42,10 @@ await page.click("#btn-shortcut-toggle"); await sleep(700);
 await page.click('#shortcut-sheet .shortcut-viewmode-btn[data-viewmode="card"]'); await sleep(400);
 await shot("08-shortcuts");
 await page.click("#btn-shortcut-register"); await sleep(700);
-await page.fill("#new-name", "柔軟剤"); await page.fill("#new-cycle-days", "25");
+await page.fill("#new-name", "柔軟剤");
+await page.click("#btn-more-fields"); await sleep(300); // 買う間隔は「＋ くわしく設定」の中
+await page.fill("#new-cycle-days", "25");
+await page.locator("#new-cycle-wrap").scrollIntoViewIfNeeded(); await sleep(200);
 await shot("18-shortcut-cycle"); // 買う間隔（任意）欄
 await page.click("#btn-sheet-close"); await sleep(400);
 

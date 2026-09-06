@@ -3,6 +3,10 @@
 import { startHarness } from "../harness.mjs";
 const t = await startHarness();
 const { url, page, errs, sleep, OUT } = t;
+// 任意項目は「＋ くわしく設定」の中に折りたたまれている（add-sheet-fold-test）。使う前に開く
+const openMore = async () => {
+  if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
+};
 const check = t.check;
 
 await page.goto(url,{waitUntil:"domcontentloaded"});
@@ -25,18 +29,18 @@ await page.screenshot({path:`${OUT}/dest1-settings.png`});
 
 // --- おつかい追加シートに行き先チップが出て、選んで保存できる ---
 await page.click('[data-tab="requests"]'); await sleep(400);
-await page.click("#btn-add-float"); await sleep(400);
+await page.click("#btn-add-float"); await sleep(400); await openMore();
 check("追加シートに行き先チップが2件出る", (await page.locator("#new-destination .cat-chip").count())===2);
 await page.fill("#new-name", "洗剤A");
 await page.click('#new-category .cat-chip[data-cat="daily"]');
 await page.click('#new-destination .cat-chip:has-text("薬局")');
 await page.click("#btn-add-request"); await sleep(600);
-await page.click("#btn-add-float"); await sleep(400);
+await page.click("#btn-add-float"); await sleep(400); await openMore();
 await page.fill("#new-name", "洗剤B");
 await page.click('#new-category .cat-chip[data-cat="daily"]');
 await page.click('#new-destination .cat-chip:has-text("スーパー")');
 await page.click("#btn-add-request"); await sleep(600);
-await page.click("#btn-add-float"); await sleep(400);
+await page.click("#btn-add-float"); await sleep(400); await openMore();
 await page.fill("#new-name", "洗剤C");
 await page.click('#new-category .cat-chip[data-cat="daily"]'); // 行き先は選ばない
 await page.click("#btn-add-request"); await sleep(600);
