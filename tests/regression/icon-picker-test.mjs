@@ -4,10 +4,6 @@
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
-// 任意項目は「＋ くわしく設定」の中に折りたたまれている（add-sheet-fold-test）。使う前に開く
-const openMore = async () => {
-  if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
-};
 const check = t.check;
 
 // 1x1 の透明PNG。ファイル選択の中身は問わない（スタブが data URL を返す）
@@ -23,7 +19,6 @@ await t.ready();
 await page.click("#btn-add-float");
 await sleep(500);
 await page.fill("#new-name", "キャベツ大玉");
-await openMore();
 check("「イラストから選ぶ」ボタンがある", (await page.locator("#btn-req-photo-icon").count()) === 1);
 await page.click("#btn-req-photo-icon");
 await sleep(500);

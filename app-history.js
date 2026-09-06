@@ -233,20 +233,44 @@ async function removeReminderTime(t) {
   ]), "削除できませんでした");
 }
 
+// 件数が増えたので、よく買うもののイラストピッカーと同じくタブで分類を切り替える。
+// タブ・グリッドは呼び出し元ごとに2組（新規プロフィール作成 emoji-picker / 設定タブ
+// set-emoji-picker）あるため、タブ入れ物は「<elId>-tabs」という決め打ちのIDで探す。
+// 開いたときは、今選んでいる絵文字が入っている分類のタブを自動で選ぶ（そうしないと
+// 別の分類の絵文字を選んでいる場合、開いた瞬間どれも選択済みに見えなくなるため）。
 function renderEmojiPicker(elId, stateKey) {
+  const grid = $(elId);
+  const tabsWrap = $(elId + "-tabs");
   const cur = state[stateKey];
-  // 件数が増えたので、よく買うもののイラストピッカーと同じく分類ごとに見出しを付ける
-  $(elId).innerHTML = EMOJI_GROUPS.map((g) => `
-    <div class="icon-picker-group-hdr">${escapeHtml(g.label)}</div>
-    ${g.emojis.map((e) => `<button type="button" data-e="${e}" class="${e === cur ? 'selected' : ''}">${e}</button>`).join("")}
-  `).join("");
-  $(elId).querySelectorAll("button").forEach((b) => {
-    b.addEventListener("click", () => {
-      state[stateKey] = b.dataset.e;
-      $(elId).querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
-      b.classList.add("selected");
+  const curGroup = EMOJI_GROUPS.find((g) => g.emojis.includes(cur));
+  let active = curGroup ? curGroup.key : EMOJI_GROUPS[0].key;
+
+  function renderGrid() {
+    const g = EMOJI_GROUPS.find((x) => x.key === active) || EMOJI_GROUPS[0];
+    grid.innerHTML = g.emojis.map((e) => `<button type="button" data-e="${e}" class="${e === state[stateKey] ? "selected" : ""}">${e}</button>`).join("");
+    grid.querySelectorAll("button").forEach((b) => {
+      b.addEventListener("click", () => {
+        state[stateKey] = b.dataset.e;
+        grid.querySelectorAll("button").forEach((x) => x.classList.remove("selected"));
+        b.classList.add("selected");
+      });
     });
-  });
+  }
+  function renderTabs() {
+    if (!tabsWrap) return;
+    tabsWrap.innerHTML = EMOJI_GROUPS.map((g) => `
+      <button type="button" class="icon-picker-tab${g.key === active ? " selected" : ""}" data-group="${g.key}">${escapeHtml(g.label)}</button>
+    `).join("");
+    tabsWrap.querySelectorAll(".icon-picker-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        active = btn.dataset.group;
+        renderTabs();
+        renderGrid();
+      });
+    });
+  }
+  renderTabs();
+  renderGrid();
 }
 
 // お買い物タブの赤バッジ「既読」時刻（端末ローカル）。

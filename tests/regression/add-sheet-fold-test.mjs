@@ -1,6 +1,7 @@
 // おつかい追加シートの「任意項目の折りたたみ」の検証:
-// 開いた直後は品名・カテゴリ・手間/急ぎ・「＋ くわしく設定」・追加ボタンだけが見え、
-// 任意項目（写真・予算・ブランド・メモ・担当）は押すまで隠れている。
+// 開いた直後は品名・カテゴリ・写真・手間/急ぎ・「＋ くわしく設定」・追加ボタンが見え、
+// 任意項目（行き先・予算・ブランド・メモ・担当）は押すまで隠れている
+// （写真・イラストはカテゴリと同じく基本の位置に出すよう変更した）。
 // 追加ボタンはシート下部に固定され、小さい画面でもスクロールせずに押せる。
 // 編集で任意項目に値が入っていれば自動で開き、閉じたときは「設定あり: …」の要約が出る。
 import { startHarness } from "../harness.mjs";
@@ -23,11 +24,13 @@ const tb = await toggle.boundingBox();
 check("ボタンのタップ領域は44px以上", tb && tb.height >= 44, tb ? `${tb.width}x${tb.height}` : "none");
 check("最初は閉じている（aria-expanded=false）", (await toggle.getAttribute("aria-expanded")) === "false");
 check("任意項目は隠れている", !(await page.locator("#more-fields").isVisible()));
-for (const id of ["req-photo-label", "new-budget", "new-brand", "new-memo", "new-assignee"]) {
+for (const id of ["new-budget", "new-brand", "new-memo", "new-assignee"]) {
   check(`#${id} は見えない`, !(await page.locator("#" + id).isVisible()));
 }
 check("品名は見える", await page.locator("#new-name").isVisible());
 check("カテゴリは見える", await page.locator("#new-category").isVisible());
+check("写真はカテゴリと同じく最初から見える", await page.locator("#req-photo-label").isVisible());
+check("「イラストから選ぶ」も最初から見える", await page.locator("#btn-req-photo-icon").isVisible());
 check("手間・急ぎは見える", (await page.locator("#new-diff").isVisible()) && (await page.locator("#new-urgent").isVisible()));
 
 // 追加ボタンはフッターに固定され、画面内に収まる
@@ -44,7 +47,7 @@ await sleep(200);
 check("押すと任意項目が開く", await page.locator("#more-fields.open").isVisible());
 check("aria-expanded=true", (await toggle.getAttribute("aria-expanded")) === "true");
 check("ラベルが「閉じる」に変わる", (await page.locator("#more-fields-label").innerText()).includes("閉じる"));
-check("写真・メモ・担当が見える", (await page.locator("#req-photo-label").isVisible()) && (await page.locator("#new-memo").isVisible()) && (await page.locator("#new-assignee").isVisible()));
+check("メモ・担当が見える", (await page.locator("#new-memo").isVisible()) && (await page.locator("#new-assignee").isVisible()));
 check("開いても追加ボタンは画面内（フッター固定）", await addBtn.isVisible());
 check("開いたら要約は出さない", (await page.locator("#more-fields-summary").innerText()) === "");
 

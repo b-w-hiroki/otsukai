@@ -24,10 +24,10 @@ const pushSupported = ("Notification" in window) &&
 // イラストピッカー（ICON_GROUPS/ICON_LIBRARY）と同じ考え方でグループ分けする。
 // 古い端末でも出やすいよう、Unicode 12以前を中心に選んでいる。
 const EMOJI_GROUPS = [
-  { label: "😀 表情", emojis: ["🙂","😊","😀","😄","😆","😁","😉","😍","🥰","🤩","😎","🥳","🤓","🧐","😴","🤗"] },
-  { label: "🐾 どうぶつ", emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🦄","🐢","🐬"] },
-  { label: "🧑 ひと", emojis: ["👨","👩","👦","👧","👴","👵","🧑","🧒","👶","🧔","👱","🧓"] },
-  { label: "🎈 のりもの・すきなもの", emojis: ["🚗","🚕","🚌","🚓","🚑","🚒","🚲","✈️","🚀","⚽","🎨","🎮"] },
+  { key: "face", label: "😀 表情", emojis: ["🙂","😊","😀","😄","😆","😁","😉","😍","🥰","🤩","😎","🥳","🤓","🧐","😴","🤗"] },
+  { key: "animal", label: "🐾 どうぶつ", emojis: ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🐔","🐧","🦄","🐢","🐬"] },
+  { key: "person", label: "🧑 ひと", emojis: ["👨","👩","👦","👧","👴","👵","🧑","🧒","👶","🧔","👱","🧓"] },
+  { key: "other", label: "🎈 のりもの・すきなもの", emojis: ["🚗","🚕","🚌","🚓","🚑","🚒","🚲","✈️","🚀","⚽","🎨","🎮"] },
 ];
 // 個別の絵文字だけ見たい場合はこちらを使う（現状は選択済み判定くらいにしか使わない）
 const EMOJI_CHOICES = EMOJI_GROUPS.flatMap((g) => g.emojis);
@@ -452,12 +452,18 @@ async function saveProfile() {
 async function updateProfileFromSettings() {
   const name = $("set-name").value.trim();
   if (!name) return showToast("名前を入力してください");
-  await db.ref("users/" + state.uid).update({ name, emoji: state.settingsEmoji });
+  // 保存する絵文字はここで確定する。families/.../members への書き込みは
+  // 「members」の value リスナー（renderSettings() を呼ぶ）を同期的に再発火させ、
+  // そこで state.settingsEmoji が古い state.profile.emoji で上書きされてしまうため、
+  // 書き込みの前に読んだこの emoji 変数を使う（state.settingsEmoji を後から読み直さない）
+  const emoji = state.settingsEmoji;
+  await db.ref("users/" + state.uid).update({ name, emoji });
   if (state.familyId) {
-    await db.ref(`families/${state.familyId}/members/${state.uid}`).update({ name, emoji: state.settingsEmoji });
+    await db.ref(`families/${state.familyId}/members/${state.uid}`).update({ name, emoji });
   }
-  state.profile = { name, emoji: state.settingsEmoji };
+  state.profile = { name, emoji };
   renderTopbar();
+  renderSettings(); // 書き込み中の再描画で古い絵文字に戻って見えていたピッカーを、保存した値に描き直す
   showToast("プロフィールを更新しました");
 }
 
