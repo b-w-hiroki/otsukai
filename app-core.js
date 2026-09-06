@@ -313,8 +313,9 @@ function updateMemberAdminToggle() {
 }
 
 // 自分のアカウント削除（役割を問わず本人ならいつでも可）。誤操作防止のため
-// こちらもトグルで隠す。実際の削除処理は adminDeleteAccount() を共用する
-// （isSelf=true のときの後始末・確認ダイアログは既にそちらに実装済み）。
+// こちらもトグルで隠す。実際の削除処理は adminDeleteAccount() を共用する。
+// 呼び出し口はここ（プロフィールカード）だけに一本化している
+// （以前はメンバー管理の自分の行にも同じ削除ボタンが重複して出ていた）。
 let selfDeleteOpen = false;
 function updateSelfDeleteToggle() {
   const body = $("self-delete-body");
@@ -349,14 +350,11 @@ function renderMemberAdmin() {
         <span class="muted" style="font-size:11px;">${ROLE_LABEL[m.memberRole] || "未設定"}</span>
       </span>
       <span style="display:flex;gap:6px;flex-shrink:0;">
-        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : `<button class="danger tiny-btn" style="font-size:11px;" data-admin-delete="${uid}">アカウント削除</button>`}
+        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : `<span class="muted" style="font-size:11px;">削除は👤プロフィールから</span>`}
       </span>
     </div>`).join("");
   $("member-admin-list").querySelectorAll("[data-admin-remove]").forEach((btn) => {
     btn.addEventListener("click", () => removeMemberFromFamily(btn.dataset.adminRemove, btn.dataset.name));
-  });
-  $("member-admin-list").querySelectorAll("[data-admin-delete]").forEach((btn) => {
-    btn.addEventListener("click", () => adminDeleteAccount());
   });
   updateMemberAdminToggle();
 }
