@@ -7,6 +7,10 @@ const { url, page, errs, sleep, OUT } = t;
 const openMore = async () => {
   if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
 };
+// ストック登録シートも同じ考え方で任意項目（行き先など）が折りたたまれている
+const openStockMore = async () => {
+  if (!(await page.locator("#stock-more-fields.open").count())) { await page.click("#btn-stock-more-fields"); await sleep(200); }
+};
 const check = t.check;
 
 await page.goto(url,{waitUntil:"domcontentloaded"});
@@ -67,6 +71,7 @@ await page.click('[data-tab="stock"]'); await sleep(400);
 await page.click("#btn-stock-register"); await sleep(400);
 await page.fill("#stock-name", "アイス");
 await page.click('#stock-category .cat-chip[data-cat="food"]');
+await openStockMore();
 check("ストック登録シートにも行き先チップが出る", (await page.locator("#stock-destination .cat-chip").count())===2);
 await page.click('#stock-destination .cat-chip:has-text("スーパー")');
 await page.click("#btn-add-stock"); await sleep(600);

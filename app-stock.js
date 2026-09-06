@@ -48,6 +48,27 @@ let pendingStockPhoto = null;
 // 詳細シートで「写真を撮る・選ぶ」を選んだとき、どのストックが対象かを覚えておく
 let stockPhotoTargetId = null;
 
+// 任意項目（行き先・メモ・予算・買う間隔）の折りたたみ。おつかい追加シートと同じ考え方
+// （このシートは新規登録専用で編集では再利用しないため、自動で開く判定は無い）。
+function updateStockMoreFieldsSummary() {
+  const set = [];
+  if (document.querySelector("#stock-destination .cat-chip.selected")) set.push("行き先");
+  if ($("stock-budget").value.trim()) set.push("予算");
+  if ($("stock-memo").value.trim()) set.push("メモ");
+  if ($("stock-cycle").value.trim()) set.push("買う間隔");
+  const open = $("stock-more-fields").classList.contains("open");
+  $("stock-more-fields-summary").textContent = !open && set.length ? "設定あり: " + set.join("・") : "";
+}
+function setStockMoreFieldsOpen(open) {
+  $("stock-more-fields").classList.toggle("open", !!open);
+  const btn = $("btn-stock-more-fields");
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  btn.querySelector(".fold-toggle-mark").textContent = open ? "－" : "＋";
+  $("stock-more-fields-label").textContent = open ? "くわしい設定を閉じる" : "くわしく設定（行き先・メモ・予算など）";
+  updateStockMoreFieldsSummary();
+}
+function toggleStockMoreFields() { setStockMoreFieldsOpen(!$("stock-more-fields").classList.contains("open")); }
+
 function openStockSheet() {
   stockAddLevel = "ok";
   document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
@@ -60,6 +81,7 @@ function openStockSheet() {
   $("stock-photo-input").value = "";
   pendingStockPhoto = null;
   $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
+  setStockMoreFieldsOpen(false);
   $("stock-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
   setTimeout(() => $("stock-name").focus(), 350);
