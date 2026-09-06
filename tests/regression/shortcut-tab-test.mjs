@@ -174,6 +174,10 @@ check("差し替えの完了トーストが出る", toast.includes("写真を変
 const targetCard2 = page.locator(".shortcut-card").filter({ hasText: "トイレットペーパー" }).first();
 await targetCard2.locator(".shortcut-card-photo").click();
 await sleep(400);
+// パン（bread）は「乳製品・パン・主食」タブにあり、開いた直後は「野菜」タブのまま。
+// 検索で出す（検索はタブに関係なく全分類から探せる）
+await page.fill("#icon-picker-search", "食パン");
+await sleep(200);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="bread"]');
 await sleep(700);
 const icon2 = await targetCard2.locator(".shortcut-card-photo img").getAttribute("src").catch(() => null);

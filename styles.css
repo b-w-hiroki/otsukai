@@ -514,13 +514,34 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 #btn-shortcut-edit.open { border-color: var(--c-claimed); background: var(--c-claimed-soft); color: var(--ink); }
 
+/* 分類が12まであるので、タブで切り替える（#icon-picker-sheet）。検索中は無視して全分類から探す */
+.icon-picker-tabs {
+  display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  margin: 0 0 10px; padding-bottom: 2px; scrollbar-width: none;
+}
+.icon-picker-tabs::-webkit-scrollbar { display: none; }
+.icon-picker-tab {
+  flex: 0 0 auto; white-space: nowrap; display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 14px; border-radius: var(--r-full);
+  border: 1.5px solid var(--border); background: var(--surface-2); color: var(--ink-2);
+  font-size: 13px; font-weight: 700; box-shadow: none;
+}
+.icon-picker-tab:hover:not(:disabled) { background: var(--border); color: var(--ink); box-shadow: none; transform: none; }
+.icon-picker-tab.selected, .icon-picker-tab.selected:hover:not(:disabled) {
+  background: var(--pri); color: #fff; border-color: var(--pri);
+  box-shadow: 0 2px 8px rgba(99,102,241,.3);
+}
+
 /* 「イラストから選ぶ」ピッカーのグリッド（#icon-picker-sheet） */
 .icon-picker-grid {
   /* minmax(0,1fr): 「トイレットペーパー」のような長いラベルでも列が広がらず、ラベル側が省略される */
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
   margin: 8px 0 4px;
 }
-/* 分類の小見出し（グリッドの1行を占める） */
+/* タブ選択中（検索なし）は見出しを隠す。タブ自体が分類を表しているため重複表示にしない。
+   検索中は複数分類にまたがる結果を区別するため、マッチがある分類だけ見出しを出す
+   （JS 側で .icon-picker-group-hdr の display を都度切り替える） */
+.icon-picker-group { display: contents; }
 .icon-picker-group-hdr {
   grid-column: 1 / -1;
   font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .04em;

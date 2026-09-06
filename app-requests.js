@@ -844,6 +844,7 @@ function matchShortcutIcon(name) {
 // 選ぶと photoUrl にイラストのパスをそのまま入れる（本物の写真と同じ扱い。アップロード不要）。
 let iconPickerOnSelect = null; // (path) => void
 let iconPickerOnCamera = null; // () => void（渡したときだけ「写真をセットする」ボタンをイラスト一覧とは別枠で出す）
+let activeIconGroup = null; // ICON_GROUPS のキー。タブで選んでいる分類（検索中は無視する）
 function openIconPicker({ onSelect, onCamera } = {}) {
   iconPickerOnSelect = onSelect || null;
   iconPickerOnCamera = onCamera || null;
@@ -852,6 +853,8 @@ function openIconPicker({ onSelect, onCamera } = {}) {
   $("btn-icon-picker-camera").style.display = iconPickerOnCamera ? "" : "none";
   $("icon-picker-grid-label").style.display = iconPickerOnCamera ? "" : "none";
   $("icon-picker-search").value = "";
+  activeIconGroup = Object.keys(ICON_GROUPS)[0]; // 開くたびに先頭のタブから始める
+  renderIconPickerTabs();
   renderIconPickerGrid();
   applyIconPickerFilter();
   $("icon-picker-sheet").classList.add("open");
@@ -863,18 +866,40 @@ function closeIconPicker() {
   iconPickerOnSelect = null;
   iconPickerOnCamera = null;
 }
+// 分類ごとのタブ。押すと activeIconGroup を切り替えて絞り込み直す（検索中は無視される）
+function renderIconPickerTabs() {
+  const wrap = $("icon-picker-tabs");
+  if (!wrap) return;
+  wrap.innerHTML = Object.entries(ICON_GROUPS).map(([g, gLabel]) => `
+    <button type="button" class="icon-picker-tab${g === activeIconGroup ? " selected" : ""}" data-group="${g}">${escapeHtml(gLabel)}</button>
+  `).join("");
+  wrap.querySelectorAll(".icon-picker-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeIconGroup = btn.dataset.group;
+      wrap.querySelectorAll(".icon-picker-tab").forEach((b) => b.classList.toggle("selected", b === btn));
+      applyIconPickerFilter();
+      // 前の分類の途中位置のままにならないよう、グリッドの先頭までスクロールを戻す
+      $("icon-picker-grid").scrollIntoView({ block: "start" });
+    });
+  });
+}
 function renderIconPickerGrid() {
   const grid = $("icon-picker-grid");
   if (!grid) return;
-  // 件数が多いので、分類（ICON_GROUPS）ごとに小見出しを付けて並べる
+  // 件数が多いので、分類（ICON_GROUPS）ごとに1グループとしてまとめる。
+  // 普段はタブで選んだ1分類だけを表示し、検索中だけ全分類を対象に絞り込む
+  // （.icon-picker-group は display:contents でグリッドの並びには影響しない）
   grid.innerHTML = Object.entries(ICON_GROUPS).map(([g, gLabel]) => {
     const items = ICON_LIBRARY.filter((it) => it.group === g);
     if (!items.length) return "";
-    return `<div class="icon-picker-group-hdr">${escapeHtml(gLabel)}</div>` + items.map((it) => `
-    <button type="button" class="icon-picker-tile" data-file="${it.file}" data-search="${escapeHtml([it.label, ...it.keywords].join(" ").toLowerCase())}">
-      <img src="./shortcut-icons/${it.file}.svg" alt="" loading="lazy" />
-      <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
-    </button>`).join("");
+    return `<div class="icon-picker-group" data-group="${g}">
+      <div class="icon-picker-group-hdr">${escapeHtml(gLabel)}</div>
+      ${items.map((it) => `
+      <button type="button" class="icon-picker-tile" data-file="${it.file}" data-search="${escapeHtml([it.label, ...it.keywords].join(" ").toLowerCase())}">
+        <img src="./shortcut-icons/${it.file}.svg" alt="" loading="lazy" />
+        <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
+      </button>`).join("")}
+    </div>`;
   }).join("");
   grid.querySelectorAll(".icon-picker-tile").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -889,23 +914,25 @@ function renderIconPickerGrid() {
   $("icon-picker-search").onsearch = applyIconPickerFilter;
 }
 // 200種を超えて目で探しにくいため、ラベルと自動判定キーワードの両方で絞り込む
-// （「醤油」で「調味料」タイルが当たる）。該当タイルが無い分類の見出しは隠す。
+// （「醤油」で「調味料」タイルが当たる）。検索中はタブの分類を無視して全分類から探し、
+// 該当タイルが無い分類の見出しは隠す。検索していないときはタブで選んだ1分類だけを出す
+// （見出しはタブと重複するので隠す）。
 function applyIconPickerFilter() {
   const q = ($("icon-picker-search").value || "").trim().toLowerCase();
+  const searching = !!q;
   const grid = $("icon-picker-grid");
   let any = false;
-  grid.querySelectorAll(".icon-picker-tile").forEach((b) => {
-    const hit = !q || (b.dataset.search || "").includes(q);
-    b.style.display = hit ? "" : "none";
-    if (hit) any = true;
-  });
-  grid.querySelectorAll(".icon-picker-group-hdr").forEach((h) => {
-    let el = h.nextElementSibling, show = false;
-    while (el && !el.classList.contains("icon-picker-group-hdr")) {
-      if (el.style.display !== "none") { show = true; break; }
-      el = el.nextElementSibling;
-    }
-    h.style.display = show ? "" : "none";
+  grid.querySelectorAll(".icon-picker-group").forEach((sec) => {
+    const groupActive = searching || sec.dataset.group === activeIconGroup;
+    let anyInGroup = false;
+    sec.querySelectorAll(".icon-picker-tile").forEach((b) => {
+      const hit = groupActive && (!q || (b.dataset.search || "").includes(q));
+      b.style.display = hit ? "" : "none";
+      if (hit) { anyInGroup = true; any = true; }
+    });
+    sec.style.display = groupActive ? "" : "none";
+    const hdr = sec.querySelector(".icon-picker-group-hdr");
+    if (hdr) hdr.style.display = (searching && anyInGroup) ? "" : "none";
   });
   $("icon-picker-empty").style.display = any ? "none" : "";
 }
