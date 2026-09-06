@@ -690,6 +690,12 @@
       </div>
       <!-- 主操作はシート下部に固定（docs/rules/ui.md §5）。中身をスクロールしなくても押せる -->
       <div class="sheet-footer">
+        <!-- 「おつかいを追加」モードのときだけ出す（編集・よく買うもの登録では意味がないため）。
+             まとめ買いで何品も続けて登録したいときに、閉じずに次の品名入力へ進める -->
+        <label id="new-continue-wrap" class="row continue-add-row" style="display:none;">
+          <input type="checkbox" id="new-continue-add" style="width:18px;height:18px;" />
+          <span>🔁 続けて追加する（閉じずに次を入力）</span>
+        </label>
         <button id="btn-add-request" class="btn-block">追加する</button>
       </div>
     </div>

@@ -1768,6 +1768,9 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 /* フッターに閉じるボタンを置くシートでは、ヘッダーの下余白を詰める */
 #history-sheet .sheet-header { margin-bottom: 10px; }
 
+/* 追加シートのフッター: 「続けて追加」トグル。ボタンの上に小さく置く */
+.continue-add-row { justify-content: flex-start; gap: 8px; padding: 6px 2px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+
 /* ======= 追加シートの任意項目の折りたたみ ======= */
 /* 押すと任意項目（写真・行き先・予算・ブランド・メモ・担当・買う間隔）が開く。
    閉じているときは、値が入っている項目名を小さく並べて「設定あり」が分かるようにする */

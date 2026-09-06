@@ -170,6 +170,8 @@ function resetSheetToAddMode() {
   existingReqPhotoUrl = "";
   $("new-cycle-wrap").style.display = "none";
   $("new-cycle-days").value = "";
+  $("new-continue-wrap").style.display = "none"; // 「おつかいを追加」モードのときだけ openSheet() が表示する
+  $("new-continue-add").checked = false;
   setMoreFieldsOpen(false);   // 任意項目は閉じた状態から（値のリセットが済んでから要約を更新する）
 }
 
@@ -226,6 +228,7 @@ function openSheet() {
   // closeSheet 側のリセットに頼らず、開くときにも明示的にクリーンな追加モードにする
   resetSheetToAddMode();
   populateAssigneeSelect();
+  $("new-continue-wrap").style.display = ""; // 編集・よく買うもの登録では出さない
   $("sheet-add").classList.add("open");
   $("sheet-backdrop").classList.add("open");
   $("btn-add-float").classList.add("open");
@@ -295,14 +298,33 @@ async function addRequest() {
     }
     if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
     bumpStat("requestedCount");
-    $("new-name").value = "";
-    $("new-memo").value = "";
-    $("new-budget").value = "";
-    $("new-brand").value = "";
-    $("new-urgent").checked = false;
-    $("new-assignee").value = "";
-    closeSheet();
-    showToast("追加しました 🛒", { sound: false });
+    // 「🔁 続けて追加する」が ON なら、まとめ買い用にシートを開いたまま次の品名入力へ進む。
+    // カテゴリ・行き先は同じ買い物で繰り返し使うことが多いので残し、それ以外の
+    // 品ごとの入力（写真・手間・急ぎ・予算・ブランド・メモ・担当者）だけをクリアする
+    if ($("new-continue-add").checked) {
+      $("new-name").value = "";
+      $("new-diff").value = "normal";
+      $("new-urgent").checked = false;
+      $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
+      $("new-assignee").value = "";
+      setReqPhotoPreview("");
+      pendingReqPhoto = null;
+      existingReqPhotoUrl = "";
+      updateMoreFieldsSummary();
+      showToast(`🛒 「${name}」を追加しました（続けて入力できます）`, { sound: false });
+      $("new-name").focus();
+    } else {
+      $("new-name").value = "";
+      $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
+      $("new-urgent").checked = false;
+      $("new-assignee").value = "";
+      closeSheet();
+      showToast("追加しました 🛒", { sound: false });
+    }
   } finally {
     addingRequest = false;
   }
