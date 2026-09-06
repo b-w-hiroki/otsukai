@@ -291,11 +291,12 @@ async function signOut() {
 // ===== メンバー管理（保護者専用） =====
 // 他のメンバーの管理（役割変更・家族から外す）は保護者専用。「家族から外す」は
 // メンバー表から締め出すだけで、本人のログインアカウントは残る（removeMemberFromFamily）。
-// ログインアカウントそのものの完全削除は、他人の分は誰にも許可していない。本人が
-// 自分自身を削除する場合のみ可能（設定タブのプロフィールカードから。役割を問わず本人が行える。
-// 下の adminDeleteAccount 参照）。誤操作防止のためどちらもトグルの内側に隠す。
+// ログインアカウントそのものの完全削除も、自分の行からここでのみ行える（保護者本人に限る。
+// 副保護者・こどもはこのカード自体が表示されないため、自分のアカウントを完全削除する手段は無く、
+// 退会したい場合は保護者に「家族から外して」もらう）。呼び出し口をここに一本化している
+// （以前はプロフィールカードにも同じ削除メニューが重複して出ていた）。
 // 実際の削除は Cloud Functions の deleteMemberAccount（Admin SDK）で行い、
-// 呼び出し元と削除対象が本人同士であることをサーバー側でも検証する。
+// 呼び出し元と削除対象が本人同士であることをサーバー側でも検証する（下の adminDeleteAccount 参照）。
 // 依頼・コメントは家族の記録として残る。
 
 // 誤操作防止: 管理メニュー（アカウント削除等）はトグルで閉じておき、開いた時だけ操作できる
@@ -310,23 +311,6 @@ function updateMemberAdminToggle() {
   btn.innerHTML = memberAdminOpen
     ? '🔧 管理メニューを閉じる <span class="toggle-chevron">▴</span>'
     : '🔧 管理メニューを開く <span class="toggle-chevron">▾</span>';
-}
-
-// 自分のアカウント削除（役割を問わず本人ならいつでも可）。誤操作防止のため
-// こちらもトグルで隠す。実際の削除処理は adminDeleteAccount() を共用する。
-// 呼び出し口はここ（プロフィールカード）だけに一本化している
-// （以前はメンバー管理の自分の行にも同じ削除ボタンが重複して出ていた）。
-let selfDeleteOpen = false;
-function updateSelfDeleteToggle() {
-  const body = $("self-delete-body");
-  const btn = $("btn-self-delete-toggle");
-  if (!body || !btn) return;
-  body.style.display = selfDeleteOpen ? "" : "none";
-  btn.classList.toggle("open", selfDeleteOpen);
-  btn.setAttribute("aria-expanded", String(selfDeleteOpen));
-  btn.innerHTML = selfDeleteOpen
-    ? '🗑️ アカウント削除メニューを閉じる <span class="toggle-chevron">▴</span>'
-    : '🗑️ アカウント削除メニューを開く <span class="toggle-chevron">▾</span>';
 }
 
 // 設定タブのメンバー管理カードを描画（保護者にだけ表示）
@@ -350,11 +334,14 @@ function renderMemberAdmin() {
         <span class="muted" style="font-size:11px;">${ROLE_LABEL[m.memberRole] || "未設定"}</span>
       </span>
       <span style="display:flex;gap:6px;flex-shrink:0;">
-        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : `<span class="muted" style="font-size:11px;">削除は👤プロフィールから</span>`}
+        ${uid !== state.uid ? `<button class="ghost tiny-btn" style="font-size:11px;" data-admin-remove="${uid}" data-name="${escapeHtml(m.name || "メンバー")}">家族から外す</button>` : `<button class="danger tiny-btn" style="font-size:11px;min-height:44px;" data-admin-delete="${uid}">アカウント削除</button>`}
       </span>
     </div>`).join("");
   $("member-admin-list").querySelectorAll("[data-admin-remove]").forEach((btn) => {
     btn.addEventListener("click", () => removeMemberFromFamily(btn.dataset.adminRemove, btn.dataset.name));
+  });
+  $("member-admin-list").querySelectorAll("[data-admin-delete]").forEach((btn) => {
+    btn.addEventListener("click", () => adminDeleteAccount());
   });
   updateMemberAdminToggle();
 }

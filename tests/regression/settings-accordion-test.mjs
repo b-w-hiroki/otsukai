@@ -62,13 +62,11 @@ await page.click("#btn-member-admin-toggle");
 await sleep(400);
 check("内側のボタンでさらに開くと管理メニューが見える", await page.locator("#member-admin-body").isVisible());
 
-// --- 自分のアカウント削除: プロフィールカードにあり、役割を問わず出る（member-adminのような
-//     isParent ゲートが無い）。外側のアコーディオンと内側の安全ゲートが両方効くことを確認
-//     （プロフィールカードは43行目で開いたまま、リロード後も開いた状態が続いている） ---
-check("プロフィールが開いた状態でも削除メニューはまだ隠れている", !(await page.locator("#self-delete-body").isVisible()));
-await page.click("#btn-self-delete-toggle");
-await sleep(400);
-check("内側のボタンでさらに開くと削除ボタンが見える", await page.locator("#self-delete-body").isVisible());
-check("削除ボタンのタップ領域は44px以上", (await page.locator("#btn-self-delete").boundingBox()).height >= 44);
+// --- 自分のアカウント削除: メンバー管理カードの自分の行にあり、保護者本人に一本化されている
+//     （プロフィールカードには置かない）。外側のアコーディオン・内側の安全ゲート両方の内側で、
+//     自分の行にだけ削除ボタンが出ることを確認（57〜63行目でメンバー管理は開いたまま） ---
+const selfDeleteBtn = page.locator("#member-admin-list [data-admin-delete]");
+check("削除ボタンは自分の行に1つだけ出る", (await selfDeleteBtn.count()) === 1);
+check("削除ボタンのタップ領域は44px以上", (await selfDeleteBtn.boundingBox()).height >= 44);
 
 await t.finish();
