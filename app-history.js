@@ -235,8 +235,10 @@ async function removeReminderTime(t) {
 
 function renderEmojiPicker(elId, stateKey) {
   const cur = state[stateKey];
-  $(elId).innerHTML = EMOJI_CHOICES.map((e) => `
-    <button data-e="${e}" class="${e === cur ? 'selected' : ''}">${e}</button>
+  // 件数が増えたので、よく買うもののイラストピッカーと同じく分類ごとに見出しを付ける
+  $(elId).innerHTML = EMOJI_GROUPS.map((g) => `
+    <div class="icon-picker-group-hdr">${escapeHtml(g.label)}</div>
+    ${g.emojis.map((e) => `<button type="button" data-e="${e}" class="${e === cur ? 'selected' : ''}">${e}</button>`).join("")}
   `).join("");
   $(elId).querySelectorAll("button").forEach((b) => {
     b.addEventListener("click", () => {
