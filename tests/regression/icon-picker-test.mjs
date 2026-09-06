@@ -47,6 +47,17 @@ check("タブを切り替えるとトイレットペーパーが見える", awai
 check("切り替えるとトマトは隠れる", !(await page.locator('#icon-picker-grid .icon-picker-tile[data-file="tomato"]').isVisible()));
 check("選択中のタブ表示が切り替わる", await page.locator('#icon-picker-tabs .icon-picker-tab.selected').innerText() === "🧻 日用品");
 check("非選択のタブは selected でない", !(await tabs.first().evaluate((el) => el.classList.contains("selected"))));
+// 12分類あると末尾のタブは初期スクロール位置では見えない。選んだタブが途中で
+// 切れて見えたままにならないよう、全体が見える位置までスクロールされるはず
+await tabs.last().click();
+await sleep(200);
+const lastTabVisible = await page.evaluate(() => {
+  const wrap = document.getElementById("icon-picker-tabs");
+  const sel = wrap.querySelector(".icon-picker-tab.selected");
+  const wr = wrap.getBoundingClientRect(), sr = sel.getBoundingClientRect();
+  return sr.left >= wr.left - 5 && sr.right <= wr.right + 5;
+});
+check("末尾のタブを選んでも途中で切れずに見える位置までスクロールされる", lastTabVisible);
 // 以降の検証・キャベツのタップは「野菜」タブ前提のため、いったん戻しておく
 await tabs.first().click();
 await sleep(200);

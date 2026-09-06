@@ -865,7 +865,9 @@ function closeIconPicker() {
   iconPickerOnSelect = null;
   iconPickerOnCamera = null;
 }
-// 分類ごとのタブ。押すと activeIconGroup を切り替えて絞り込み直す（検索中は無視される）
+// 分類ごとのタブ。押すと activeIconGroup を切り替えて絞り込み直す（検索中は無視される）。
+// タブの列は横スクロールする（12分類あると1画面に収まらないため）。選ばれているタブが
+// 途中で切れて見えることがないよう、開いた直後・タップ直後の両方でスクロール位置を合わせる。
 function renderIconPickerTabs() {
   const wrap = $("icon-picker-tabs");
   if (!wrap) return;
@@ -877,10 +879,12 @@ function renderIconPickerTabs() {
       activeIconGroup = btn.dataset.group;
       wrap.querySelectorAll(".icon-picker-tab").forEach((b) => b.classList.toggle("selected", b === btn));
       applyIconPickerFilter();
+      btn.scrollIntoView({ inline: "nearest", block: "nearest" });
       // 前の分類の途中位置のままにならないよう、グリッドの先頭までスクロールを戻す
       $("icon-picker-grid").scrollIntoView({ block: "start" });
     });
   });
+  wrap.querySelector(".icon-picker-tab.selected")?.scrollIntoView({ inline: "nearest", block: "nearest" });
 }
 function renderIconPickerGrid() {
   const grid = $("icon-picker-grid");

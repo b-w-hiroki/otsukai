@@ -29,6 +29,15 @@ check("表情タブの絵文字数ぶんボタンが並ぶ", (await grid.locator
 await tabs.last().click();
 await sleep(200);
 check("タブを切り替えると選択中の表示になる", await tabs.last().evaluate((el) => el.classList.contains("selected")));
+// タブの列は横スクロールする。長いラベル（のりもの・すきなもの）を選んでも、
+// 端で切れて見えたままにならないよう、選んだタブ全体が見える位置までスクロールされる
+const tabVisible = await page.evaluate(() => {
+  const wrap = document.getElementById("set-emoji-picker-tabs");
+  const sel = wrap.querySelector(".icon-picker-tab.selected");
+  const wr = wrap.getBoundingClientRect(), sr = sel.getBoundingClientRect();
+  return sr.left >= wr.left - 5 && sr.right <= wr.right + 5;
+});
+check("選んだタブが途中で切れずに見える位置までスクロールされる", tabVisible);
 check("表情タブは選択中でなくなる", !(await tabs.first().evaluate((el) => el.classList.contains("selected"))));
 const vehicleCount = await page.evaluate(() => EMOJI_GROUPS.find((g) => g.key === "other").emojis.length);
 check("のりものタブの絵文字数ぶんに変わる", (await grid.locator("button").count()) === vehicleCount, String(vehicleCount));
