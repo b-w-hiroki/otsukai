@@ -481,7 +481,7 @@ function howtoHtml() {
         <div class="howto-num">1</div>
         <div class="howto-text">
           <strong>＋ をタップして追加</strong>
-          <span>品名・メモ・難易度を入れて送信</span>
+          <span>品名とカテゴリを選んで送信</span>
         </div>
         <div class="howto-emoji">🛒</div>
       </div>
