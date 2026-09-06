@@ -32,9 +32,26 @@
     table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
     th, td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
     th { background: var(--surface); font-weight: 700; }
-    .box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin: 16px 0; }
+    .box { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--pri); border-radius: 0 14px 14px 0; padding: 16px 18px; margin: 16px 0; box-shadow: var(--shadow, none); }
     .shot { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 14px 0; max-width: 300px; }
     .shot img { display: block; }
+    /* セクション見出しの上に置く小さな分類ラベル（お知らせ記事のタグと同じ考え方） */
+    .kicker { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--pri); background: var(--pri-soft); padding: 3px 10px; border-radius: 999px; margin: 36px 0 6px; }
+    .kicker + h2 { margin-top: 4px; }
+    /* テーブルはカード化して、罫線を減らし行区切りだけにする */
+    table { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; border-spacing: 0; border-collapse: separate; }
+    th, td { border: none; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    /* ヘッダー直下のCTA（アプリを開く）。back-float と同系統の見た目 */
+    .cta-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 44px; padding: 0 22px; margin: 14px 0 4px;
+      background: linear-gradient(135deg, var(--pri) 0%, #4f46e5 100%);
+      color: #fff; font-weight: 700; font-size: 14px; line-height: 1;
+      border-radius: 999px; text-decoration: none; white-space: nowrap;
+      box-shadow: 0 4px 18px rgba(99,102,241,0.35);
+    }
+    .cta-btn:active { transform: scale(0.97); }
     footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); }
     /* 外部からこのページだけ開いたときに迷わないよう、常に見える「戻る」を置く */
     .back-float {
@@ -71,7 +88,7 @@
   <div class="wrap">
     <header>
       <h1>🧺 おうちのおつかい — 使い方ガイド</h1>
-      <p class="muted">最終更新日: 2026年9月3日</p>
+      <p class="muted">最終更新日: 2026年9月6日</p>
     </header>
 
     <p>
@@ -79,10 +96,8 @@
       「あれ買ってきて」を家族みんなのリストにまとめて、誰が何を買うかを迷わず決められます。
       このページ1枚で、主な機能の使い方をひと通り読めるようにまとめています。
     </p>
-    <p class="muted">
-      📱 アプリ本体はこちら → <a href="./app.html">おうちのおつかいを開く</a><br>
-      Safari / Chrome で開いて「ホーム画面に追加」すると、アプリのように使えます。
-    </p>
+    <a href="./app.html" class="cta-btn">📱 おうちのおつかいを開く</a>
+    <p class="muted">Safari / Chrome で開いて「ホーム画面に追加」すると、アプリのように使えます。</p>
     <div class="box">
       <p style="margin:0 0 6px;"><b>はじめての方（ログイン）</b></p>
       <p style="margin:0;">
@@ -100,10 +115,12 @@
         <li><a href="#lowstock">⏳ そろそろ切れるかも</a></li>
         <li><a href="#shortcuts">⚡ よく買うもの</a></li>
         <li><a href="#stock">📦 ストック</a></li>
+        <li><a href="#destinations">🏬 行き先</a></li>
         <li><a href="#missions">🎯 ミッション・ごほうび</a></li>
         <li><a href="#expenses">💴 支出・家計</a></li>
         <li><a href="#history">🧾 購入履歴</a></li>
-        <li><a href="#photos">📷 写真の使い方</a></li>
+        <li><a href="#photos">📷 写真・イラストの使い方</a></li>
+        <li><a href="#news">📣 お知らせ</a></li>
         <li><a href="#family">👨‍👩‍👧‍👦 家族の招待・やくわり</a></li>
         <li><a href="#notify">🔔 通知</a></li>
         <li><a href="#settings">⚙️ 設定・更新・ダークモード</a></li>
@@ -111,6 +128,7 @@
       </ol>
     </nav>
 
+    <span class="kicker">きほん</span>
     <h2 id="flow">きほんの流れ</h2>
     <div class="flow">
       <div class="flow-step"><div class="flow-num">1</div><div class="flow-text"><b>＋ 追加</b> — 買ってほしいものをリストに入れる（誰でもOK）</div></div>
@@ -127,16 +145,20 @@
       「お買い物したいものを登録しよう！」と案内し、その下に上の3ステップが出ます。
     </p>
 
+    <span class="kicker">お買い物</span>
     <h2 id="requests">🛒 お買い物リスト</h2>
-    <p>下部フローティングボタン列の <b>＋ 追加</b> から入力します。品名と<b>カテゴリ</b>は必須、それ以外は任意です。</p>
+    <p>下部フローティングボタン列の <b>＋ 追加</b> から入力します。品名と<b>カテゴリ</b>は必須、それ以外は任意です。
+    シートを開いた直後は <b>品名・カテゴリ・写真・手間/急ぎ・追加ボタン</b> だけの短い画面で、残りの項目は
+    <b>「＋ くわしく設定」</b>を押すと開きます（何を入れたかは閉じたままでも「設定あり: 予算・メモ」のように1行で分かります）。</p>
     <table>
       <tr><th>項目</th><th>内容</th></tr>
       <tr><td>カテゴリ（必須）</td><td>🍎食品 / 🧻日用品 / 📦その他 のいずれか1つを必ずタップ。当てはまるものが無ければ「📦その他」を選びます（選ばずに保存しようとすると案内が出てブロックされます）</td></tr>
-      <tr><td>📷 写真</td><td>撮影・ライブラリから選ぶ以外に、🎨「イラストから選ぶ」で201種のイラスト（野菜・果物・肉魚・日用品・行事など。名前で検索できます）も選べます</td></tr>
+      <tr><td>📷 写真</td><td>カテゴリのすぐ下、開いた直後から選べます。撮影・ライブラリから選ぶ以外に、🎨「イラストから選ぶ」で201種のイラスト（野菜・果物・肉魚・日用品・行事など12分類をタブで切り替え・名前でも検索できます）も選べます</td></tr>
       <tr><td>手間</td><td>ふつう / 💪ちょっと大変 / 💪💪めちゃ大変 → ポイントが増えます</td></tr>
       <tr><td>🔥 急ぎ</td><td>リストの最上段に固定＋ポイント+1</td></tr>
-      <tr><td>予算上限・ブランド指定・メモ</td><td>「300円以下で」「パナソニック」「12ロール・ダブル」など</td></tr>
-      <tr><td>担当者を指名</td><td>特定の人に頼む（その人だけに通知が届きます）</td></tr>
+      <tr><td>🏬 行き先・予算上限・ブランド指定・メモ（「＋くわしく設定」の中）</td><td>「スーパー」「300円以下で」「パナソニック」「12ロール・ダブル」など（→ <a href="#destinations">🏬行き先</a>）</td></tr>
+      <tr><td>担当者を指名（「＋くわしく設定」の中）</td><td>特定の人に頼む（その人だけに通知が届きます）</td></tr>
+      <tr><td>🔁 続けて追加する</td><td>チェックを入れて追加すると、シートを閉じずに次の品名入力へ戻ります。カテゴリ・行き先は残るので、まとめ買いのときに便利です</td></tr>
     </table>
     <div class="shot"><img src="docs/screenshots/03-add-sheet.png" alt="おつかいを追加" loading="lazy" /></div>
 
@@ -152,6 +174,7 @@
     <p>◯ の中身で担当者が分かります。<b>空</b> = 誰も宣言していない、<b>🛒</b> = 自分、<b>絵文字</b> = その人。他の人が宣言した品でも「✅買ったよ」は押せます（確認が出ます。子どもが宣言して親が持ち帰った、というときに使えます）。</p>
     <p>行を開いた詳細には <b>💬コメント / ☆よく買うものに登録 / ✏️編集 / ×削除</b> のボタンが並びます（✏️と×は自分が追加した依頼だけ）。写真を外すときも ✏️編集 →「✕ 写真を外す」から。</p>
 
+    <span class="kicker">おすすめ</span>
     <h2 id="lowstock">⏳ そろそろ切れるかも</h2>
     <p><b>いちばんおすすめの機能です。</b> 買い忘れそうなものを、アプリが先回りして教えてくれます。お買い物タブの一番上に出て、タップするだけで買い物リストに追加できます（× で消せます）。</p>
     <div class="shot"><img src="docs/screenshots/02-lowstock.png" alt="そろそろ切れるかも" loading="lazy" /></div>
@@ -162,6 +185,7 @@
     </table>
     <p>いつから知らせるかは、ストックタブ上部の「知らせる時期」で変えられます（家族共通の設定）。品ごとに「買う間隔」を手で指定すると、学習より優先されます。</p>
 
+    <span class="kicker">お買い物</span>
     <h2 id="shortcuts">⚡ よく買うもの</h2>
     <p>お買い物ページのフローティングボタン「⚡よく買う」から開きます。定番品を登録しておくと、タップして確認するだけでリストに追加できます。「🖼️カード」「☰リスト」の2種類の見た目から選べます（既定はリスト）。</p>
     <div class="shot"><img src="docs/screenshots/08-shortcuts.png" alt="よく買うもの" loading="lazy" /></div>
@@ -178,11 +202,14 @@
       </p>
     </div>
 
+    <span class="kicker">在庫</span>
     <h2 id="stock">📦 ストック</h2>
     <p>家にある物の残量を記録しておく場所です。丸をタップするたびに 🟢たっぷり → 🟡少ない → 🔴切れてる と切り替わります。🟡🔴にすると「⏳そろそろ切れるかも」に自動で出ます。</p>
     <div class="shot"><img src="docs/screenshots/11-stock.png" alt="ストックタブ" loading="lazy" /></div>
-    <p>「＋新しく登録する」から追加でき、写真も付けられます。品名をタップすると詳細が開き、「🛒買い物リストに追加」や「買う間隔」の指定、写真の変更ができます。</p>
+    <p>「＋新しく登録する」から追加します。お買い物リストの追加と同じ考え方で、開いた直後は<b>商品名・カテゴリ（必須）・写真・残量・追加ボタン</b>だけの短い画面です。
+    行き先・メモ・予算上限・買う間隔は「＋くわしく設定」を押すと開きます。品名をタップすると詳細が開き、「🛒買い物リストに追加」や写真・買う間隔の変更ができます。</p>
 
+    <span class="kicker">遊び心</span>
     <h2 id="missions">🎯 ミッション・ごほうび</h2>
     <p>右上（名前と？の間）の🏆ボタンから開きます。おつかい完了を続けると連続記録が伸び、称号が上がります（🌱見習い → 🚶配達員 → 🛒上手 → ⭐マスター → 👑達人）。</p>
     <div class="shot"><img src="docs/screenshots/10-missions.png" alt="ミッションタブ" loading="lazy" /></div>
@@ -194,11 +221,13 @@
     </table>
     <p class="muted">ポイントは、ふつう1pt／💪2pt／💪💪3pt、🔥急ぎはさらに+1pt。ポイントが足りないごほうびはボタンが薄く表示されます。</p>
 
+    <span class="kicker">家計</span>
     <h2 id="expenses">💴 支出・家計</h2>
     <p>左上のアバター（プレイヤー情報）から開きます。買い物にかかった金額を集計できるほか、「＋その他の支出を記録」からレシート以外の立て替えも記録できます。</p>
     <div class="shot"><img src="docs/screenshots/19-expenses.png" alt="支出・家計" loading="lazy" /></div>
     <p class="muted">レシート写真を選ぶと端末内で金額を読み取りますが、写真自体は保存・送信されません。読み取り結果は保存前に必ず確認してください。</p>
 
+    <span class="kicker">記録</span>
     <h2 id="history">🧾 購入履歴</h2>
     <p>左上のアバター（プレイヤー情報）→「🛒買い物履歴」から開きます。完了した買い物は一覧から消えて、ここに日付ごと（今日／昨日／7月28日(火)…）に貯まります。</p>
     <div class="shot"><img src="docs/screenshots/09-history.png" alt="購入完了済み履歴" loading="lazy" /></div>
@@ -211,13 +240,23 @@
     </table>
     <p class="muted">完了から90日経つと自動でアーカイブへ移り、動作が重くならないようにしています。</p>
 
-    <h2 id="photos">📷 写真の使い方</h2>
-    <p>おつかい・ストック・よく買うもののどれにも写真を付けられます。「実際に撮る・ライブラリから選ぶ」以外に、🎨「イラストから選ぶ」で用意した201種のイラスト（野菜・果物・肉魚・日用品・掃除用品・行事など12分類）を選ぶこともできます。写真を付けると、同じ商品でも型番違いや詰め替え用などを一目で見分けられます。</p>
+    <span class="kicker">見た目</span>
+    <h2 id="photos">📷 写真・イラストの使い方</h2>
+    <p>おつかい・ストック・よく買うもののどれにも写真を付けられます。「実際に撮る・ライブラリから選ぶ」以外に、🎨「イラストから選ぶ」で用意した201種のイラストを選ぶこともできます。写真を付けると、同じ商品でも型番違いや詰め替え用などを一目で見分けられます。</p>
+    <p>イラストは<b>野菜・果物・肉魚・日用品・掃除用品・行事など12分類</b>あり、ピッカー上部の<b>タブを横にスクロールして切り替え</b>ます。開くと最初の分類（🥬野菜）から始まり、検索欄に名前を入れると分類に関係なく全部から絞り込めます。</p>
     <div class="box">
       写真がある品は一覧に小さなサムネイルが出て、タップすると拡大表示されます。行そのものをタップすると詳細が開きます（サムネイルを押しても詳細は開きません）。
       おつかいの詳細では、実際の写真だけ大きく表示されます（イラストは正方形基準なので、行の小さいサムネイルだけで伝えます）。
     </div>
 
+    <span class="kicker">最新情報</span>
+    <h2 id="news">📣 お知らせ</h2>
+    <p>右上の <b>🏆ミッション・📣お知らせ・？使い方</b> のうち、📣を押すとアップデート履歴の一覧が開きます。
+    行をタップすると、その更新で「どう変わったか」を画面つきで読めます。</p>
+    <p>新しいお知らせがあると📣に<b>赤い丸</b>が付き、アプリを開いた直後に<b>1回だけ</b>小さな画面（モーダル）でも
+    お知らせします。「読む」で一覧へ、「あとで」なら閉じるだけです（赤い丸は読むまで残ります）。</p>
+
+    <span class="kicker">家族</span>
     <h2 id="family">👨‍👩‍👧‍👦 家族の招待・やくわり</h2>
     <p>設定タブの「家族招待」に表示される招待コード（6文字）を家族に共有すると、参加してもらえます。参加した人は最初「こども」になり、保護者が役割を変更できます。</p>
     <table>
@@ -228,15 +267,18 @@
       <tr><td>役割の変更・メンバー管理</td><td>◯</td><td>—</td><td>—</td></tr>
     </table>
 
+    <span class="kicker">通知</span>
     <h2 id="notify">🔔 通知</h2>
     <p>設定 → 通知 →「通知をオンにする」で有効化できます。新しい依頼の追加、買ってきたお知らせ、ありがとう、ミッション達成のほか、毎日決まった時刻の未受け取りリマインドと、毎週日曜20時の週まとめ通知（そろそろ切れそうな品も含む）が届きます。通知が要らない人は、その端末だけで「通知をオフにする」で止められます。</p>
     <p class="muted">お買い物タブの赤いバッジは、家族から新しく頼まれた（まだ見ていない）未完了の依頼だけを数えます。一度お買い物タブを見ると既読になり、同じ依頼で何度も表示されることはありません。</p>
 
+    <span class="kicker">設定</span>
     <h2 id="settings">⚙️ 設定・更新・ダークモード</h2>
     <table>
       <tr><th>項目</th><th>内容</th></tr>
-      <tr><td>👤 プロフィール</td><td>名前・絵文字アイコン。いちばん下の「🗑️ アカウント削除メニュー」から、自分のアカウントを削除できます（確認のため「delete」と入力）</td></tr>
+      <tr><td>👤 プロフィール</td><td>名前・絵文字アイコン（60種。😀表情/🐾どうぶつ/🧑ひと/🎈のりもの・すきなもの の4つのボタンタブで切り替えて選べます）。いちばん下の「🗑️ アカウント削除メニュー」から、自分のアカウントを削除できます（確認のため「delete」と入力）</td></tr>
       <tr><td>👨‍👩‍👧‍👦 家族招待</td><td>招待コード・メンバー一覧</td></tr>
+      <tr><td>🏬 行き先</td><td>スーパー・薬局などよく行くお店を登録（任意。→ <a href="#destinations">🏬行き先</a>）</td></tr>
       <tr><td>🛡️ メンバー管理</td><td>保護者のみ。メンバーの役割の変更と「家族から外す」ができます（他の人のアカウント自体は消せません）</td></tr>
       <tr><td>🔔 通知</td><td>サウンド／テーマ／買い物リマインドの時刻</td></tr>
       <tr><td>🔧 メンテナンス</td><td>データの再読み込み・アプリの更新・強制ログアウト</td></tr>
@@ -250,6 +292,7 @@
     <div class="shot"><img src="docs/screenshots/15-dark.png" alt="ダークモード" loading="lazy" /></div>
     <p>初期設定は「端末の設定に合わせる」です。スマホがダークモードならアプリも暗くなります。設定 → 🎨テーマ から「ライト」「ダーク」に固定もできます（端末ごとに保存されます）。</p>
 
+    <span class="kicker">サポート</span>
     <h2 id="trouble">困ったときは</h2>
     <table>
       <tr><th>症状</th><th>対処</th></tr>
