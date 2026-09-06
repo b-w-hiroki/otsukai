@@ -140,6 +140,12 @@
         return;
       }
       var u = list[idx];
+      // 開いた記事を「読んだ」として端末に記録する（news.html の一覧が「未読」の印を出し分ける）
+      try {
+        var readIds = JSON.parse(localStorage.getItem("newsReadIds") || "[]");
+        if (!Array.isArray(readIds)) readIds = [];
+        if (readIds.indexOf(u.id) === -1) { readIds.push(u.id); localStorage.setItem("newsReadIds", JSON.stringify(readIds)); }
+      } catch (e) {}
       document.title = esc(u.title) + " — お知らせ — おうちのおつかい";
       head.innerHTML = '<span class="date">' + fmtDate(u.date) + '</span>' +
         '<h1 class="maru">' + esc(u.title) + '</h1>' +

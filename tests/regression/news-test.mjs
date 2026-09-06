@@ -61,6 +61,9 @@ const newest = await page.evaluate(() => NEWS.slice().sort((a, b) => b.date.loca
 check("先頭が最新の更新", (await first.locator(".entry-title").innerText()) === newest.title);
 check("行は記事ページ（news-item.html?id=）へのリンク", (await first.getAttribute("href")) === `./news-item.html?id=${encodeURIComponent(newest.id)}`);
 check("一覧には本文を出さない（一覧と記事を分ける）", (await page.locator(".item").count()) === 0);
+// まだ記事を1つも開いていないので、全部に「未読」の印
+check("開いていない記事には「未読」の印が付く", (await page.locator("a.entry .unread").count()) === total, String(total));
+check("「未読」の文言", (await page.locator("a.entry .unread").first().innerText()) === "未読");
 
 // --- news-item.html: 記事 ---
 await first.click();
@@ -86,6 +89,13 @@ check("一覧へ戻るリンクがある", (await page.locator('a.crumb[href="./
 const pagerLinks = await page.locator("#pager a").count();
 check("前後の更新リンクは存在する分だけ出る", pagerLinks === (total > 1 ? 1 : 0), String(pagerLinks));
 if (total > 1) check("最新の記事には「次の更新」は出ない", (await page.locator("#pager a.next").count()) === 0);
+
+// --- 記事を開いたら、一覧のその行だけ「未読」が消える ---
+check("開いた記事の id を端末に記録する", (await page.evaluate(() => JSON.parse(localStorage.getItem("newsReadIds") || "[]"))).includes(newest.id), newest.id);
+await page.goto(url + "news.html", { waitUntil: "domcontentloaded" });
+await sleep(500);
+check("開いた記事の行から「未読」が消える", (await page.locator("a.entry").first().locator(".unread").count()) === 0);
+check("開いていない記事には「未読」が残る", (await page.locator("a.entry .unread").count()) === total - 1, String(total - 1));
 
 // --- 存在しない id は最新にフォールバック ---
 await page.goto(url + "news-item.html?id=no-such-id", { waitUntil: "domcontentloaded" });
