@@ -81,6 +81,7 @@ function openStockSheet() {
   $("stock-photo-input").value = "";
   pendingStockPhoto = null;
   $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
+  $("stock-continue-add").checked = false;
   setStockMoreFieldsOpen(false);
   $("stock-sheet").classList.add("open");
   $("sheet-backdrop").classList.add("open");
@@ -188,8 +189,26 @@ async function addStock() {
       item.photoUrl = pendingStockPhoto; // 選んだイラストのパスをそのまま使う
     }
     if (!(await dbOp(familyRef().child("stocks/" + id).set(item), "登録できませんでした"))) return;
-    closeStockSheet();
-    showToast("登録しました 📦", { sound: false });
+    // 「🔁 続けて追加する」が ON なら、まとめて登録用にシートを開いたまま次の商品名入力へ進む。
+    // カテゴリ・行き先は同じ棚卸しで繰り返し使うことが多いので残し、それ以外の
+    // 品ごとの入力（残量・写真・メモ・予算・買う間隔）だけをクリアする
+    if ($("stock-continue-add").checked) {
+      $("stock-name").value = "";
+      $("stock-memo").value = "";
+      $("stock-budget").value = "";
+      $("stock-cycle").value = "";
+      $("stock-photo-input").value = "";
+      pendingStockPhoto = null;
+      $("stock-photo-preview-wrap").innerHTML = '<span class="stock-photo-placeholder">📷 タップして写真を選ぶ</span>';
+      stockAddLevel = "ok";
+      document.querySelectorAll(".slp-btn").forEach((b) => b.classList.toggle("active", b.dataset.lvl === "ok"));
+      updateStockMoreFieldsSummary();
+      showToast(`📦 「${name}」を登録しました（続けて入力できます）`, { sound: false });
+      $("stock-name").focus();
+    } else {
+      closeStockSheet();
+      showToast("登録しました 📦", { sound: false });
+    }
   } finally {
     if (addBtn) addBtn.disabled = false;
   }
