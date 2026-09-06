@@ -779,6 +779,11 @@
       </div>
       <!-- 主操作はシート下部に固定（docs/rules/ui.md §5）。中身をスクロールしなくても押せる -->
       <div class="sheet-footer">
+        <!-- おつかい追加シートと同じ考え方。まとめて何品も登録したいときに、閉じずに次の商品名入力へ進める -->
+        <label id="stock-continue-wrap" class="row continue-add-row">
+          <input type="checkbox" id="stock-continue-add" style="width:18px;height:18px;" />
+          <span>🔁 続けて追加する（閉じずに次を入力）</span>
+        </label>
         <button id="btn-add-stock" class="btn-block">追加する</button>
       </div>
     </div>

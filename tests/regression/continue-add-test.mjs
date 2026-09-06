@@ -1,8 +1,10 @@
 // 🔁「続けて追加する」トグルの検証:
+// おつかい追加シート・ストック登録シートの両方に同じ考え方で付いている。
 // おつかい追加シートの下部にだけ出る（編集・よく買うもの登録には出さない）。
 // ONで追加すると、シートを閉じずに品名欄へ戻り、カテゴリ/行き先は残るが
 // 写真・手間・急ぎ・予算・ブランド・メモ・担当者はクリアされる。
 // OFFなら従来どおり追加後にシートが閉じる。
+// ストック登録シートも同様（カテゴリ/行き先は残り、残量・写真・メモ・予算・買う間隔はクリア）。
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep, errs } = t;
@@ -66,6 +68,51 @@ check("3品目も追加されている", (await page.locator(".check-row", { has
 await page.click("#btn-add-float"); await sleep(500);
 check("開き直すとチェックはリセットされる", !(await page.isChecked("#new-continue-add")));
 await page.click("#btn-sheet-close");
+
+// ===== ストック登録シートも同様に「続けて追加する」がある =====
+await page.click('[data-tab="stock"]'); await sleep(500);
+await page.click("#btn-stock-register"); await sleep(500);
+check("ストック登録シートにも「続けて追加する」が出る", await page.locator("#stock-continue-wrap").isVisible());
+check("開いた直後はチェックが外れている（ストック）", !(await page.isChecked("#stock-continue-add")));
+
+// --- ON にして1品目を登録。閉じずに、カテゴリ・行き先は残ったまま残量等がクリアされる ---
+await page.click("#btn-stock-more-fields"); await sleep(300); // 行き先・メモは任意項目の中
+await page.fill("#stock-name", "洗剤A");
+await page.click('#stock-category .cat-chip[data-cat="daily"]');
+await page.click('#stock-destination .cat-chip:has-text("スーパー")');
+await page.fill("#stock-memo", "詰め替え用");
+await page.click('.slp-btn[data-lvl="low"]');
+await page.click("#stock-continue-add");
+await page.click("#btn-add-stock");
+await sleep(700);
+check("ONのまま登録してもシートは開いたまま", await page.locator("#stock-sheet.open").isVisible());
+check("商品名欄はクリアされる", (await page.inputValue("#stock-name")) === "");
+check("メモはクリアされる（ストック）", (await page.inputValue("#stock-memo")) === "");
+check("残量は既定の🟢たっぷりに戻る", await page.locator('.slp-btn[data-lvl="ok"].active').isVisible());
+check("カテゴリは選んだまま残る（ストック）", await page.locator('#stock-category .cat-chip[data-cat="daily"]').evaluate((el) => el.classList.contains("selected")));
+check("行き先は選んだまま残る（ストック）", await page.locator('#stock-destination .cat-chip:has-text("スーパー")').evaluate((el) => el.classList.contains("selected")));
+check("トグル自体は ON のまま（ストック）", await page.isChecked("#stock-continue-add"));
+check("1品目が登録されている（ストック）", (await page.locator(".stock-item", { hasText: "洗剤A" }).count()) === 1);
+
+// --- 続けて2品目を入力して登録（カテゴリ・行き先はそのまま使う） ---
+await page.fill("#stock-name", "洗剤B");
+await page.click("#btn-add-stock");
+await sleep(700);
+check("2品目もシートを閉じずに登録できる", await page.locator("#stock-sheet.open").isVisible());
+check("2品目が同じカテゴリ・行き先で登録されている", (await page.locator(".stock-item", { hasText: "洗剤B" }).count()) === 1);
+
+// --- OFF にして3品目を登録すると、いつも通り閉じる ---
+await page.fill("#stock-name", "洗剤C");
+await page.click("#stock-continue-add");
+await page.click("#btn-add-stock");
+await sleep(700);
+check("OFFで登録するといつも通りシートが閉じる", !(await page.locator("#stock-sheet.open").isVisible()));
+check("3品目も登録されている（ストック）", (await page.locator(".stock-item", { hasText: "洗剤C" }).count()) === 1);
+
+// --- 開き直すとチェックは外れている（毎回リセット・ストック） ---
+await page.click("#btn-stock-register"); await sleep(500);
+check("開き直すとチェックはリセットされる（ストック）", !(await page.isChecked("#stock-continue-add")));
+await page.click("#btn-stock-sheet-close");
 
 if (errs.length) console.log(errs);
 await t.finish();
