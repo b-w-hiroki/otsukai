@@ -4,6 +4,10 @@
 import { startHarness } from "../harness.mjs";
 const t = await startHarness();
 const { page, sleep } = t;
+// 任意項目は「＋ くわしく設定」の中に折りたたまれている（add-sheet-fold-test）。使う前に開く
+const openMore = async () => {
+  if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
+};
 const check = t.check;
 
 const stockNamed = async (name) =>
@@ -23,6 +27,7 @@ const openShortcutRegister = async () => {
   await sleep(500);
   await page.click("#btn-shortcut-register");
   await sleep(700);
+  await openMore(); // 買う間隔は任意項目の中
 };
 
 await t.ready();

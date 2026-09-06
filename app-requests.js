@@ -116,6 +116,40 @@ async function deleteDestination(id) {
 }
 
 // ===== Bottom sheet =====
+// 任意項目の折りたたみ。開くたびに閉じた状態から始める（ファーストビューに品名・カテゴリ・
+// 追加ボタンを収めるため）。編集で任意項目に値が入っているときだけ自動で開く。
+function hasOptionalFieldValues() {
+  return !!(
+    existingReqPhotoUrl || pendingReqPhoto ||
+    $("new-budget").value.trim() || $("new-brand").value.trim() || $("new-memo").value.trim() ||
+    $("new-assignee").value ||
+    document.querySelector("#new-destination .cat-chip.selected") ||
+    ($("new-cycle-wrap").style.display !== "none" && $("new-cycle-days").value.trim())
+  );
+}
+// 閉じているときに「何が設定済みか」を1行で見せる（設定あり: 写真・メモ）
+function updateMoreFieldsSummary() {
+  const set = [];
+  if (existingReqPhotoUrl || pendingReqPhoto) set.push("写真");
+  if (document.querySelector("#new-destination .cat-chip.selected")) set.push("行き先");
+  if ($("new-budget").value.trim()) set.push("予算");
+  if ($("new-brand").value.trim()) set.push("ブランド");
+  if ($("new-memo").value.trim()) set.push("メモ");
+  if ($("new-assignee").value) set.push("担当");
+  if ($("new-cycle-wrap").style.display !== "none" && $("new-cycle-days").value.trim()) set.push("買う間隔");
+  const open = $("more-fields").classList.contains("open");
+  $("more-fields-summary").textContent = !open && set.length ? "設定あり: " + set.join("・") : "";
+}
+function setMoreFieldsOpen(open) {
+  $("more-fields").classList.toggle("open", !!open);
+  const btn = $("btn-more-fields");
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  btn.querySelector(".fold-toggle-mark").textContent = open ? "－" : "＋";
+  $("more-fields-label").textContent = open ? "くわしい設定を閉じる" : "くわしく設定（写真・メモ・予算など）";
+  updateMoreFieldsSummary();
+}
+function toggleMoreFields() { setMoreFieldsOpen(!$("more-fields").classList.contains("open")); }
+
 function resetSheetToAddMode() {
   editingRequestId = null;
   shortcutMode = false;
@@ -136,6 +170,7 @@ function resetSheetToAddMode() {
   existingReqPhotoUrl = "";
   $("new-cycle-wrap").style.display = "none";
   $("new-cycle-days").value = "";
+  setMoreFieldsOpen(false);   // 任意項目は閉じた状態から（値のリセットが済んでから要約を更新する）
 }
 
 // 追加/編集シートの写真プレビュー。url が空なら「タップして選ぶ」に戻す。
@@ -289,6 +324,7 @@ function openEditSheet(r) {
   pendingReqPhoto = null;
   existingReqPhotoUrl = r.photoUrl || "";
   setReqPhotoPreview(existingReqPhotoUrl);
+  setMoreFieldsOpen(hasOptionalFieldValues());
   // 編集モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "✏️ おつかいを編集";
   $("btn-add-request").textContent = "更新する";
@@ -475,6 +511,7 @@ function openShortcutEditSheet(id) {
   pendingReqPhoto = null;
   existingReqPhotoUrl = s.photoUrl || "";
   setReqPhotoPreview(existingReqPhotoUrl);
+  setMoreFieldsOpen(hasOptionalFieldValues());
   document.querySelector("#sheet-add .sheet-title").textContent = "✏️ よく買うものを編集";
   $("btn-add-request").textContent = "更新する";
   $("sheet-add").classList.add("open");

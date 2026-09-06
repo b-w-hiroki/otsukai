@@ -792,7 +792,9 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 /* 中身はシート内でスクロールさせる */
 .sheet-content {
-  padding: 14px 20px 8px;
+  /* 上の余白はヘッダー側（sticky）に持たせる。ここに付けるとスクロール時に中身が
+     ヘッダーの上に 14px はみ出して見える（すべてのシートは sheet-header から始まる） */
+  padding: 0 20px 8px;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   flex: 1; min-height: 0;
   overscroll-behavior: contain;
@@ -803,7 +805,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   margin-bottom: 18px;
   position: sticky; top: 0; z-index: 2;
   background: var(--surface);
-  padding-top: 2px;
+  padding-top: 16px;
 }
 .sheet-title { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; color: var(--ink); }
 .sheet-close {
@@ -1765,6 +1767,21 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 /* フッターに閉じるボタンを置くシートでは、ヘッダーの下余白を詰める */
 #history-sheet .sheet-header { margin-bottom: 10px; }
+
+/* ======= 追加シートの任意項目の折りたたみ ======= */
+/* 押すと任意項目（写真・行き先・予算・ブランド・メモ・担当・買う間隔）が開く。
+   閉じているときは、値が入っている項目名を小さく並べて「設定あり」が分かるようにする */
+button.fold-toggle {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; min-height: 44px; padding: 10px 14px; text-align: left;
+  border-style: dashed; font-size: 13px;
+}
+.fold-toggle-main { display: inline-flex; align-items: center; gap: 6px; }
+.fold-toggle-mark { display: inline-block; width: 1em; text-align: center; font-weight: 900; }
+.fold-toggle-summary { font-size: 11px; font-weight: 600; color: var(--muted); }
+.fold-toggle-summary:empty { display: none; }
+.fold-body { display: none; }
+.fold-body.open { display: grid; gap: 12px; }
 
 /* ======= 更新モーダル（新バージョン検知・ソシャゲ風の強制アップデート） =======
    閉じるボタンは無い。安全なタイミング（isSafeToAutoUpdate）になるまで出さないが、
