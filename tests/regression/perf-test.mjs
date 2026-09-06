@@ -17,14 +17,16 @@ const functionsScriptLoaded = await page.evaluate(() =>
 check("起動時は functions-compat.js を読み込まない", !functionsScriptLoaded);
 
 // --- アカウント削除の操作で動的に読み込まれ、実際に呼び出しまで届く ---
+// 自分のアカウント削除の入口はプロフィールカードに一本化されている
+// （メンバー管理の自分の行には重複ボタンを置かない）
 await page.click('[data-tab="settings"]');
 await sleep(500);
-await page.click('.settings-acc[data-acc="member-admin"] [data-acc-toggle]');
+await page.click('.settings-acc[data-acc="profile"] [data-acc-toggle]');
 await sleep(400);
-await page.click("#btn-member-admin-toggle");
+await page.click("#btn-self-delete-toggle");
 await sleep(400);
-const deleteBtn = page.locator("[data-admin-delete]").first();
-check("メンバー管理にアカウント削除ボタンがある", (await deleteBtn.count()) > 0);
+const deleteBtn = page.locator("#btn-self-delete");
+check("プロフィールにアカウント削除ボタンがある", (await deleteBtn.count()) > 0);
 await deleteBtn.click();
 await sleep(600);
 const scriptLoadedAfter = await page.evaluate(() =>
