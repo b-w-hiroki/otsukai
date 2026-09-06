@@ -10,11 +10,11 @@ const check = t.check;
 await t.ready();
 await page.click('[data-tab="settings"]');
 await sleep(500);
-await page.click('.settings-acc[data-acc="profile"] [data-acc-toggle]');
+await page.click('.settings-acc[data-acc="member-admin"] [data-acc-toggle]');
 await sleep(400);
-await page.click("#btn-self-delete-toggle");
+await page.click("#btn-member-admin-toggle");
 await sleep(400);
-await page.click("#btn-self-delete");
+await page.click("#member-admin-list [data-admin-delete]");
 await sleep(600);
 
 const functionsScriptLoaded = await page.evaluate(() =>

@@ -504,11 +504,6 @@ function wireGlobalEvents() {
     memberAdminOpen = !memberAdminOpen;
     updateMemberAdminToggle();
   });
-  $("btn-self-delete-toggle").addEventListener("click", () => {
-    selfDeleteOpen = !selfDeleteOpen;
-    updateSelfDeleteToggle();
-  });
-  $("btn-self-delete").addEventListener("click", () => adminDeleteAccount());
   $("btn-copy-code").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("set-invite-code").value);
