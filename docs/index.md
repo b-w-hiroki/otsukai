@@ -26,7 +26,7 @@
 | **ストア配信の費用と手順** | `docs/release-plan.md` | — |
 | **ブランチ・テスト・PR の進め方** | `docs/rules/workflow.md` | — |
 | **機能の仕様（利用者向け）** | `docs/features.md` | — |
-| **お知らせ（アップデート履歴）の内容** | `news.js`（先頭に1件足す） | `news.html`（一覧）・`news-item.html`（記事）・右上📣のバッジ |
+| **お知らせ（アップデート履歴）の内容** | `news.js`（頼まれたときだけ先頭に1件足す） | `news.html`（一覧）・`news-item.html`（記事）・右上📣のバッジ |
 | **利用規約** | `terms.html` | — |
 | **プライバシーポリシー** | `privacy.html` | — |
 | **お問い合わせ** | `contact.html` | — |
@@ -93,7 +93,7 @@
 | やること | 手順の場所 |
 |---|---|
 | リリースする | [`rules/deploy.md` §1](./rules/deploy.md) |
-| 📣 お知らせに1件足す | `news.js` の先頭に追記（書き方はファイル冒頭のコメント）→ [`rules/deploy.md` §1](./rules/deploy.md) |
+| 📣 お知らせに1件足す（**頼まれたときだけ**） | `news.js` の先頭に追記（書き方はファイル冒頭のコメント）→ [`rules/deploy.md` §1](./rules/deploy.md) |
 | DBルールを適用する | [`rules/deploy.md` §2](./rules/deploy.md) |
 | functions をデプロイする | [`rules/deploy.md` §3](./rules/deploy.md) |
 | 回帰テストを回す | `node tests/run-all.mjs` → [`rules/workflow.md` §2](./rules/workflow.md) |
