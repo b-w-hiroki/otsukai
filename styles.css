@@ -514,13 +514,34 @@ button.icon-btn:hover:not(:disabled) { color: var(--c-urgent); background: var(-
 }
 #btn-shortcut-edit.open { border-color: var(--c-claimed); background: var(--c-claimed-soft); color: var(--ink); }
 
+/* 分類が12まであるので、タブで切り替える（#icon-picker-sheet）。検索中は無視して全分類から探す */
+.icon-picker-tabs {
+  display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  margin: 0 0 10px; padding-bottom: 2px; scrollbar-width: none;
+}
+.icon-picker-tabs::-webkit-scrollbar { display: none; }
+.icon-picker-tab {
+  flex: 0 0 auto; white-space: nowrap; display: inline-flex; align-items: center;
+  min-height: 44px; padding: 0 14px; border-radius: var(--r-full);
+  border: 1.5px solid var(--border); background: var(--surface-2); color: var(--ink-2);
+  font-size: 13px; font-weight: 700; box-shadow: none;
+}
+.icon-picker-tab:hover:not(:disabled) { background: var(--border); color: var(--ink); box-shadow: none; transform: none; }
+.icon-picker-tab.selected, .icon-picker-tab.selected:hover:not(:disabled) {
+  background: var(--pri); color: #fff; border-color: var(--pri);
+  box-shadow: 0 2px 8px rgba(99,102,241,.3);
+}
+
 /* 「イラストから選ぶ」ピッカーのグリッド（#icon-picker-sheet） */
 .icon-picker-grid {
   /* minmax(0,1fr): 「トイレットペーパー」のような長いラベルでも列が広がらず、ラベル側が省略される */
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
   margin: 8px 0 4px;
 }
-/* 分類の小見出し（グリッドの1行を占める） */
+/* タブ選択中（検索なし）は見出しを隠す。タブ自体が分類を表しているため重複表示にしない。
+   検索中は複数分類にまたがる結果を区別するため、マッチがある分類だけ見出しを出す
+   （JS 側で .icon-picker-group-hdr の display を都度切り替える） */
+.icon-picker-group { display: contents; }
 .icon-picker-group-hdr {
   grid-column: 1 / -1;
   font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: .04em;
@@ -792,7 +813,9 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 /* 中身はシート内でスクロールさせる */
 .sheet-content {
-  padding: 14px 20px 8px;
+  /* 上の余白はヘッダー側（sticky）に持たせる。ここに付けるとスクロール時に中身が
+     ヘッダーの上に 14px はみ出して見える（すべてのシートは sheet-header から始まる） */
+  padding: 0 20px 8px;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   flex: 1; min-height: 0;
   overscroll-behavior: contain;
@@ -803,7 +826,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   margin-bottom: 18px;
   position: sticky; top: 0; z-index: 2;
   background: var(--surface);
-  padding-top: 2px;
+  padding-top: 16px;
 }
 .sheet-title { font-size: 18px; font-weight: 800; letter-spacing: -0.4px; color: var(--ink); }
 .sheet-close {
@@ -1765,6 +1788,24 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
 }
 /* フッターに閉じるボタンを置くシートでは、ヘッダーの下余白を詰める */
 #history-sheet .sheet-header { margin-bottom: 10px; }
+
+/* 追加シートのフッター: 「続けて追加」トグル。ボタンの上に小さく置く */
+.continue-add-row { justify-content: flex-start; gap: 8px; padding: 6px 2px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+
+/* ======= 追加シートの任意項目の折りたたみ ======= */
+/* 押すと任意項目（写真・行き先・予算・ブランド・メモ・担当・買う間隔）が開く。
+   閉じているときは、値が入っている項目名を小さく並べて「設定あり」が分かるようにする */
+button.fold-toggle {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  width: 100%; min-height: 44px; padding: 10px 14px; text-align: left;
+  border-style: dashed; font-size: 13px;
+}
+.fold-toggle-main { display: inline-flex; align-items: center; gap: 6px; }
+.fold-toggle-mark { display: inline-block; width: 1em; text-align: center; font-weight: 900; }
+.fold-toggle-summary { font-size: 11px; font-weight: 600; color: var(--muted); }
+.fold-toggle-summary:empty { display: none; }
+.fold-body { display: none; }
+.fold-body.open { display: grid; gap: 12px; }
 
 /* ======= 更新モーダル（新バージョン検知・ソシャゲ風の強制アップデート） =======
    閉じるボタンは無い。安全なタイミング（isSafeToAutoUpdate）になるまで出さないが、

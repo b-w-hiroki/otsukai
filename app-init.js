@@ -528,6 +528,11 @@ function wireGlobalEvents() {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if ((localStorage.getItem("theme") || "auto") === "auto") applyTheme("auto");
   });
+  // 追加シートの任意項目（折りたたみ）。中の値が変わったら閉じたときの要約も更新する
+  $("btn-more-fields").addEventListener("click", toggleMoreFields);
+  $("more-fields").addEventListener("input", updateMoreFieldsSummary);
+  $("more-fields").addEventListener("change", updateMoreFieldsSummary);
+  $("more-fields").addEventListener("click", () => setTimeout(updateMoreFieldsSummary, 0)); // 行き先チップ
   // 写真: 選ぶ / 外す / 拡大して見る
   $("req-photo-input").addEventListener("change", (e) => {
     const file = e.target.files[0];

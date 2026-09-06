@@ -4,6 +4,10 @@
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
+// 任意項目は「＋ くわしく設定」の中に折りたたまれている（add-sheet-fold-test）。使う前に開く
+const openMore = async () => {
+  if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
+};
 const check = t.check;
 
 // 1x1 の透明PNG。ファイル選択の中身は問わない（スタブが data URL を返す）
@@ -19,6 +23,7 @@ await t.ready();
 await page.click("#btn-add-float");
 await sleep(500);
 await page.fill("#new-name", "キャベツ大玉");
+await openMore();
 check("「イラストから選ぶ」ボタンがある", (await page.locator("#btn-req-photo-icon").count()) === 1);
 await page.click("#btn-req-photo-icon");
 await sleep(500);
@@ -26,10 +31,31 @@ check("ピッカーが開く", await page.locator("#icon-picker-sheet.open").isV
 check("「写真をセットする」ボタンは出ない（新規追加時は写真ラベルが既に主導線のため）",
   !(await page.locator("#btn-icon-picker-camera").isVisible()));
 const libCount = await page.evaluate(() => ICON_LIBRARY.length);
+const groupCount = await page.evaluate(() => Object.keys(ICON_GROUPS).length);
 const tileCount = await page.locator('#icon-picker-grid .icon-picker-tile[data-file]').count();
-check("ライブラリの全件がタイルとして並ぶ", tileCount === libCount && libCount >= 100, `${tileCount}/${libCount}`);
+check("ライブラリの全件がDOMにある（表示/非表示は別）", tileCount === libCount && libCount >= 100, `${tileCount}/${libCount}`);
 check("分類の見出しが付く", (await page.locator('#icon-picker-grid .icon-picker-group-hdr').count()) >= 5);
 check("日用品のイラストもある", (await page.locator('#icon-picker-grid .icon-picker-tile[data-file="toiletpaper"]').count()) === 1);
+
+// --- 分類が多いので、1ページの縦スクロールではなくタブで切り替える ---
+const tabs = page.locator("#icon-picker-tabs .icon-picker-tab");
+check("分類の数ぶんタブが並ぶ", (await tabs.count()) === groupCount, String(await tabs.count()));
+check("開いた直後は先頭のタブが選ばれている（🥬野菜）", (await tabs.first().innerText()) === "🥬 野菜" && (await tabs.first().evaluate((el) => el.classList.contains("selected"))));
+check("検索していないときは、選ばれたタブの分類だけ見える", (await page.locator('#icon-picker-grid .icon-picker-tile:visible').count()) < libCount);
+check("見出しは出さない（タブが分類を表すため二重にしない）", (await page.locator('#icon-picker-grid .icon-picker-group-hdr:visible').count()) === 0);
+check("トマト（野菜）は見える", await page.locator('#icon-picker-grid .icon-picker-tile[data-file="tomato"]').isVisible());
+check("トイレットペーパー（日用品）はまだ見えない", !(await page.locator('#icon-picker-grid .icon-picker-tile[data-file="toiletpaper"]').isVisible()));
+// 「日用品」タブに切り替えると、その分類だけに変わる
+await page.click('#icon-picker-tabs .icon-picker-tab:has-text("日用品")');
+await sleep(200);
+check("タブを切り替えるとトイレットペーパーが見える", await page.locator('#icon-picker-grid .icon-picker-tile[data-file="toiletpaper"]').isVisible());
+check("切り替えるとトマトは隠れる", !(await page.locator('#icon-picker-grid .icon-picker-tile[data-file="tomato"]').isVisible()));
+check("選択中のタブ表示が切り替わる", await page.locator('#icon-picker-tabs .icon-picker-tab.selected').innerText() === "🧻 日用品");
+check("非選択のタブは selected でない", !(await tabs.first().evaluate((el) => el.classList.contains("selected"))));
+// 以降の検証・キャベツのタップは「野菜」タブ前提のため、いったん戻しておく
+await tabs.first().click();
+await sleep(200);
+check("野菜タブに戻すとトマトが再び見える", await page.locator('#icon-picker-grid .icon-picker-tile[data-file="tomato"]').isVisible());
 // 品名からの自動判定は「いちばん長いキーワード」を優先する
 const auto = await page.evaluate(() => [matchShortcutIcon("フライパン"), matchShortcutIcon("パンツ"), matchShortcutIcon("食器用洗剤"), matchShortcutIcon("食パン")]);
 check("フライパン→キッチン用品（パンに化けない）", auto[0].endsWith("/kitchen.svg"), auto[0]);
@@ -45,7 +71,9 @@ await sleep(200);
 check("見つからないときは案内が出る", await page.locator("#icon-picker-empty").isVisible());
 await page.fill("#icon-picker-search", "");
 await sleep(200);
-check("空にすると全件に戻る", (await page.locator('#icon-picker-grid .icon-picker-tile:visible').count()) === libCount);
+// 検索を空にすると、全件表示ではなく「検索前に選んでいたタブ（野菜）」だけに戻る
+const veg = await page.evaluate(() => ICON_LIBRARY.filter((it) => it.group === "veg").length);
+check("空にすると検索前のタブ（野菜）に戻る", (await page.locator('#icon-picker-grid .icon-picker-tile:visible').count()) === veg, String(veg));
 check("食器用洗剤→食器用洗剤（洗濯洗剤に化けない）", auto[2].endsWith("/dishsoap.svg"), auto[2]);
 check("食パン→パン", auto[3].endsWith("/bread.svg"), auto[3]);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="cabbage"]');
@@ -96,6 +124,10 @@ await page.click("#btn-stock-detail-photo");
 await sleep(400);
 check("詳細シートからは「写真をセットする」ボタンがイラスト一覧とは別枠で出る（撮る/選ぶも両方できる）",
   await page.locator("#btn-icon-picker-camera").isVisible());
+// パン（bread）は「乳製品・パン・主食」タブで、開いた直後は「野菜」タブのまま。
+// タブを切り替える代わりに検索で出す（検索はタブに関係なく全分類から探せる）
+await page.fill("#icon-picker-search", "食パン");
+await sleep(200);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="bread"]');
 await sleep(700);
 const soyPhoto = await page.evaluate(async () => {

@@ -5,6 +5,10 @@
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep } = t;
+// 任意項目は「＋ くわしく設定」の中に折りたたまれている（add-sheet-fold-test）。使う前に開く
+const openMore = async () => {
+  if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
+};
 const check = t.check;
 
 // 1x1 の透明PNG。ファイル選択の中身は問わない（スタブが data URL を返す）
@@ -101,6 +105,7 @@ await sleep(700);
 check("登録シートが開く", await page.locator("#sheet-add.open").isVisible());
 check("タイトルがよく買うもの登録になっている", (await page.locator("#sheet-add .sheet-title").innerText()).includes("よく買うもの"));
 await page.fill("#new-name", "写真つきテスト品");
+await openMore();
 await pickPhoto("#req-photo-input");
 await sleep(400);
 await page.click('#new-category .cat-chip[data-cat="food"]');
@@ -169,6 +174,10 @@ check("差し替えの完了トーストが出る", toast.includes("写真を変
 const targetCard2 = page.locator(".shortcut-card").filter({ hasText: "トイレットペーパー" }).first();
 await targetCard2.locator(".shortcut-card-photo").click();
 await sleep(400);
+// パン（bread）は「乳製品・パン・主食」タブにあり、開いた直後は「野菜」タブのまま。
+// 検索で出す（検索はタブに関係なく全分類から探せる）
+await page.fill("#icon-picker-search", "食パン");
+await sleep(200);
 await page.click('#icon-picker-grid .icon-picker-tile[data-file="bread"]');
 await sleep(700);
 const icon2 = await targetCard2.locator(".shortcut-card-photo img").getAttribute("src").catch(() => null);

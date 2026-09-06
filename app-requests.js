@@ -116,6 +116,40 @@ async function deleteDestination(id) {
 }
 
 // ===== Bottom sheet =====
+// 任意項目の折りたたみ。開くたびに閉じた状態から始める（ファーストビューに品名・カテゴリ・
+// 追加ボタンを収めるため）。編集で任意項目に値が入っているときだけ自動で開く。
+function hasOptionalFieldValues() {
+  return !!(
+    existingReqPhotoUrl || pendingReqPhoto ||
+    $("new-budget").value.trim() || $("new-brand").value.trim() || $("new-memo").value.trim() ||
+    $("new-assignee").value ||
+    document.querySelector("#new-destination .cat-chip.selected") ||
+    ($("new-cycle-wrap").style.display !== "none" && $("new-cycle-days").value.trim())
+  );
+}
+// 閉じているときに「何が設定済みか」を1行で見せる（設定あり: 写真・メモ）
+function updateMoreFieldsSummary() {
+  const set = [];
+  if (existingReqPhotoUrl || pendingReqPhoto) set.push("写真");
+  if (document.querySelector("#new-destination .cat-chip.selected")) set.push("行き先");
+  if ($("new-budget").value.trim()) set.push("予算");
+  if ($("new-brand").value.trim()) set.push("ブランド");
+  if ($("new-memo").value.trim()) set.push("メモ");
+  if ($("new-assignee").value) set.push("担当");
+  if ($("new-cycle-wrap").style.display !== "none" && $("new-cycle-days").value.trim()) set.push("買う間隔");
+  const open = $("more-fields").classList.contains("open");
+  $("more-fields-summary").textContent = !open && set.length ? "設定あり: " + set.join("・") : "";
+}
+function setMoreFieldsOpen(open) {
+  $("more-fields").classList.toggle("open", !!open);
+  const btn = $("btn-more-fields");
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  btn.querySelector(".fold-toggle-mark").textContent = open ? "－" : "＋";
+  $("more-fields-label").textContent = open ? "くわしい設定を閉じる" : "くわしく設定（写真・メモ・予算など）";
+  updateMoreFieldsSummary();
+}
+function toggleMoreFields() { setMoreFieldsOpen(!$("more-fields").classList.contains("open")); }
+
 function resetSheetToAddMode() {
   editingRequestId = null;
   shortcutMode = false;
@@ -136,6 +170,9 @@ function resetSheetToAddMode() {
   existingReqPhotoUrl = "";
   $("new-cycle-wrap").style.display = "none";
   $("new-cycle-days").value = "";
+  $("new-continue-wrap").style.display = "none"; // 「おつかいを追加」モードのときだけ openSheet() が表示する
+  $("new-continue-add").checked = false;
+  setMoreFieldsOpen(false);   // 任意項目は閉じた状態から（値のリセットが済んでから要約を更新する）
 }
 
 // 追加/編集シートの写真プレビュー。url が空なら「タップして選ぶ」に戻す。
@@ -191,6 +228,7 @@ function openSheet() {
   // closeSheet 側のリセットに頼らず、開くときにも明示的にクリーンな追加モードにする
   resetSheetToAddMode();
   populateAssigneeSelect();
+  $("new-continue-wrap").style.display = ""; // 編集・よく買うもの登録では出さない
   $("sheet-add").classList.add("open");
   $("sheet-backdrop").classList.add("open");
   $("btn-add-float").classList.add("open");
@@ -260,14 +298,33 @@ async function addRequest() {
     }
     if (!(await dbOp(familyRef().child("requests/" + id).set(req), "追加できませんでした"))) return;
     bumpStat("requestedCount");
-    $("new-name").value = "";
-    $("new-memo").value = "";
-    $("new-budget").value = "";
-    $("new-brand").value = "";
-    $("new-urgent").checked = false;
-    $("new-assignee").value = "";
-    closeSheet();
-    showToast("追加しました 🛒", { sound: false });
+    // 「🔁 続けて追加する」が ON なら、まとめ買い用にシートを開いたまま次の品名入力へ進む。
+    // カテゴリ・行き先は同じ買い物で繰り返し使うことが多いので残し、それ以外の
+    // 品ごとの入力（写真・手間・急ぎ・予算・ブランド・メモ・担当者）だけをクリアする
+    if ($("new-continue-add").checked) {
+      $("new-name").value = "";
+      $("new-diff").value = "normal";
+      $("new-urgent").checked = false;
+      $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
+      $("new-assignee").value = "";
+      setReqPhotoPreview("");
+      pendingReqPhoto = null;
+      existingReqPhotoUrl = "";
+      updateMoreFieldsSummary();
+      showToast(`🛒 「${name}」を追加しました（続けて入力できます）`, { sound: false });
+      $("new-name").focus();
+    } else {
+      $("new-name").value = "";
+      $("new-memo").value = "";
+      $("new-budget").value = "";
+      $("new-brand").value = "";
+      $("new-urgent").checked = false;
+      $("new-assignee").value = "";
+      closeSheet();
+      showToast("追加しました 🛒", { sound: false });
+    }
   } finally {
     addingRequest = false;
   }
@@ -289,6 +346,7 @@ function openEditSheet(r) {
   pendingReqPhoto = null;
   existingReqPhotoUrl = r.photoUrl || "";
   setReqPhotoPreview(existingReqPhotoUrl);
+  setMoreFieldsOpen(hasOptionalFieldValues());
   // 編集モード UI
   document.querySelector("#sheet-add .sheet-title").textContent = "✏️ おつかいを編集";
   $("btn-add-request").textContent = "更新する";
@@ -475,6 +533,7 @@ function openShortcutEditSheet(id) {
   pendingReqPhoto = null;
   existingReqPhotoUrl = s.photoUrl || "";
   setReqPhotoPreview(existingReqPhotoUrl);
+  setMoreFieldsOpen(hasOptionalFieldValues());
   document.querySelector("#sheet-add .sheet-title").textContent = "✏️ よく買うものを編集";
   $("btn-add-request").textContent = "更新する";
   $("sheet-add").classList.add("open");
@@ -785,6 +844,7 @@ function matchShortcutIcon(name) {
 // 選ぶと photoUrl にイラストのパスをそのまま入れる（本物の写真と同じ扱い。アップロード不要）。
 let iconPickerOnSelect = null; // (path) => void
 let iconPickerOnCamera = null; // () => void（渡したときだけ「写真をセットする」ボタンをイラスト一覧とは別枠で出す）
+let activeIconGroup = null; // ICON_GROUPS のキー。タブで選んでいる分類（検索中は無視する）
 function openIconPicker({ onSelect, onCamera } = {}) {
   iconPickerOnSelect = onSelect || null;
   iconPickerOnCamera = onCamera || null;
@@ -793,6 +853,8 @@ function openIconPicker({ onSelect, onCamera } = {}) {
   $("btn-icon-picker-camera").style.display = iconPickerOnCamera ? "" : "none";
   $("icon-picker-grid-label").style.display = iconPickerOnCamera ? "" : "none";
   $("icon-picker-search").value = "";
+  activeIconGroup = Object.keys(ICON_GROUPS)[0]; // 開くたびに先頭のタブから始める
+  renderIconPickerTabs();
   renderIconPickerGrid();
   applyIconPickerFilter();
   $("icon-picker-sheet").classList.add("open");
@@ -804,18 +866,40 @@ function closeIconPicker() {
   iconPickerOnSelect = null;
   iconPickerOnCamera = null;
 }
+// 分類ごとのタブ。押すと activeIconGroup を切り替えて絞り込み直す（検索中は無視される）
+function renderIconPickerTabs() {
+  const wrap = $("icon-picker-tabs");
+  if (!wrap) return;
+  wrap.innerHTML = Object.entries(ICON_GROUPS).map(([g, gLabel]) => `
+    <button type="button" class="icon-picker-tab${g === activeIconGroup ? " selected" : ""}" data-group="${g}">${escapeHtml(gLabel)}</button>
+  `).join("");
+  wrap.querySelectorAll(".icon-picker-tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeIconGroup = btn.dataset.group;
+      wrap.querySelectorAll(".icon-picker-tab").forEach((b) => b.classList.toggle("selected", b === btn));
+      applyIconPickerFilter();
+      // 前の分類の途中位置のままにならないよう、グリッドの先頭までスクロールを戻す
+      $("icon-picker-grid").scrollIntoView({ block: "start" });
+    });
+  });
+}
 function renderIconPickerGrid() {
   const grid = $("icon-picker-grid");
   if (!grid) return;
-  // 件数が多いので、分類（ICON_GROUPS）ごとに小見出しを付けて並べる
+  // 件数が多いので、分類（ICON_GROUPS）ごとに1グループとしてまとめる。
+  // 普段はタブで選んだ1分類だけを表示し、検索中だけ全分類を対象に絞り込む
+  // （.icon-picker-group は display:contents でグリッドの並びには影響しない）
   grid.innerHTML = Object.entries(ICON_GROUPS).map(([g, gLabel]) => {
     const items = ICON_LIBRARY.filter((it) => it.group === g);
     if (!items.length) return "";
-    return `<div class="icon-picker-group-hdr">${escapeHtml(gLabel)}</div>` + items.map((it) => `
-    <button type="button" class="icon-picker-tile" data-file="${it.file}" data-search="${escapeHtml([it.label, ...it.keywords].join(" ").toLowerCase())}">
-      <img src="./shortcut-icons/${it.file}.svg" alt="" loading="lazy" />
-      <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
-    </button>`).join("");
+    return `<div class="icon-picker-group" data-group="${g}">
+      <div class="icon-picker-group-hdr">${escapeHtml(gLabel)}</div>
+      ${items.map((it) => `
+      <button type="button" class="icon-picker-tile" data-file="${it.file}" data-search="${escapeHtml([it.label, ...it.keywords].join(" ").toLowerCase())}">
+        <img src="./shortcut-icons/${it.file}.svg" alt="" loading="lazy" />
+        <span class="icon-picker-tile-label">${escapeHtml(it.label)}</span>
+      </button>`).join("")}
+    </div>`;
   }).join("");
   grid.querySelectorAll(".icon-picker-tile").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -830,23 +914,25 @@ function renderIconPickerGrid() {
   $("icon-picker-search").onsearch = applyIconPickerFilter;
 }
 // 200種を超えて目で探しにくいため、ラベルと自動判定キーワードの両方で絞り込む
-// （「醤油」で「調味料」タイルが当たる）。該当タイルが無い分類の見出しは隠す。
+// （「醤油」で「調味料」タイルが当たる）。検索中はタブの分類を無視して全分類から探し、
+// 該当タイルが無い分類の見出しは隠す。検索していないときはタブで選んだ1分類だけを出す
+// （見出しはタブと重複するので隠す）。
 function applyIconPickerFilter() {
   const q = ($("icon-picker-search").value || "").trim().toLowerCase();
+  const searching = !!q;
   const grid = $("icon-picker-grid");
   let any = false;
-  grid.querySelectorAll(".icon-picker-tile").forEach((b) => {
-    const hit = !q || (b.dataset.search || "").includes(q);
-    b.style.display = hit ? "" : "none";
-    if (hit) any = true;
-  });
-  grid.querySelectorAll(".icon-picker-group-hdr").forEach((h) => {
-    let el = h.nextElementSibling, show = false;
-    while (el && !el.classList.contains("icon-picker-group-hdr")) {
-      if (el.style.display !== "none") { show = true; break; }
-      el = el.nextElementSibling;
-    }
-    h.style.display = show ? "" : "none";
+  grid.querySelectorAll(".icon-picker-group").forEach((sec) => {
+    const groupActive = searching || sec.dataset.group === activeIconGroup;
+    let anyInGroup = false;
+    sec.querySelectorAll(".icon-picker-tile").forEach((b) => {
+      const hit = groupActive && (!q || (b.dataset.search || "").includes(q));
+      b.style.display = hit ? "" : "none";
+      if (hit) { anyInGroup = true; any = true; }
+    });
+    sec.style.display = groupActive ? "" : "none";
+    const hdr = sec.querySelector(".icon-picker-group-hdr");
+    if (hdr) hdr.style.display = (searching && anyInGroup) ? "" : "none";
   });
   $("icon-picker-empty").style.display = any ? "none" : "";
 }

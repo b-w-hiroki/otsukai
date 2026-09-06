@@ -2,6 +2,10 @@
 import { startHarness } from "../harness.mjs";
 const t = await startHarness({ noAnimation: true });
 const { page, sleep, OUT } = t;
+// 任意項目は「＋ くわしく設定」の中に折りたたまれている（add-sheet-fold-test）。使う前に開く
+const openMore = async () => {
+  if (!(await page.locator("#more-fields.open").count())) { await page.click("#btn-more-fields"); await sleep(200); }
+};
 const check = t.check;
 
 // 1x1 の透明PNG。ファイル選択の中身は問わない（スタブが data URL を返す）
@@ -16,6 +20,7 @@ await t.ready();
 // --- 追加シートに写真の入力がある ---
 await page.click("#btn-add-float");
 await sleep(700);
+await openMore();
 check("追加シートに写真の入力がある", (await page.locator("#req-photo-input").count()) === 1);
 check("「写真を外す」は最初は隠れている", !(await page.locator("#btn-req-photo-clear").isVisible()));
 
@@ -90,6 +95,7 @@ check("外すとサムネイルが消える", (await row2.locator(".photo-thumb"
 await page.click("#btn-add-float");
 await sleep(600);
 await page.fill("#new-name", "ホットケーキミックス");
+await openMore();
 await pick("#req-photo-input");
 await sleep(400);
 await page.click('#new-category .cat-chip[data-cat="food"]');
