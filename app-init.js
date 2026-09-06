@@ -610,6 +610,11 @@ function wireGlobalEvents() {
   });
   $("btn-stock-sheet-close").addEventListener("click", closeStockSheet);
   $("btn-add-stock").addEventListener("click", addStock);
+  // ストック登録シートの任意項目（折りたたみ）。中の値が変わったら閉じたときの要約も更新する
+  $("btn-stock-more-fields").addEventListener("click", toggleStockMoreFields);
+  $("stock-more-fields").addEventListener("input", updateStockMoreFieldsSummary);
+  $("stock-more-fields").addEventListener("change", updateStockMoreFieldsSummary);
+  $("stock-more-fields").addEventListener("click", () => setTimeout(updateStockMoreFieldsSummary, 0)); // 行き先チップ
   $("btn-stock-photo-icon").addEventListener("click", (e) => {
     e.preventDefault();
     openIconPicker({

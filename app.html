@@ -746,21 +746,7 @@
               <button type="button" class="cat-chip" data-cat="other">📦 その他</button>
             </div>
           </div>
-          <!-- 行き先が1件も登録されていない家族には行ごと出さない（JS で display を切り替える） -->
-          <div id="stock-destination-wrap" style="display:none;">
-            <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">行き先（任意）</label>
-            <div id="stock-destination" class="cat-chips"></div>
-          </div>
-          <input id="stock-memo" placeholder="こだわり・メモ（任意）例: 国産・無添加" maxlength="60" />
-          <div style="position:relative;">
-            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
-            <input id="stock-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
-          </div>
-          <div>
-            <input id="stock-cycle" type="number" min="1" max="365" inputmode="numeric" placeholder="何日ごとに買う？（任意）例: 7" />
-            <p class="muted" style="font-size:11px;margin-top:4px;">指定すると、切れる前に「⏳ そろそろ切れるかも」でお知らせします。空欄なら買い物履歴から自動で学習します。</p>
-          </div>
-          <!-- 写真アップロード -->
+          <!-- 写真（任意・カテゴリと同じく基本の位置。おつかい追加シートと同じ考え方） -->
           <div>
             <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">商品写真（任意）</label>
             <label id="stock-photo-label" class="stock-photo-upload">
@@ -776,8 +762,33 @@
             <button class="slp-btn" data-lvl="low">🟡 少ない</button>
             <button class="slp-btn" data-lvl="out">🔴 切れた</button>
           </div>
-          <button id="btn-add-stock">追加する</button>
+          <!-- 任意項目はまとめて折りたたむ（おつかい追加シートと同じ考え方）。
+               編集時に任意項目へ値が入っていれば自動で開く（app-stock.js の setStockMoreFieldsOpen）。 -->
+          <button type="button" id="btn-stock-more-fields" class="ghost fold-toggle" aria-expanded="false" aria-controls="stock-more-fields">
+            <span class="fold-toggle-main"><span class="fold-toggle-mark" aria-hidden="true">＋</span> <span id="stock-more-fields-label">くわしく設定（行き先・メモ・予算など）</span></span>
+            <span id="stock-more-fields-summary" class="fold-toggle-summary"></span>
+          </button>
+          <div id="stock-more-fields" class="fold-body">
+            <!-- 行き先が1件も登録されていない家族には行ごと出さない（JS で display を切り替える） -->
+            <div id="stock-destination-wrap" style="display:none;">
+              <label style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">行き先（任意）</label>
+              <div id="stock-destination" class="cat-chips"></div>
+            </div>
+            <input id="stock-memo" placeholder="こだわり・メモ（任意）例: 国産・無添加" maxlength="60" />
+            <div style="position:relative;">
+              <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:600;pointer-events:none;">¥</span>
+              <input id="stock-budget" type="number" min="0" max="9999999" placeholder="予算上限（任意）" style="padding-left:26px;" />
+            </div>
+            <div>
+              <input id="stock-cycle" type="number" min="1" max="365" inputmode="numeric" placeholder="何日ごとに買う？（任意）例: 7" />
+              <p class="muted" style="font-size:11px;margin-top:4px;">指定すると、切れる前に「⏳ そろそろ切れるかも」でお知らせします。空欄なら買い物履歴から自動で学習します。</p>
+            </div>
+          </div>
         </div>
+      </div>
+      <!-- 主操作はシート下部に固定（docs/rules/ui.md §5）。中身をスクロールしなくても押せる -->
+      <div class="sheet-footer">
+        <button id="btn-add-stock" class="btn-block">追加する</button>
       </div>
     </div>
 
