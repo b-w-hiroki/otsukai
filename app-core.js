@@ -100,6 +100,16 @@ if (isConfigured) {
     console.error("[init] Firebase SDK の初期化に失敗:", e);
     firebaseInitFailed = true;
   }
+  // 利用者数・利用状況の把握用（Google Analytics for Firebase）。広告ブロッカーで
+  // firebase-analytics-compat.js だけ読み込めないことがあるため、auth/db とは別に
+  // 独立して失敗させる（Analyticsが死んでもアプリ本体は普通に動く）
+  if (!firebaseInitFailed) {
+    try {
+      if (firebase.analytics) firebase.analytics();
+    } catch (e) {
+      console.error("[init] Firebase Analytics の初期化に失敗:", e);
+    }
+  }
 }
 
 // ===== PWA インストール導線 =====
