@@ -140,7 +140,7 @@
 |---|---|---|
 | 4 | 予算アラート（月100円など）の設定 | [`rules/deploy.md` §5](./rules/deploy.md) |
 | 6 | 通知タップで `app.html` を開く変更（`functions/index.js`）を反映する `firebase deploy --only functions`（急ぎではない） | [`rules/deploy.md` §3](./rules/deploy.md) |
-| 7 | i-mobile の媒体審査を紹介ページの URL（`https://otsukai.birdman-studio.com/`）で再申請 | [`monetization-ideas.md`](./monetization-ideas.md) |
 
 済み（2026-09-03）: functions 初回デプロイ（Node 22）、コンテナイメージの削除ポリシー（1日）、
 お問い合わせメール通知の Secret Manager 登録と到達確認。
+済み（2026-09-07）: i-mobile の媒体審査、紹介ページのURLで通過（[`monetization-ideas.md`](./monetization-ideas.md)）。
