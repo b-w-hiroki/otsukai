@@ -177,7 +177,7 @@
     .end .box p { margin: 0; font-size: 15px; }
     .end .box small { display: block; color: var(--muted); font-size: 12.5px; }
 
-    /* 広告枠（app.html の .ad-slot と同じ見た目。スポット未作成のため現状は空枠のまま） */
+    /* 広告枠（app.html の .ad-slot と同じ見た目。中身が描画されるまで .has-ad が付かず空枠として隠れる） */
     .ad-slot { display: none; margin: 32px auto 0; text-align: center; }
     .ad-slot.has-ad { display: block; }
     .ad-slot .ad-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 6px; font-weight: 600; }
@@ -375,7 +375,8 @@
       update();
     })();
 
-    // 広告枠 (#ad-slot-lp): i-mobile の新規スポット作成後、pid/sp/pc を実際の値に置き換えて
+    // 広告枠 (#ad-slot-lp): i-mobile「トップ画面」スポット設定済み（pid/mid/asidは
+    // docs/monetization-ideas.md の配置済みスポット表を参照）。
     // app-init.js の injectImobileBanner() と同じ仕組み（SP/PC別タグを端末判定して
     // 片方だけ注入・広告SDKが描画するまで枠を隠す）。このページは app.html の JS を
     // 読み込まない独立した静的ページのため、ここに同等の処理を複製している。
