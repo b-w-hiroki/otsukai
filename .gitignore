@@ -5,3 +5,6 @@ package-lock.json
 # テストの出力（スクショ）
 tests/**/shots/
 tests/shots/
+
+# Claude Code セッションの実行時ファイル（リポジトリの内容ではない）
+.claude/scheduled_tasks.lock
