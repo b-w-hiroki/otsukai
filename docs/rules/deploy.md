@@ -161,3 +161,17 @@ firebase functions:artifacts:setpolicy --location asia-southeast1
 ```
 
 予算アラート（Google Cloud Console → お支払い → 予算とアラート）も月100円などで設定推奨。
+
+## 6. 利用者数・コストの確認方法
+
+| 知りたいこと | 見る場所 |
+|---|---|
+| 実際に使われている人数（一番正確） | Firebase Console → Realtime Database → `families/*/members` の件数を数える。離脱した試用アカウントを含まない |
+| 登録アカウント数・最終ログイン日時 | Firebase Console → Authentication → Users |
+| 利用状況の推移（DAU/MAU・継続率など） | Firebase Console → Analytics（[`app.html`](../../app.html) が起動時に自動収集。個人を特定しない集計データのみ） |
+| Functions呼び出し回数・DB/Storageの転送量 | Firebase Console → 各プロダクトの使用量タブ |
+| 実際の請求額 | Google Cloud Console → お支払い |
+
+Analytics は `firebase-config.js` の `measurementId` を使って `app.html` から自動収集している
+（`app-core.js` の Firebase init 部分）。広告ブロッカー等で読み込めなくてもアプリ本体の動作には影響しない
+（auth/db の初期化とは別に try/catch している）。個人情報の扱いは [`privacy.html`](../../privacy.html) に明記。
