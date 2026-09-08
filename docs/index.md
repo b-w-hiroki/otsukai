@@ -17,6 +17,7 @@
 | **PWA更新の仕組み・SWの落とし穴** | `docs/rules/deploy.md` §4 | `docs/rules/ui.md` §6 |
 | **更新のやり方（利用者の操作）** | `docs/features.md` §9 メンテナンス | — |
 | **DBルールの適用手順** | `docs/rules/deploy.md` §2 | `functions/README.md` §3 |
+| **DBの構造（誰が何を書けるか）** | `database.rules.json` | `docs/db-schema.md`（早見表・実体を持たない） |
 | **functions のデプロイ手順** | `docs/rules/deploy.md` §3 | `functions/README.md` デプロイ手順 |
 | **Firebase の運用コスト** | `docs/rules/deploy.md` §5 | `functions/README.md` 末尾 |
 | **サーバー関数の責務** | `functions/README.md` 含まれる関数 | — |
@@ -62,12 +63,13 @@
 | [`../functions/README.md`](../functions/README.md) | 関数10個の責務・仕組み図・VAPID/Blaze/メール通知の設定 | 関数追加のたび更新 |
 | [`release-plan.md`](./release-plan.md) | ストア配信 Phase 0/1/2・費用表 | **金額は2026年7月時点**（Play $25 / Apple $99・年） |
 | [`monetization-ideas.md`](./monetization-ideas.md) | 広告配置案・i-mobile の PID/asid 実値・残タスク | 配置変更のたび更新 |
+| [`db-schema.md`](./db-schema.md) | RTDBの全パスとフィールドの早見表（正本ではない） | フィールドを足す/変えるたび手で更新 |
 
 **コードの中にある事実**（ドキュメントに写さない。ここを見る）
 
 | 知りたいこと | 見る場所 |
 |---|---|
-| DBの構造と権限 | `database.rules.json` |
+| DBの構造と権限（正本） | `database.rules.json`（人が読む早見表は [`db-schema.md`](./db-schema.md)） |
 | Firebase プロジェクトID | `.firebaserc`（`otsukai-app-4b62b`） |
 | 色・余白・角丸のトークン | `styles.css` 冒頭の `:root` |
 | 現在のキャッシュ版 | `sw.js` の `CACHE` |
