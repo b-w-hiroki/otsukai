@@ -8,6 +8,7 @@ const CACHE = "otsukai-v154";
 const PRECACHE = [
   "./app.html",
   "./index.html",
+  "./sister-apps.js",
   "./hub.html",
   "./news.html",
   "./news-item.html",
