@@ -34,7 +34,7 @@
       --ink:#1c1917; --ink-2:#44403c; --muted:#57534e; --border:#e7e5e1; --bg:#faf9f7; --surface:#fff; --paper:#fffdf5;
       --pri:#6366f1; --pri-dark:#4f46e5; --pri-soft:#eeecfb;
       --marker:#fde68a; --top-bg:rgba(250,249,247,0.9);
-      --c-open:#3b82f6; --c-open-soft:#eff6ff; --c-claimed:#b45309; --c-claimed-soft:#fffbeb; --c-done:#047857; --c-done-soft:#ecfdf5; --c-thanks:#be185d; --c-thanks-soft:#fdf2f8;
+      --c-open:#1d4ed8; --c-open-soft:#eff6ff; --c-claimed:#b45309; --c-claimed-soft:#fffbeb; --c-done:#047857; --c-done-soft:#ecfdf5; --c-thanks:#be185d; --c-thanks-soft:#fdf2f8;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -67,7 +67,9 @@
 
     /* ボタン */
     .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 26px; border-radius: 12px; font-weight: 700; font-size: 15px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
-    .btn-solid { background: var(--pri); color: #fff; }
+    /* 白文字とのコントラスト 4.5:1 以上になるよう、ライトは一段濃い紫 */
+    .btn-solid { background: var(--pri-dark); color: #fff; }
+    @media (prefers-color-scheme: dark) { .btn-solid { background: var(--pri); color: #14131a; } }
     .btn-solid:active { transform: translateY(1px); }
     .btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; }
     .textlink { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; font-weight: 700; color: var(--pri-dark); text-decoration: underline; text-underline-offset: 4px; }
@@ -265,7 +267,7 @@
         <p class="note">インストール不要。iPhone / Android のブラウザで開いて、「ホーム画面に追加」するとアプリのように使えます。</p>
       </div>
       <div class="stage" aria-hidden="true">
-        <div class="phone"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="" /></div>
+        <div class="phone"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="" fetchpriority="high" /></div>
         <div class="chip c1"><img src="./shortcut-icons/milk.svg" alt="" /></div>
         <div class="chip c2"><img src="./shortcut-icons/egg.svg" alt="" /></div>
         <div class="chip c3"><img src="./shortcut-icons/carrot.svg" alt="" /></div>
@@ -308,11 +310,11 @@
       <h2 class="maru">ほかにも、毎日の買い物を軽くする仕組み</h2>
       <p class="sub">どれも「家族で共有する」ことを前提に作っています。</p>
       <div class="more">
-        <div class="li"><img src="./shortcut-icons/rice.svg" alt="" /><div><b>「そろそろ切れるかも」を予測</b><p>買った履歴から次に切れる時期を見積もって、切れる前にリストへ。米や洗剤のような「気づいたら無い」を減らします。</p></div></div>
-        <div class="li"><img src="./shortcut-icons/bread.svg" alt="" /><div><b>家のストックを「たっぷり / 少ない / なし」で記録</b><p>写真付きで在庫を共有。買い忘れも、買いすぎもなくなります。</p></div></div>
-        <div class="li"><img src="./shortcut-icons/tomato.svg" alt="" /><div><b>よく買うものはワンタップ</b><p>定番品を登録しておけば、毎回入力しなくても即リストに入ります。</p></div></div>
-        <div class="li"><img src="./shortcut-icons/apple.svg" alt="" /><div><b>お手伝いがポイントに<span class="pt">+3pt</span></b><p>おつかいを完了するとポイントがたまり、家族で決めた「ごほうび」と交換できます。子どものやる気が続きます。</p></div></div>
-        <div class="li"><img src="./shortcut-icons/onion.svg" alt="" /><div><b>いくら使ったかのメモ</b><p>買った金額を記録して、食費・日用品費をざっくり把握。レシートの読み取りにも対応しています。</p></div></div>
+        <div class="li"><img loading="lazy" src="./shortcut-icons/rice.svg" alt="" /><div><b>「そろそろ切れるかも」を予測</b><p>買った履歴から次に切れる時期を見積もって、切れる前にリストへ。米や洗剤のような「気づいたら無い」を減らします。</p></div></div>
+        <div class="li"><img loading="lazy" src="./shortcut-icons/bread.svg" alt="" /><div><b>家のストックを「たっぷり / 少ない / なし」で記録</b><p>写真付きで在庫を共有。買い忘れも、買いすぎもなくなります。</p></div></div>
+        <div class="li"><img loading="lazy" src="./shortcut-icons/tomato.svg" alt="" /><div><b>よく買うものはワンタップ</b><p>定番品を登録しておけば、毎回入力しなくても即リストに入ります。</p></div></div>
+        <div class="li"><img loading="lazy" src="./shortcut-icons/apple.svg" alt="" /><div><b>お手伝いがポイントに<span class="pt">+3pt</span></b><p>おつかいを完了するとポイントがたまり、家族で決めた「ごほうび」と交換できます。子どものやる気が続きます。</p></div></div>
+        <div class="li"><img loading="lazy" src="./shortcut-icons/onion.svg" alt="" /><div><b>いくら使ったかのメモ</b><p>買った金額を記録して、食費・日用品費をざっくり把握。レシートの読み取りにも対応しています。</p></div></div>
       </div>
     </section>
 
@@ -328,13 +330,13 @@
         </div>
       </div>
       <div class="car" id="shots-car" tabindex="0" aria-label="アプリの画面イメージ（横スクロール）">
-        <figure><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="ホーム画面" /><figcaption>ホーム — 買い物リストと「そろそろ切れるかも」</figcaption></figure>
-        <figure><img src="./docs/screenshots/03-add-sheet.png" width="480" height="1039" alt="おつかいを追加する画面" /><figcaption>追加 — 写真・カテゴリ・急ぎを付けて頼む</figcaption></figure>
-        <figure><img src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" alt="よく買うもの" /><figcaption>よく買うもの — タップで即リストへ</figcaption></figure>
-        <figure><img src="./docs/screenshots/11-stock.png" width="480" height="1039" alt="ストック" /><figcaption>ストック — 家にある物を「たっぷり / 少ない / なし」で</figcaption></figure>
-        <figure><img src="./docs/screenshots/10-missions.png" width="480" height="1039" alt="ミッション" /><figcaption>ミッション — ポイントとごほうび</figcaption></figure>
-        <figure><img src="./docs/screenshots/19-expenses.png" width="480" height="1039" alt="支出・家計" /><figcaption>支出 — いくら使ったかをメモ</figcaption></figure>
-        <figure><img src="./docs/screenshots/09-history.png" width="480" height="1039" alt="購入履歴" /><figcaption>履歴 — 買ったものは家族の記録に</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/01-home.png" width="480" height="1039" alt="ホーム画面" /><figcaption>ホーム — 買い物リストと「そろそろ切れるかも」</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/03-add-sheet.png" width="480" height="1039" alt="おつかいを追加する画面" /><figcaption>追加 — 写真・カテゴリ・急ぎを付けて頼む</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/08-shortcuts.png" width="480" height="1039" alt="よく買うもの" /><figcaption>よく買うもの — タップで即リストへ</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/11-stock.png" width="480" height="1039" alt="ストック" /><figcaption>ストック — 家にある物を「たっぷり / 少ない / なし」で</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/10-missions.png" width="480" height="1039" alt="ミッション" /><figcaption>ミッション — ポイントとごほうび</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/19-expenses.png" width="480" height="1039" alt="支出・家計" /><figcaption>支出 — いくら使ったかをメモ</figcaption></figure>
+        <figure><img loading="lazy" decoding="async" src="./docs/screenshots/09-history.png" width="480" height="1039" alt="購入履歴" /><figcaption>履歴 — 買ったものは家族の記録に</figcaption></figure>
       </div>
       <div class="car-dots" id="shots-dots" aria-hidden="true"></div>
     </section>
