@@ -13,6 +13,7 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
+const { crossedBudget, budgetNotification } = require("./budget-alert");
 
 admin.initializeApp();
 
@@ -296,10 +297,12 @@ exports.notifyStatusChange = functions
   .onUpdate(async (change, context) => {
     const before = change.before.val() || {};
     const after = change.after.val() || {};
-    if (before.status === after.status) return null;
+    const statusChanged = before.status !== after.status;
+    const crossedBudgetNow = crossedBudget(before, after);
+    if (!statusChanged && !crossedBudgetNow) return null;
     const { familyId } = context.params;
     try {
-      if (after.status === "claimed" && after.claimedBy && after.claimedBy !== after.requestedBy) {
+      if (statusChanged && after.status === "claimed" && after.claimedBy && after.claimedBy !== after.requestedBy) {
         const claimer = await memberName(familyId, after.claimedBy);
         await sendToFamily(familyId, {
           title: "🙋 立候補がありました",
@@ -307,12 +310,21 @@ exports.notifyStatusChange = functions
           tag: `request-${context.params.requestId}`,
           filterUid: { only: after.requestedBy },
         });
-      } else if (after.status === "done" && after.completedBy && after.completedBy !== after.requestedBy) {
+      } else if (statusChanged && after.status === "done" && after.completedBy && after.completedBy !== after.requestedBy) {
         const buyer = await memberName(familyId, after.completedBy);
         await sendToFamily(familyId, {
           title: "✅ 買ってきました！",
           body: `${buyer}さんが「${after.name}」を買ってきました`,
           tag: `request-${context.params.requestId}`,
+          filterUid: { only: after.requestedBy },
+        });
+      }
+      if (crossedBudgetNow && after.requestedBy && after.actualCostBy !== after.requestedBy) {
+        const recorder = await memberName(familyId, after.actualCostBy || after.completedBy);
+        const message = budgetNotification(after, recorder);
+        await sendToFamily(familyId, {
+          ...message,
+          tag: `budget-${context.params.requestId}`,
           filterUid: { only: after.requestedBy },
         });
       }

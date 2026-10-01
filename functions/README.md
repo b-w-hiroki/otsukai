@@ -133,7 +133,7 @@ firebase functions:log --only shoppingReminder
 |---|---|---|
 | `shoppingReminder` | 5分ごと（Scheduler） | 設定時刻（5分きざみ）に未完了の買い物があれば家族へリマインド |
 | `notifyNewRequest` | requests onCreate | 新しい依頼を家族へプッシュ（指名ありは本人だけ、急ぎは🔥） |
-| `notifyStatusChange` | requests onUpdate | 立候補・完了を依頼者本人へプッシュ |
+| `notifyStatusChange` | requests onUpdate | 立候補・完了と、実支出が初めて予算を超えた時に依頼者本人へプッシュ |
 | `notifyReaction` | reactions onCreate | 「ありがとう」を完了した本人へプッシュ（依頼×人ごとに1回だけ） |
 | `awardPoints` | requests onUpdate | 完了でポイント付与・取り消しで返却（**サーバー側で付与＝偽造不可**）＋ウィークリーミッションの進捗記録・達成判定 |
 | `notifyRewardRedeem` | rewardLogs onCreate | ごほうび交換を本人以外へプッシュ＋交換履歴を最新50件にローテーション |

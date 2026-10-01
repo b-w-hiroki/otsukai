@@ -304,13 +304,17 @@ async function recordActualCost(id) {
   if (input === null) return;
   const trimmed = input.trim();
   if (trimmed === "") {
-    await dbOp(familyRef().child(`requests/${id}/actualCost`).remove(), "記録できませんでした");
+    await dbOp(familyRef().child(`requests/${id}`).update({ actualCost: null, actualCostBy: null, actualCostAt: null }), "記録できませんでした");
     return;
   }
   const val = parseInt(trimmed.replace(/[^\d]/g, ""), 10);
   if (!(val > 0)) { showToast("金額を数字で入力してください", { sound: false }); return; }
-  if (!(await dbOp(familyRef().child(`requests/${id}/actualCost`).set(val), "記録できませんでした"))) return;
-  showToast(`💴 ${val.toLocaleString()}円を記録しました`, { sound: false });
+  if (!(await dbOp(familyRef().child(`requests/${id}`).update({ actualCost: val, actualCostBy: state.uid, actualCostAt: now() }), "記録できませんでした"))) return;
+  if (r.budget > 0 && val > r.budget) {
+    showToast(`⚠️ 予算を${(val - r.budget).toLocaleString()}円超えています（${val.toLocaleString()}円）`, { sound: false });
+  } else {
+    showToast(`💴 ${val.toLocaleString()}円を記録しました`, { sound: false });
+  }
 }
 
 // リアクションの付け外し（同じ絵文字をもう一度タップで取消）
