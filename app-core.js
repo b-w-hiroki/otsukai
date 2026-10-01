@@ -105,7 +105,14 @@ if (isConfigured) {
   // 独立して失敗させる（Analyticsが死んでもアプリ本体は普通に動く）
   if (!firebaseInitFailed) {
     try {
-      if (firebase.analytics) firebase.analytics();
+      if (firebase.analytics) {
+        // ホーム画面から起動したか（GA4 のカスタム定義 display_mode）。全イベントに付ける
+        const standalone = (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+        window.gtag("set", { display_mode: standalone ? "standalone" : "browser" });
+        firebase.analytics();
+      }
     } catch (e) {
       console.error("[init] Firebase Analytics の初期化に失敗:", e);
     }
