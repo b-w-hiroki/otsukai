@@ -193,6 +193,7 @@ body {
   width: 100%; min-height: 44px; text-align: left;
   background: none; border: none; box-shadow: none; padding: 0;
   margin: 0 0 8px; cursor: pointer; color: inherit; font: inherit;
+  scroll-margin-block: 80px calc(var(--nav-height) + 20px);
 }
 .settings-acc-hdr:hover:not(:disabled) { background: none; box-shadow: none; transform: none; }
 .settings-acc-hdr:active:not(:disabled) { transform: none; box-shadow: none; }
@@ -824,6 +825,7 @@ button, a, [role="button"] { touch-action: manipulation; -webkit-user-select: no
   flex: 1; min-height: 0;
   overscroll-behavior: contain;
 }
+#sheet-add .sheet-content { padding-bottom: 6px; }
 /* ヘッダーはスクロールしても常に見える位置に固定（重複定義を統合） */
 .sheet-header {
   display: flex; align-items: center; justify-content: space-between;

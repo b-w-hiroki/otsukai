@@ -16,7 +16,7 @@
 import http from "node:http";
 import { readFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { extname, join, normalize, dirname } from "node:path";
+import { extname, join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
@@ -52,7 +52,7 @@ export async function startHarness(opts = {}) {
   const ocrStub = await readFile(join(HERE, "ocr-stub.js"), "utf8");
   const server = http.createServer(async (req, res) => {
     try {
-      const p = normalize(decodeURIComponent(new URL(req.url, "http://x").pathname));
+      const p = decodeURIComponent(new URL(req.url, "http://x").pathname);
       if (p.startsWith("/__fb/")) {
         res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });
         return res.end(p.includes("firebase-app-compat") ? stub : "//");
@@ -63,7 +63,7 @@ export async function startHarness(opts = {}) {
       }
       // テストは "/" でアプリ本体（app.html）を開く。ルートの index.html は紹介ページで、
       // ここではアプリの挙動を見たいため
-      const f = join(ROOT, p === "/" ? "app.html" : p.replace(/^\/+/, ""));
+      const f = resolve(ROOT, p === "/" ? "app.html" : p.replace(/^\/+/, ""));
       if (!f.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
       let b = await readFile(f);
       if (f.endsWith("app.html")) {

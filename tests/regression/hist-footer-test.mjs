@@ -28,13 +28,14 @@ const histBtn2 = await page.locator("#btn-history-close").boundingBox();
 check("スクロール後も閉じるボタンが同位置", Math.abs(histBtn2.y-histBtn.y) < 2, `y=${Math.round(histBtn2.y)}`);
 await page.screenshot({path:`${OUT}/h2-hist-scrolled.png`});
 
-// 実タップで閉じる
-await page.locator("#btn-history-close").tap();
+// CDP で実タッチスワイプした直後も、強制指定なしの通常クリックで
+// 固定フッターの実ヒット領域と click ハンドラーを確認する。
+await page.locator("#btn-history-close").click();
 await sleep(600);
 check("タップで閉じられる", await page.locator("#history-sheet.open").count()===0);
 // 背景タップでも閉じられる
 await t.openHistory(); await sleep(700);
-await page.locator("#sheet-backdrop").tap({position:{x:195,y:40}});
+await page.locator("#sheet-backdrop").click({position:{x:195,y:40}});
 await sleep(600);
 check("背景タップでも閉じられる", await page.locator("#history-sheet.open").count()===0);
 

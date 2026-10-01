@@ -16,7 +16,7 @@ jobs:
 
       - name: JS 構文チェック（単体ファイル）
         run: |
-          for f in app-*.js news.js sw.js firebase-messaging-sw.js firebase-config.js functions/index.js; do
+          for f in app-*.js news.js sw.js firebase-messaging-sw.js firebase-config.js functions/*.js; do
             node --check "$f"
           done
 
