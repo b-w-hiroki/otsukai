@@ -46,16 +46,29 @@ export async function startHarness(opts = {}) {
     // 📣 新しいお知らせのモーダル（app-init.js の initNewsBadge）。既定では出さない
     // （出るとオーバーレイが他の全テストの操作を邪魔する）。news-test だけ true にする。
     newsModal = false,
+    authUser = "signed-in",  // "signed-in" | "signed-out"
+    authDelayMs = 0,         // auth restoration UI tests can keep the loading screen visible
   } = opts;
 
   const stub = await readFile(join(HERE, "fb-stub.js"), "utf8");
+  const authStub = stub
+    .replace(
+      'currentUser: { uid: "uid-parent", metadata: { lastSignInTime: new Date().toISOString() }, delete: async () => {} },',
+      authUser === "signed-out"
+        ? 'currentUser: null,'
+        : 'currentUser: { uid: "uid-parent", metadata: { lastSignInTime: new Date().toISOString() }, delete: async () => {} },'
+    )
+    .replace(
+      'onAuthStateChanged(cb) { setTimeout(() => cb({ uid: "uid-parent" }), 0); },',
+      `onAuthStateChanged(cb) { setTimeout(() => cb(${authUser === "signed-out" ? "null" : '{ uid: "uid-parent" }'}), ${Number(authDelayMs) || 0}); },`
+    );
   const ocrStub = await readFile(join(HERE, "ocr-stub.js"), "utf8");
   const server = http.createServer(async (req, res) => {
     try {
       const p = decodeURIComponent(new URL(req.url, "http://x").pathname);
       if (p.startsWith("/__fb/")) {
         res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });
-        return res.end(p.includes("firebase-app-compat") ? stub : "//");
+        return res.end(p.includes("firebase-app-compat") ? authStub : "//");
       }
       if (p.startsWith("/__ocr/")) {
         res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });

@@ -204,11 +204,22 @@ function playBeep(urgent) {
 }
 
 // ===== Auth =====
+const LAUNCH_GUIDE_SEEN_KEY = "otsukaiLaunchGuideSeenV1";
+function hasSeenLaunchGuide() {
+  try { return localStorage.getItem(LAUNCH_GUIDE_SEEN_KEY) === "1"; }
+  catch (e) { return false; }
+}
+function finishLaunchGuide(mode) {
+  try { localStorage.setItem(LAUNCH_GUIDE_SEEN_KEY, "1"); } catch (e) {}
+  switchAuthMode(mode === "signup" ? "signup" : "signin");
+  showScreen("auth");
+  requestAnimationFrame(() => $("btn-google")?.focus());
+}
 function initAuthListener() {
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       state.uid = null;
-      showScreen("auth");
+      showScreen(hasSeenLaunchGuide() ? "auth" : "welcome");
       return;
     }
     state.uid = user.uid;

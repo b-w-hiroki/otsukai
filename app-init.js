@@ -443,6 +443,13 @@ function renderOnboardingInstallStep() {
 
 // ===== Init =====
 function wireGlobalEvents() {
+  $("btn-welcome-start").addEventListener("click", () => finishLaunchGuide("signup"));
+  $("btn-welcome-login").addEventListener("click", () => finishLaunchGuide("signin"));
+  $("btn-welcome-about").addEventListener("click", openAppAbout);
+  $("btn-about-app").addEventListener("click", openAppAbout);
+  $("btn-app-about-close").addEventListener("click", () => closeAppAbout());
+  $("app-about-dialog").addEventListener("cancel", (e) => { e.preventDefault(); closeAppAbout(); });
+  $("app-about-dialog").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeAppAbout(); });
   $("btn-google").addEventListener("click", signInGoogle);
   $("btn-auth-submit").addEventListener("click", submitAuthForm);
   $("auth-agree").addEventListener("change", updateAuthAgreeGate);
@@ -654,6 +661,23 @@ function wireGlobalEvents() {
     });
   }, 5 * 60000);
 }
+
+const APP_ABOUT_HISTORY_KEY = "otsukaiAbout";
+function openAppAbout() {
+  const dialog = $("app-about-dialog");
+  if (!dialog || dialog.open) return;
+  history.pushState({ ...(history.state || {}), [APP_ABOUT_HISTORY_KEY]: true }, "");
+  dialog.showModal();
+  $("btn-app-about-close")?.focus();
+}
+function closeAppAbout(fromHistory = false) {
+  const dialog = $("app-about-dialog");
+  if (dialog?.open) dialog.close();
+  if (!fromHistory && history.state?.[APP_ABOUT_HISTORY_KEY]) history.back();
+}
+window.addEventListener("popstate", () => {
+  if ($("app-about-dialog")?.open && !history.state?.[APP_ABOUT_HISTORY_KEY]) closeAppAbout(true);
+});
 
 // i-mobile のバナータグを端末別に注入する。
 // SP/PC 用タグを別サイト/別プラットフォームで併用するのは規約違反のため、

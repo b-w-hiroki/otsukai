@@ -57,6 +57,46 @@ body {
 .screen { display: none; }
 .screen.active { display: block; }
 
+/* ======= First launch / About ======= */
+.launch-guide {
+  width: min(100%, 430px); min-height: 100dvh; margin: 0 auto;
+  padding: max(34px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; background:
+    radial-gradient(circle at 18% 18%, rgba(129,140,248,.22), transparent 34%),
+    radial-gradient(circle at 82% 72%, rgba(124,58,237,.14), transparent 38%);
+}
+.launch-guide-logo { border-radius: 22px; box-shadow: 0 12px 30px rgba(99,102,241,.22); }
+.launch-guide-kicker { margin: 20px 0 6px; color: var(--pri); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+.launch-guide h1 { margin: 0; font-size: clamp(28px, 8vw, 36px); }
+.launch-guide-lead { max-width: 340px; margin: 14px 0 18px; color: var(--ink-2); font-size: 15px; line-height: 1.8; }
+.launch-guide-points { width: 100%; display: grid; gap: 8px; margin-bottom: 24px; }
+.launch-guide-points span { min-height: 44px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); font-weight: 700; font-size: 13px; }
+.launch-guide-actions { width: 100%; }
+.launch-guide-actions > button { min-height: 48px; }
+.launch-guide-note { margin: 7px 0 10px; color: var(--muted); font-size: 11px; }
+.launch-guide-about { min-height: 44px; margin-top: 8px; padding: 8px 14px; background: transparent; color: var(--pri); box-shadow: none; text-decoration: underline; text-underline-offset: 3px; }
+.launch-guide-about:hover:not(:disabled) { transform: none; box-shadow: none; }
+
+.app-about-dialog { width: min(calc(100% - 32px), 430px); max-height: calc(100dvh - 32px); padding: 0; border: 0; border-radius: 22px; color: var(--ink); background: var(--surface); box-shadow: 0 24px 70px rgba(15,12,50,.28); }
+.app-about-dialog::backdrop { background: rgba(15,12,50,.58); backdrop-filter: blur(3px); }
+.app-about-card { padding: 24px; overflow-y: auto; }
+.app-about-icon { font-size: 42px; text-align: center; }
+.app-about-card h2 { margin-top: 8px; text-align: center; font-size: 21px; }
+.app-about-card p, .app-about-card li { color: var(--ink-2); font-size: 14px; line-height: 1.7; }
+.app-about-card ul { margin: 16px 0; padding-left: 22px; }
+.app-about-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin: 10px 0 18px; }
+.app-about-links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--pri); }
+
+@media (max-height: 620px), (orientation: landscape) and (max-height: 500px) {
+  .launch-guide { justify-content: flex-start; padding-top: max(18px, env(safe-area-inset-top)); }
+  .launch-guide-logo { width: 64px; height: 64px; }
+  .launch-guide-kicker { margin-top: 10px; }
+  .launch-guide-lead { margin: 8px 0 10px; }
+  .launch-guide-points { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+  .launch-guide-points span { padding: 8px 5px; }
+}
+
 /* ======= Layout ======= */
 .app {
   max-width: 680px; margin: 0 auto;
