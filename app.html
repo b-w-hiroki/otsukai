@@ -28,6 +28,24 @@
   <!-- Toasts (global) -->
   <div id="toasts" class="toast-wrap"></div>
 
+  <dialog id="app-about-dialog" class="app-about-dialog" aria-labelledby="app-about-title">
+    <div class="app-about-card">
+      <div class="app-about-icon" aria-hidden="true">🧺</div>
+      <h2 id="app-about-title">おうちのおつかいについて</h2>
+      <p>家族のお買い物を、頼む・引き受ける・買ったまで一緒に確認できるアプリです。</p>
+      <ul>
+        <li>家族の買い物リストをリアルタイムで共有</li>
+        <li>ストックや、よく買うものをまとめて管理</li>
+        <li>利用にはログインと家族グループへの参加が必要です</li>
+      </ul>
+      <div class="app-about-links">
+        <a href="./guide.html" target="_blank" rel="noopener">使い方ガイド</a>
+        <a href="./privacy.html" target="_blank" rel="noopener">プライバシーポリシー</a>
+      </div>
+      <button id="btn-app-about-close" type="button" class="btn-block">閉じる</button>
+    </div>
+  </dialog>
+
   <!-- 更新モーダル（新バージョン検知・ソシャゲ風の強制アップデート）。
        閉じるボタンは無い。showUpdateModal() / scheduleForcedUpdate()（app-init.js）参照。 -->
   <div id="update-modal" class="update-modal">
@@ -58,6 +76,28 @@
       <div class="spinner">🧺</div>
       <div class="muted" style="font-weight:500;">読み込み中…</div>
     </div>
+  </div>
+
+  <!-- Screen: first launch guide. Auth state is resolved before this screen is shown,
+       so returning users never see it while their session is being restored. -->
+  <div id="screen-welcome" class="screen">
+    <main class="launch-guide" aria-labelledby="launch-guide-title">
+      <img src="icon-192.png" width="88" height="88" alt="" class="launch-guide-logo" />
+      <p class="launch-guide-kicker">家族のお買い物をひとつに</p>
+      <h1 id="launch-guide-title">おうちのおつかい</h1>
+      <p class="launch-guide-lead">頼みたいものも、買ってきたものも、家族みんなで同じリストを見ながら管理できます。</p>
+      <div class="launch-guide-points" aria-label="主な機能">
+        <span>🛒 買い物を共有</span>
+        <span>📦 ストックを確認</span>
+        <span>🔔 買い忘れを防止</span>
+      </div>
+      <div class="launch-guide-actions">
+        <button id="btn-welcome-start" type="button" class="btn-block">はじめる</button>
+        <p class="launch-guide-note">初めての方は無料のアカウントを作成します</p>
+        <button id="btn-welcome-login" type="button" class="ghost btn-block">ログイン</button>
+        <button id="btn-welcome-about" type="button" class="launch-guide-about">アプリについて</button>
+      </div>
+    </main>
   </div>
 
   <!-- Screen: Config error -->
@@ -417,6 +457,7 @@
         <div class="card">
           <p style="font-weight:800;margin:0;">📄 その他</p>
           <div class="btn-stack">
+            <button id="btn-about-app" type="button" class="btn-block btn-neutral">ℹ️ アプリについて</button>
             <a href="https://birdman-studio.com/" target="_blank" rel="noopener noreferrer" class="btn-block btn-neutral" style="display:block;text-decoration:none;">🏠 birdman studio・ほかのアプリ</a>
             <a href="./guide.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">💡 使い方ガイド</a>
             <a href="./terms.html" target="_blank" rel="noopener" class="btn-block btn-neutral" style="display:block;text-decoration:none;">📜 利用規約</a>
