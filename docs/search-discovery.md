@@ -20,10 +20,17 @@ node tests/search-discovery.mjs
 
 HTML では title、description、canonical、OG、JSON-LD を確認する。HTTP status、最終 URL、`content-type`、取得時刻を保存する。検索結果の観測は検索エンジン名、検索語、UTC 日時、ログイン状態を併記する。順位や AI 検索での引用は変動するため保証値にしない。
 
+ブラウザ表示は Chromium の 390×844 CSS px で紹介ページを撮影し、横スクロール、見出し、主 CTA、先頭スクリーンショットを確認する。再現例:
+
+```sh
+npx playwright screenshot --viewport-size="390,844" https://otsukai.birdman-studio.com/ otsukai-home.png
+```
+
 ## 変更前の観測
 
 - 2026-10-19 12:29 UTC、直接 HTTP 取得: `/` は 200 で description、canonical、OG、静的紹介あり。
 - 同時刻、`/robots.txt` と `/sitemap.xml` は 404。
 - 2026-10-19 12:48 UTC、Bing 通常検索（未ログイン相当の HTTP 取得、`site:otsukai.birdman-studio.com`）: 返却された上位 organic 結果ブロックに対象ドメインの一致を確認できなかった。これはインデックス未登録の確定判定ではなく、地域・時刻・検索側の応答に依存する観測値。
 - 2026-10-19 12:29 UTC、`birdman-studio.com` apex は A / AAAA / CNAME が無く名前解決不能。直前調査の 503 は再現せず、コードではなく DNS / hosting 側の確認が必要。サブドメインは `b-w-hiroki.github.io` への CNAME で 200。
+- 2026-10-19 12:38 UTC、Chromium 390×844 で変更後のローカル紹介ページを撮影し、見出し、主 CTA、画面イメージを確認。既存 `brand-site-link-test` の横 overflow 検査も通過。
 - ChatGPT、Gemini、Copilot への質問や外部 AI API 送信は実施していない。
