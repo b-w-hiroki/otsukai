@@ -1,5 +1,17 @@
 User-agent: *
 Allow: /
+# 公開紹介ページと利用ガイドで使用する画像だけをクロール可能にする。
+Allow: /docs/screenshots/01-home.png
+Allow: /docs/screenshots/02-lowstock.png
+Allow: /docs/screenshots/03-add-sheet.png
+Allow: /docs/screenshots/08-shortcuts.png
+Allow: /docs/screenshots/09-history.png
+Allow: /docs/screenshots/10-missions.png
+Allow: /docs/screenshots/11-stock.png
+Allow: /docs/screenshots/12-settings.png
+Allow: /docs/screenshots/14-maintenance.png
+Allow: /docs/screenshots/15-dark.png
+Allow: /docs/screenshots/19-expenses.png
 Disallow: /docs/
 Disallow: /functions/
 Disallow: /tests/

@@ -22,6 +22,17 @@ const robots = read("robots.txt");
 for (const path of ["/docs/", "/functions/", "/tests/"]) {
   assert.ok(robots.includes(`Disallow: ${path}`), `${path} must be disallowed`);
 }
+for (const image of [
+  "01-home.png", "02-lowstock.png", "03-add-sheet.png", "08-shortcuts.png",
+  "09-history.png", "10-missions.png", "11-stock.png", "12-settings.png",
+  "14-maintenance.png", "15-dark.png", "19-expenses.png",
+]) {
+  assert.ok(robots.includes(`Allow: /docs/screenshots/${image}`), `${image} must be crawlable`);
+}
+for (const privateScreenshot of ["04-claimed.png", "13-member-admin.png", "news/"]) {
+  assert.ok(!robots.includes(`Allow: /docs/screenshots/${privateScreenshot}`),
+    `${privateScreenshot} must not be explicitly allowed`);
+}
 assert.ok(robots.includes("Sitemap: https://otsukai.birdman-studio.com/sitemap.xml"));
 
 const sitemap = read("sitemap.xml");
