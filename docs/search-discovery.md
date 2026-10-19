@@ -34,3 +34,13 @@ npx playwright screenshot --viewport-size="390,844" https://otsukai.birdman-stud
 - 2026-10-19 12:29 UTC、`birdman-studio.com` apex は A / AAAA / CNAME が無く名前解決不能。直前調査の 503 は再現せず、コードではなく DNS / hosting 側の確認が必要。サブドメインは `b-w-hiroki.github.io` への CNAME で 200。
 - 2026-10-19 12:38 UTC、Chromium 390×844 で変更後のローカル紹介ページを撮影し、見出し、主 CTA、画面イメージを確認。既存 `brand-site-link-test` の横 overflow 検査も通過。
 - ChatGPT、Gemini、Copilot への質問や外部 AI API 送信は実施していない。
+
+## 自動契約検査とJSON記録
+
+- node tests/search-discovery.mjs は sitemap の canonical 一致、掲載HTMLから参照する同一オリジンの href/src 実在、OG画像の実ファイルと1200×630寸法を検査する。
+- 2026-10-19 14:24 UTC、og.jpg を実ピクセルで確認し、「おうちのおつかい」の名称・買い物リスト画面・説明文が読め、端の見切れがないことを確認した。
+- 公開前後は次の同一コマンドを実行し、標準出力のJSONを docs/qa/search-discovery/YYYY-MM-DD-http.json として保存する。
+
+    node scripts/measure-search-discovery.mjs https://otsukai.birdman-studio.com/
+
+JSONはUTC時刻、要求URL、最終URL、status、content-type、バイト数、title、description、canonical、OG画像、sitemap URL数を同じキーで出力する。ローカル確認では公開URLの代わりにローカルサーバーのURLを渡す。

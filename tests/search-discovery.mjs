@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import staticSearchContract from "./static-search-contract.cjs";
+
+const { auditStaticSearch } = staticSearchContract;
 
 const read = (file) => readFileSync(file, "utf8");
 const index = read("index.html");
@@ -48,5 +51,7 @@ for (const url of ["https://otsukai.birdman-studio.com/", ...[
 for (const privatePath of ["app.html", "app.v1.html", "hub.html", "?action=", "?invite="]) {
   assert.ok(!sitemap.includes(privatePath), `${privatePath} must not be in sitemap`);
 }
+
+auditStaticSearch({ baseUrl: "https://otsukai.birdman-studio.com/" });
 
 console.log("search discovery contract passed");
