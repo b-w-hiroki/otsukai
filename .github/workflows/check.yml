@@ -64,6 +64,9 @@ jobs:
             console.log("precache files all exist");
           '
 
+      - name: 検索公開範囲とメタ情報
+        run: node tests/search-discovery.mjs
+
   docs:
     runs-on: ubuntu-latest
     steps:

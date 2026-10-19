@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /docs/
+Disallow: /functions/
+Disallow: /tests/
+
+Sitemap: https://otsukai.birdman-studio.com/sitemap.xml

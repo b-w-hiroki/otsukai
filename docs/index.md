@@ -31,6 +31,7 @@
 | **利用規約** | `terms.html` | — |
 | **プライバシーポリシー** | `privacy.html` | — |
 | **お問い合わせ** | `contact.html` | — |
+| **検索公開範囲・測定** | `docs/search-discovery.md` | `robots.txt` / `sitemap.xml` / `tests/search-discovery.mjs` が実体 |
 
 **粒度が違うものは、無理に片方へ寄せない。** 通知・更新・使い方は正本が2つある:
 
