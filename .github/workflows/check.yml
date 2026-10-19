@@ -27,11 +27,12 @@ jobs:
             let errors = 0;
             for (const file of ["app.html", "index.html", "contact.html", "news.html", "news-item.html"]) {
               const html = fs.readFileSync(file, "utf8");
-              const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
+              const re = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
               let m, count = 0;
               while ((m = re.exec(html))) {
+                if (/\bsrc\s*=/.test(m[1]) || /\btype\s*=\s*"application\/ld\+json"/.test(m[1])) continue;
                 count++;
-                try { new Function(m[1]); }
+                try { new Function(m[2]); }
                 catch (e) { errors++; console.error(file + " script #" + count + ": " + e.message); }
               }
               console.log(file + ": inline scripts " + count);
