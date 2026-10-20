@@ -766,7 +766,7 @@ exports.submitContactForm = functions
     const phone = String((data && data.phone) || "").trim().slice(0, 40);
     const subject = String((data && data.subject) || "").trim().slice(0, 120);
     const message = String((data && data.message) || "").trim().slice(0, 4000);
-    const serviceId = data && data.serviceId == null ? "otsukai" : String(data.serviceId);
+    const serviceId = data?.serviceId == null ? "otsukai" : String(data.serviceId);
     if (!Object.prototype.hasOwnProperty.call(CONTACT_SERVICES, serviceId)) {
       throw new functions.https.HttpsError("invalid-argument", "サービスの指定が正しくありません");
     }
