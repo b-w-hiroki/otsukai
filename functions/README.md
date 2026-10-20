@@ -140,7 +140,7 @@ firebase functions:log --only shoppingReminder
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動＋古い週次ミッションデータの掃除 |
 | `deleteMemberAccount` | callable（**本人のみ**。役割問わず自分自身のアカウントをいつでも削除可） | 自分のアカウント完全削除。他人の指定は permission-denied で拒否。**最後の保護者は削除不可**（家族ロック防止） |
-| `submitContactForm` | callable（`contact.html`から・未ログインでも可） | お問い合わせを `contactMessages` に記録し、Gmail SMTP経由で開発者へメール通知（未設定ならDB記録のみ） |
+| `submitContactForm` | callable（`contact.html`から・未ログインでも可） | お問い合わせを `contactMessages` にサービスID・名称とともに記録し、Gmail SMTP経由で開発者へメール通知（未設定ならDB記録のみ）。`serviceId` は `otsukai`（省略時）または `fictionWarArchive` のみ。後者は入力件名をそのまま使い、差出人表示・本文でサービスを識別 |
 
 `firebase deploy --only functions` でまとめてデプロイされます。
 
