@@ -745,6 +745,12 @@ function getContactMailer() {
   return { user, transporter: nodemailer.createTransport({ service: "gmail", auth: { user, pass } }) };
 }
 
+// クライアントから任意の表示名を受け取らず、既知のサービスIDのみを許可する。
+const CONTACT_SERVICES = Object.freeze({
+  otsukai: { label: "おうちのおつかい", subjectPrefix: "【おうちのおつかい】" },
+  fictionWarArchive: { label: "フィクション戦史アーカイブ", subjectPrefix: "" },
+});
+
 exports.submitContactForm = functions
   .region(REGION)
   .runWith({ ...RUNTIME_OPTS, secrets: ["CONTACT_GMAIL_USER", "CONTACT_GMAIL_APP_PASSWORD"] })
@@ -760,6 +766,11 @@ exports.submitContactForm = functions
     const phone = String((data && data.phone) || "").trim().slice(0, 40);
     const subject = String((data && data.subject) || "").trim().slice(0, 120);
     const message = String((data && data.message) || "").trim().slice(0, 4000);
+    const serviceId = data?.serviceId == null ? "otsukai" : String(data.serviceId);
+    if (!Object.prototype.hasOwnProperty.call(CONTACT_SERVICES, serviceId)) {
+      throw new functions.https.HttpsError("invalid-argument", "サービスの指定が正しくありません");
+    }
+    const service = CONTACT_SERVICES[serviceId];
     const agreed = !!(data && data.agreed);
     // 必須項目と同意はクライアント側でも見ているが、callable を直接叩かれる
     // 前提でサーバー側でも検証する（会社名・電話番号は任意）
@@ -774,6 +785,8 @@ exports.submitContactForm = functions
     }
 
     await admin.database().ref("contactMessages").push({
+      serviceId,
+      serviceName: service.label,
       name,
       company: company || null,
       email,
@@ -792,11 +805,12 @@ exports.submitContactForm = functions
     try {
       await mailer.transporter.sendMail({
         // Gmail は差出人を認証したアカウントに書き換えるため from は送信用アカウント
-        from: `おうちのおつかい <${mailer.user}>`,
+        from: `"${service.label}" <${mailer.user}>`,
         to: CONTACT_NOTIFY_TO || mailer.user,
         replyTo: email,
-        subject: `【おうちのおつかい】${subject}`,
+        subject: `${service.subjectPrefix}${subject}`,
         text: [
+          `サービス: ${service.label}`,
           `お名前: ${name}`,
           company && `会社名・組織名: ${company}`,
           `メールアドレス: ${email}`,

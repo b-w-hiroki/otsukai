@@ -78,7 +78,7 @@
 ## contactMessages/{pushId}
 
 `contact.html` → `submitContactForm` 関数のみが書く（クライアントからは書けない）。
-`name` / `company`（任意） / `email` / `phone`（任意） / `subject` / `message` / `agreed` / `createdAt`。
+`serviceId` / `serviceName` / `name` / `company`（任意） / `email` / `phone`（任意） / `subject` / `message` / `agreed` / `createdAt`。旧レコードにはサービス欄がない。
 
 ## notifDedup/reactions/{familyId}/{requestId}_{uid}
 
