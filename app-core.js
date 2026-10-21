@@ -494,6 +494,7 @@ async function createFamily() {
     await db.ref("users/" + state.uid + "/familyId").set(familyId);
     state.familyId = familyId;
     attachFamilyListeners();
+    await loadFunctionsSdk();
     const createInvite = firebase.app().functions("asia-southeast1").httpsCallable("createFamilyInvite");
     await createInvite({ familyId });
   } catch (e) {
@@ -504,6 +505,7 @@ async function joinFamily() {
   const code = $("invite-code").value.trim().toUpperCase();
   if (!code) return showFamilyError("招待コードを入力してください");
   try {
+    await loadFunctionsSdk();
     const redeem = firebase.app().functions("asia-southeast1").httpsCallable("redeemFamilyInvite");
     const result = await redeem({ code, profile: state.profile });
     const familyId = result.data.familyId;
