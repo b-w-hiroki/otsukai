@@ -501,6 +501,21 @@ async function createFamily() {
     showFamilyError("家族の作成または招待コードの発行に失敗しました: " + (e && e.message || e));
   }
 }
+async function renewFamilyInvite() {
+  if (!state.familyId || state.myRole !== "parent") return;
+  const button = $("btn-renew-invite");
+  button.disabled = true;
+  try {
+    await loadFunctionsSdk();
+    const createInvite = firebase.app().functions("asia-southeast1").httpsCallable("createFamilyInvite");
+    await createInvite({ familyId: state.familyId });
+    showToast("新しい招待コードを発行しました");
+  } catch (e) {
+    showToast("招待コードを発行できませんでした: " + (e && e.message || e));
+  } finally {
+    button.disabled = false;
+  }
+}
 async function joinFamily() {
   const code = $("invite-code").value.trim().toUpperCase();
   if (!code) return showFamilyError("招待コードを入力してください");
