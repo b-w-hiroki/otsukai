@@ -511,6 +511,7 @@ function wireGlobalEvents() {
     memberAdminOpen = !memberAdminOpen;
     updateMemberAdminToggle();
   });
+  $("btn-renew-invite").addEventListener("click", renewFamilyInvite);
   $("btn-copy-code").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("set-invite-code").value);
