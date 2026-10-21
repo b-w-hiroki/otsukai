@@ -897,9 +897,15 @@ exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     const profile = data && data.profile || {};
     const name = typeof profile.name === "string" ? profile.name.slice(0, 80) : "";
     const emoji = typeof profile.emoji === "string" ? profile.emoji.slice(0, 8) : "";
-    const memberRef = familyRef.child(`members/${uid}`);
-    await memberRef.transaction(current => current === null ? {
-      name, emoji, joinedAt: Date.now(), role: "member", memberRole: "child"
-    } : undefined, undefined, false);
+    const { admitMember } = require("./invite-utils");
+    // The transaction retries against the current family. Rotation or deletion
+    // between code reservation and membership creation therefore cannot admit
+    // a user under a stale code.
+    const admitted = await familyRef.transaction(
+      current => admitMember(current, {
+        code, uid, name, emoji, now: Date.now(),
+        expiresAt: typeof invite === "string" ? null : invite.expiresAt
+      }), undefined, false);
+    if (!admitted.committed) throw inviteError();
     return { familyId };
   });
