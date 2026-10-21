@@ -2,26 +2,22 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "users": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid"
       }
     },
-
     "invites": {
       "$code": {
-        ".read": "auth != null",
-        ".write": "auth != null && (!data.exists() || root.child('families/' + data.val() + '/members/' + auth.uid + '/role').val() === 'admin')"
+        ".read": "false",
+        ".write": "false"
       }
     },
-
     "errors": {
       ".read": false,
       ".write": "auth != null"
     },
-
     "reminderIndex": {
       "$time": {
         "$familyId": {
@@ -30,39 +26,65 @@
         }
       }
     },
-
     "families": {
       "$familyId": {
         ".read": "auth != null && data.child('members/' + auth.uid).exists()",
-        ".write": "auth != null && (!data.exists() || data.child('members/' + auth.uid + '/role').val() === 'admin')",
-
+        ".write": "auth != null && ((!data.exists() && newData.child('meta/createdBy').val() === auth.uid && newData.child('members/' + auth.uid + '/role').val() === 'admin' && newData.child('members/' + auth.uid + '/memberRole').val() === 'parent') || (data.exists() && data.child('members/' + auth.uid + '/role').val() === 'admin'))",
         "members": {
           "$uid": {
-            ".write": "auth != null && (root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent' || ($uid === auth.uid && (!newData.exists() || (!data.exists() && newData.child('memberRole').val() === 'child') || (data.exists() && (newData.child('memberRole').val() === data.child('memberRole').val() || !data.child('memberRole').exists())))))"
+            ".write": "auth != null && (root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent' || ($uid === auth.uid && data.exists() && newData.exists() && newData.child('role').val() === data.child('role').val() && newData.child('memberRole').val() === data.child('memberRole').val()))",
+            "role": {
+              ".validate": "newData.val() === data.val() || (!data.exists() && (($uid === auth.uid && !root.child('families/' + $familyId).exists() && newData.val() === 'admin') || newData.val() === 'member'))"
+            }
           }
         },
-
-        "requests":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "extraExpenses": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "comments":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "stats":         { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "shortcuts":     { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "destinations":  { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "stocks":        { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "missions":      { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "missionLogs":   { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
-        "reminderTimes": { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "requests": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "extraExpenses": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "comments": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "stats": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "shortcuts": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "destinations": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "stocks": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "missions": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "missionLogs": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
+        "reminderTimes": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
         "settings": {
           ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()",
-          "lowLeadDays": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60" }
+          "lowLeadDays": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 60"
+          }
         },
-        "pushTokens":    { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()" },
+        "pushTokens": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
+        },
         "points": {
           "$uid": {
             ".write": "auth != null && (root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent' || ($uid === auth.uid && data.exists() && newData.exists() && newData.isNumber() && newData.val() >= 0 && newData.val() <= data.val()))"
           }
         },
-        "rewards":       { ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent'" },
+        "rewards": {
+          ".write": "auth != null && root.child('families/' + $familyId + '/members/' + auth.uid + '/memberRole').val() === 'parent'"
+        },
         "rewardLogs": {
           "$logId": {
             ".write": "auth != null && !data.exists() && newData.exists() && newData.child('uid').val() === auth.uid && root.child('families/' + $familyId + '/members/' + auth.uid).exists()"
