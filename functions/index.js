@@ -897,16 +897,12 @@ exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     if (!family || !family.meta || family.meta.inviteCode !== code || !family.members) throw inviteError();
     const uid = context.auth.uid;
     if (family.members[uid]) return { familyId };
-    if (typeof invite === "string") {
-      // Existing client-issued codes remain usable during migration only when
-      // the current family metadata independently confirms the exact code.
-    } else {
-      const now = Date.now();
-      const { reserveInvite } = require("./invite-utils");
-      const result = await inviteRef.transaction(
-        current => reserveInvite(current, { familyId, uid, now }), undefined, false);
-      if (!result.committed) throw inviteError();
-    }
+    const { reserveInvite } = require("./invite-utils");
+    const reserved = await inviteRef.transaction(
+      current => reserveInvite(current, { familyId, uid, now: Date.now() }),
+      undefined, false);
+    if (!reserved.committed) throw inviteError();
+    const expiresAt = reserved.snapshot.val().expiresAt;
     const profile = data && data.profile || {};
     const name = typeof profile.name === "string" ? profile.name.slice(0, 80) : "";
     const emoji = typeof profile.emoji === "string" ? profile.emoji.slice(0, 8) : "";
@@ -917,7 +913,7 @@ exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     const admitted = await familyRef.transaction(
       current => admitMember(current, {
         code, uid, name, emoji, now: Date.now(),
-        expiresAt: typeof invite === "string" ? null : invite.expiresAt
+        expiresAt
       }), undefined, false);
     if (!admitted.committed) throw inviteError();
     return { familyId };
