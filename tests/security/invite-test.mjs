@@ -2,51 +2,48 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { reserveInvite, admitMember, publishInvite } = require("../../functions/invite-utils.js");
+const { admitMember, publishInvite } = require("../../functions/invite-utils.js");
 
-const base = { familyId: "synthetic-family", expiresAt: 1000, maxUses: 2, redeemed: {} };
-test("valid invitation reserves a single use", () => {
-  const first = reserveInvite(base, { familyId: base.familyId, uid: "a", now: 900 });
-  assert.equal(first.redeemed.a, 900);
-  assert.equal(base.redeemed.a, undefined);
-  assert.equal(reserveInvite(first, { familyId: base.familyId, uid: "a", now: 901 }), undefined);
+const family = () => ({
+  meta: { inviteCode: "ACTIVE", inviteExpiresAt: 1000,
+    inviteMaxUses: 2, inviteRedemptions: {} },
+  members: { parent: { role: "admin", memberRole: "parent" } }
 });
-test("expiry, mismatched family and reuse are rejected", () => {
-  assert.equal(reserveInvite(base, { familyId: base.familyId, uid: "a", now: 1000 }), undefined);
-  assert.equal(reserveInvite(base, { familyId: "other", uid: "a", now: 900 }), undefined);
-  const full = { ...base, redeemed: { a: 800, b: 810 } };
-  assert.equal(reserveInvite(full, { familyId: base.familyId, uid: "c", now: 900 }), undefined);
-  assert.equal(reserveInvite(full, { familyId: base.familyId, uid: "a", now: 900 }), undefined);
-});
+const args = uid => ({ code: "ACTIVE", uid, name: "Synthetic",
+  emoji: "", now: 900, legacy: false });
 
-test("membership uses the current family code and rejects rotation, deletion, and expiry", () => {
-  const family = { meta: { inviteCode: "ACTIVE" }, members: { parent: { role: "admin" } } };
-  const args = { code: "ACTIVE", uid: "child", name: "Synthetic", emoji: "", now: 900, expiresAt: 1000 };
-  const admitted = admitMember(family, args);
-  assert.equal(admitted.members.child.role, "member");
-  assert.equal(admitted.members.child.memberRole, "child");
-  assert.equal(family.members.child, undefined);
-  assert.equal(admitMember({ ...family, meta: { inviteCode: "ROTATED" } }, args), undefined);
-  assert.equal(admitMember(null, args), undefined);
-  assert.equal(admitMember(family, { ...args, now: 1000 }), undefined);
-  assert.deepEqual(admitMember(admitted, args), admitted);
+test("membership and use ledger are updated together", () => {
+  const before = family();
+  const after = admitMember(before, args("child"));
+  assert.equal(after.members.child.role, "member");
+  assert.equal(after.meta.inviteRedemptions.child, 900);
+  assert.equal(before.members.child, undefined);
+  assert.equal(before.meta.inviteRedemptions.child, undefined);
 });
-
-test("legacy invitation gains a bounded expiry and replay protection", () => {
-  const first = reserveInvite("synthetic-family", {
-    familyId: "synthetic-family", uid: "a", now: 100
-  });
-  assert.equal(first.expiresAt, 100 + 7 * 86400000);
-  assert.equal(first.maxUses, 10);
-  assert.equal(reserveInvite(first, { familyId: "synthetic-family", uid: "a", now: 101 }), undefined);
+test("expiry, rotation, deletion, reuse and limit deny admission", () => {
+  assert.equal(admitMember(family(), { ...args("child"), now: 1000 }), undefined);
+  assert.equal(admitMember({ ...family(), meta: { inviteCode: "ROTATED" } }, args("child")), undefined);
+  assert.equal(admitMember(null, args("child")), undefined);
+  const used = family();
+  used.meta.inviteRedemptions.child = 800;
+  assert.equal(admitMember(used, args("child")), undefined);
+  used.meta.inviteRedemptions.other = 810;
+  assert.equal(admitMember(used, args("third")), undefined);
 });
-
+test("legacy first admission gains a bound in the same transaction", () => {
+  const before = { meta: { inviteCode: "ACTIVE" }, members: { parent: { role: "admin" } } };
+  const after = admitMember(before, { ...args("child"), legacy: true });
+  assert.equal(after.meta.inviteExpiresAt, 900 + 7 * 86400000);
+  assert.equal(after.meta.inviteMaxUses, 10);
+  assert.equal(after.meta.inviteRedemptions.child, 900);
+});
 test("issuance denies parent removed or family deleted before publish", () => {
-  const family = { meta: { inviteCode: "OLD" },
-    members: { parent: { memberRole: "parent" }, child: { memberRole: "child" } } };
-  const args = { uid: "parent", code: "NEWCODE", expiresAt: 1000 };
-  assert.equal(publishInvite(null, args), undefined);
-  assert.equal(publishInvite({ ...family, members: {} }, args), undefined);
-  assert.equal(publishInvite(family, { ...args, uid: "child" }), undefined);
-  assert.equal(publishInvite(family, args).meta.inviteCode, "NEWCODE");
+  const before = family();
+  const issue = { uid: "parent", code: "NEWCODE", expiresAt: 2000 };
+  assert.equal(publishInvite(null, issue), undefined);
+  assert.equal(publishInvite({ ...before, members: {} }, issue), undefined);
+  assert.equal(publishInvite(before, { ...issue, uid: "child" }), undefined);
+  const next = publishInvite(before, issue);
+  assert.equal(next.meta.inviteCode, "NEWCODE");
+  assert.deepEqual(next.meta.inviteRedemptions, {});
 });
