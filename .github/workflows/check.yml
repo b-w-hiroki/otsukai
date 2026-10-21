@@ -126,5 +126,7 @@ jobs:
         run: |
           npm init -y > /dev/null
           npm install --no-save firebase-tools @firebase/rules-unit-testing firebase
+      - name: Copy candidate rules into demo emulator directory
+        run: cp database.rules.json tests/security/database.rules.json
       - name: Test RTDB rules against synthetic demo data
         run: npx firebase emulators:exec --project demo-otsukai-authz --config tests/security/firebase.json --only database "node tests/security/rules-test.mjs"
