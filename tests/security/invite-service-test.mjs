@@ -7,11 +7,11 @@ const { redeemInvite, InvalidInviteError } = require("../../functions/invite-ser
 const clone = value => value == null ? value : structuredClone(value);
 function fakeDb({ maxUses = 2, legacy = false } = {}) {
   const state = {
-    invites: { CODE: legacy ? "family" : {
+    invites: { ABCDEF: legacy ? "family" : {
       familyId: "family", expiresAt: 1000, maxUses, redeemed: {}
     } },
     families: { family: {
-      meta: { inviteCode: "CODE" },
+      meta: { inviteCode: "ABCDEF" },
       members: { parent: { role: "admin", memberRole: "parent" } }
     } }
   };
@@ -38,7 +38,7 @@ function fakeDb({ maxUses = 2, legacy = false } = {}) {
   };
   return db;
 }
-const args = uid => ({ code: "CODE", uid, profile: { name: "Synthetic" }, clock: () => 900 });
+const args = uid => ({ code: "ABCDEF", uid, profile: { name: "Synthetic" }, clock: () => 900 });
 const denied = e => e instanceof InvalidInviteError;
 
 test("callable core admits one user and blocks replay after removal", async () => {
@@ -54,7 +54,7 @@ test("concurrent redemption respects the maximum use count", async () => {
     redeemInvite(db, args("a")), redeemInvite(db, args("b"))
   ]);
   assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
-  assert.equal(Object.keys(db.state.invites.CODE.redeemed).length, 1);
+  assert.equal(Object.keys(db.state.invites.ABCDEF.redeemed).length, 1);
   assert.equal(Object.keys(db.state.families.family.members).length, 2);
 });
 test("rotation or family deletion during redemption cannot create membership", async () => {
@@ -73,6 +73,6 @@ test("expired code and legacy migration", async () => {
   await assert.rejects(redeemInvite(expired, { ...args("child"), clock: () => 1000 }), denied);
   const legacy = fakeDb({ legacy: true });
   assert.deepEqual(await redeemInvite(legacy, args("child")), { familyId: "family" });
-  assert.equal(legacy.state.invites.CODE.expiresAt, 900 + 7 * 86400000);
-  assert.equal(legacy.state.invites.CODE.maxUses, 10);
+  assert.equal(legacy.state.invites.ABCDEF.expiresAt, 900 + 7 * 86400000);
+  assert.equal(legacy.state.invites.ABCDEF.maxUses, 10);
 });
