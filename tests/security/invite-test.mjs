@@ -22,6 +22,9 @@ test("membership and use ledger are updated together", () => {
 });
 test("expiry, rotation, deletion, reuse and limit deny admission", () => {
   assert.equal(admitMember(family(), { ...args("child"), now: 1000 }), undefined);
+  const malformed = family();
+  malformed.meta.inviteExpiresAt = 0;
+  assert.equal(admitMember(malformed, { ...args("child"), legacy: true }), undefined);
   assert.equal(admitMember({ ...family(), meta: { inviteCode: "ROTATED" } }, args("child")), undefined);
   assert.equal(admitMember(null, args("child")), undefined);
   const used = family();
