@@ -481,53 +481,37 @@ async function updateProfileFromSettings() {
 }
 
 // ===== Family =====
-function genInviteCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
 async function createFamily() {
   const name = $("family-name").value.trim();
   if (!name) return showFamilyError("家族の名前を入力してください");
-  const familyId = db.ref("families").push().key;
-  let code = genInviteCode();
-  // try a few times to avoid collision
-  for (let i = 0; i < 5; i++) {
-    const exist = await db.ref("invites/" + code).once("value");
-    if (!exist.exists()) break;
-    code = genInviteCode();
+  try {
+    const familyId = db.ref("families").push().key;
+    const ts = now();
+    await db.ref("families/" + familyId).set({
+      meta: { name, createdAt: ts, createdBy: state.uid },
+      members: { [state.uid]: { name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "admin", memberRole: "parent" } }
+    });
+    await db.ref("users/" + state.uid + "/familyId").set(familyId);
+    state.familyId = familyId;
+    attachFamilyListeners();
+    const createInvite = firebase.app().functions("asia-southeast1").httpsCallable("createFamilyInvite");
+    await createInvite({ familyId });
+  } catch (e) {
+    showFamilyError("家族の作成または招待コードの発行に失敗しました: " + (e && e.message || e));
   }
-  const ts = now();
-  await db.ref("families/" + familyId).set({
-    meta: { name, createdAt: ts, inviteCode: code, createdBy: state.uid },
-    members: { [state.uid]: { name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "admin", memberRole: "parent" } }
-  });
-  await db.ref("invites/" + code).set(familyId);
-  await db.ref("users/" + state.uid + "/familyId").set(familyId);
-  state.familyId = familyId;
-  attachFamilyListeners();
 }
 async function joinFamily() {
   const code = $("invite-code").value.trim().toUpperCase();
   if (!code) return showFamilyError("招待コードを入力してください");
   try {
-    const snap = await db.ref("invites/" + code).once("value");
-    const familyId = snap.val();
-    if (!familyId) return showFamilyError("招待コードが見つかりません");
-    const ts = now();
-    await db.ref(`families/${familyId}/members/${state.uid}`).set({
-      name: state.profile.name, emoji: state.profile.emoji, joinedAt: ts, role: "member", memberRole: "child"
-    });
+    const redeem = firebase.app().functions("asia-southeast1").httpsCallable("redeemFamilyInvite");
+    const result = await redeem({ code, profile: state.profile });
+    const familyId = result.data.familyId;
     await db.ref("users/" + state.uid + "/familyId").set(familyId);
     state.familyId = familyId;
     attachFamilyListeners();
   } catch (e) {
-    if (e && e.code === "PERMISSION_DENIED") {
-      showFamilyError("参加できませんでした（セキュリティルールを確認してください）");
-    } else {
-      showFamilyError("エラーが発生しました: " + (e && e.message || e));
-    }
+    showFamilyError("参加できませんでした: " + (e && e.message || e));
   }
 }
 function showFamilyError(msg) { const el = $("family-error"); el.textContent = msg; el.style.display = "block"; }
