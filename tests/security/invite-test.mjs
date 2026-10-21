@@ -9,14 +9,14 @@ test("valid invitation reserves a single use", () => {
   const first = reserveInvite(base, { familyId: base.familyId, uid: "a", now: 900 });
   assert.equal(first.redeemed.a, 900);
   assert.equal(base.redeemed.a, undefined);
-  assert.deepEqual(reserveInvite(first, { familyId: base.familyId, uid: "a", now: 901 }), first);
+  assert.equal(reserveInvite(first, { familyId: base.familyId, uid: "a", now: 901 }), undefined);
 });
 test("expiry, mismatched family and reuse are rejected", () => {
   assert.equal(reserveInvite(base, { familyId: base.familyId, uid: "a", now: 1000 }), undefined);
   assert.equal(reserveInvite(base, { familyId: "other", uid: "a", now: 900 }), undefined);
   const full = { ...base, redeemed: { a: 800, b: 810 } };
   assert.equal(reserveInvite(full, { familyId: base.familyId, uid: "c", now: 900 }), undefined);
-  assert.deepEqual(reserveInvite(full, { familyId: base.familyId, uid: "a", now: 900 }), full);
+  assert.equal(reserveInvite(full, { familyId: base.familyId, uid: "a", now: 900 }), undefined);
 });
 
 test("membership uses the current family code and rejects rotation, deletion, and expiry", () => {
@@ -30,4 +30,13 @@ test("membership uses the current family code and rejects rotation, deletion, an
   assert.equal(admitMember(null, args), undefined);
   assert.equal(admitMember(family, { ...args, now: 1000 }), undefined);
   assert.deepEqual(admitMember(admitted, args), admitted);
+});
+
+test("legacy invitation gains a bounded expiry and replay protection", () => {
+  const first = reserveInvite("synthetic-family", {
+    familyId: "synthetic-family", uid: "a", now: 100
+  });
+  assert.equal(first.expiresAt, 100 + 7 * 86400000);
+  assert.equal(first.maxUses, 10);
+  assert.equal(reserveInvite(first, { familyId: "synthetic-family", uid: "a", now: 101 }), undefined);
 });
