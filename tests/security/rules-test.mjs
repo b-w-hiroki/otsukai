@@ -25,6 +25,14 @@ async function seed() {
 }
 async function run() {
   await seed();
+  await assertSucceeds(db("creator").ref("families/new-family").set({
+    meta: { createdBy: "creator" },
+    members: { creator: { role: "admin", memberRole: "parent" } }
+  }));
+  await assertFails(db("outsider").ref("families/forged-family").set({
+    meta: { createdBy: "creator" },
+    members: { outsider: { role: "admin", memberRole: "parent" } }
+  }));
   await assertFails(member("outsider").set({ role: "member", memberRole: "child" }));
   await assertFails(member("outsider").set({ role: "admin", memberRole: "child" }));
   await assertFails(db("outsider").ref(`families/${family}`).once("value"));
