@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { reserveInvite, admitMember } = require("../../functions/invite-utils.js");
+const { reserveInvite, admitMember, publishInvite } = require("../../functions/invite-utils.js");
 
 const base = { familyId: "synthetic-family", expiresAt: 1000, maxUses: 2, redeemed: {} };
 test("valid invitation reserves a single use", () => {
@@ -39,4 +39,14 @@ test("legacy invitation gains a bounded expiry and replay protection", () => {
   assert.equal(first.expiresAt, 100 + 7 * 86400000);
   assert.equal(first.maxUses, 10);
   assert.equal(reserveInvite(first, { familyId: "synthetic-family", uid: "a", now: 101 }), undefined);
+});
+
+test("issuance denies parent removed or family deleted before publish", () => {
+  const family = { meta: { inviteCode: "OLD" },
+    members: { parent: { memberRole: "parent" }, child: { memberRole: "child" } } };
+  const args = { uid: "parent", code: "NEWCODE", expiresAt: 1000 };
+  assert.equal(publishInvite(null, args), undefined);
+  assert.equal(publishInvite({ ...family, members: {} }, args), undefined);
+  assert.equal(publishInvite(family, { ...args, uid: "child" }), undefined);
+  assert.equal(publishInvite(family, args).meta.inviteCode, "NEWCODE");
 });
