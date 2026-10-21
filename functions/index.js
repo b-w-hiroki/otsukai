@@ -826,3 +826,86 @@ exports.submitContactForm = functions
     }
     return { ok: true };
   });
+
+
+// Membership writes use Admin SDK only after a server-verified invitation.
+// Legacy string invites are accepted only when they still match the family's
+// original meta.inviteCode. They are retired when a parent issues a new code.
+function inviteError() {
+  return new functions.https.HttpsError("failed-precondition", "招待コードを確認してください");
+}
+
+exports.createFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
+  .https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
+    const familyId = data && data.familyId;
+    if (typeof familyId !== "string" || !/^[-A-Za-z0-9_]{1,128}$/.test(familyId)) {
+      throw new functions.https.HttpsError("invalid-argument", "家族IDが正しくありません");
+    }
+    const db = admin.database();
+    const familyRef = db.ref(`families/${familyId}`);
+    const family = (await familyRef.once("value")).val();
+    if (!family || !family.members || !family.members[context.auth.uid] ||
+        family.members[context.auth.uid].memberRole !== "parent") {
+      throw new functions.https.HttpsError("permission-denied", "保護者のみ招待できます");
+    }
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const crypto = require("crypto");
+    let code;
+    let inviteRef;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      code = Array.from(crypto.randomBytes(12), b => alphabet[b % alphabet.length]).join("");
+      inviteRef = db.ref(`invites/${code}`);
+      const result = await inviteRef.transaction(current => current === null ? {
+        familyId, issuedBy: context.auth.uid, expiresAt: Date.now() + 7 * 86400000,
+        maxUses: 10, redeemed: {}
+      } : undefined, undefined, false);
+      if (result.committed) break;
+      code = null;
+    }
+    if (!code) throw new functions.https.HttpsError("internal", "招待コードを作れませんでした");
+    // The old code no longer passes redemption once meta points to the new code.
+    await familyRef.child("meta/inviteCode").set(code);
+    return { code, expiresAt: Date.now() + 7 * 86400000 };
+  });
+
+exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
+  .https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
+    const code = data && data.code;
+    if (typeof code !== "string" || !/^[A-HJ-NP-Z2-9]{6,12}$/.test(code)) throw inviteError();
+    const db = admin.database();
+    const inviteRef = db.ref(`invites/${code}`);
+    const invite = (await inviteRef.once("value")).val();
+    const familyId = typeof invite === "string" ? invite : invite && invite.familyId;
+    if (typeof familyId !== "string" || !/^[-A-Za-z0-9_]{1,128}$/.test(familyId)) throw inviteError();
+    const familyRef = db.ref(`families/${familyId}`);
+    const family = (await familyRef.once("value")).val();
+    if (!family || !family.meta || family.meta.inviteCode !== code || !family.members) throw inviteError();
+    const uid = context.auth.uid;
+    if (family.members[uid]) return { familyId };
+    if (typeof invite === "string") {
+      // Existing client-issued codes remain usable during migration only when
+      // the current family metadata independently confirms the exact code.
+    } else {
+      const now = Date.now();
+      const result = await inviteRef.transaction(current => {
+        if (!current || typeof current !== "object" ||
+            current.familyId !== familyId || current.expiresAt <= now) return;
+        const redeemed = current.redeemed || {};
+        if (redeemed[uid]) return current; // retry after a partial failure
+        if (Object.keys(redeemed).length >= current.maxUses) return;
+        redeemed[uid] = now;
+        return { ...current, redeemed };
+      }, undefined, false);
+      if (!result.committed) throw inviteError();
+    }
+    const profile = data && data.profile || {};
+    const name = typeof profile.name === "string" ? profile.name.slice(0, 80) : "";
+    const emoji = typeof profile.emoji === "string" ? profile.emoji.slice(0, 8) : "";
+    const memberRef = familyRef.child(`members/${uid}`);
+    await memberRef.transaction(current => current === null ? {
+      name, emoji, joinedAt: Date.now(), role: "member", memberRole: "child"
+    } : undefined, undefined, false);
+    return { familyId };
+  });
