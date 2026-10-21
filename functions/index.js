@@ -866,13 +866,11 @@ exports.createFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     if (!code) throw new functions.https.HttpsError("internal", "招待コードを作れませんでした");
     // The old code no longer passes redemption once meta points to the new code.
     const issued = (await inviteRef.once("value")).val();
-    const updated = await familyRef.transaction(current => {
-      if (!current || !current.meta || !current.members ||
-          !current.members[context.auth.uid] ||
-          current.members[context.auth.uid].memberRole !== "parent") return;
-      return { ...current, meta: { ...current.meta,
-        inviteCode: code, inviteExpiresAt: issued.expiresAt } };
-    }, undefined, false);
+    const { publishInvite } = require("./invite-utils");
+    const updated = await familyRef.transaction(
+      current => publishInvite(current, {
+        uid: context.auth.uid, code, expiresAt: issued.expiresAt
+      }), undefined, false);
     if (!updated.committed) {
       // An orphan record has no authority: redemption checks the active code
       // in the family transaction. Remove it as best effort.
