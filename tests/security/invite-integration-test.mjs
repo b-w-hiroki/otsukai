@@ -38,7 +38,6 @@ try {
   await assert.rejects(redeemInvite(db, args(first)), e => e instanceof InvalidInviteError);
 
   await seed(2);
-  const original = db.ref("families/family").transaction.bind(db.ref("families/family"));
   // Inject a failure before any family transaction commits, then retry.
   const failingDb = { ref(path) {
     const ref = db.ref(path);
