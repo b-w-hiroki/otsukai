@@ -889,15 +889,9 @@ exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
       // the current family metadata independently confirms the exact code.
     } else {
       const now = Date.now();
-      const result = await inviteRef.transaction(current => {
-        if (!current || typeof current !== "object" ||
-            current.familyId !== familyId || current.expiresAt <= now) return;
-        const redeemed = current.redeemed || {};
-        if (redeemed[uid]) return current; // retry after a partial failure
-        if (Object.keys(redeemed).length >= current.maxUses) return;
-        redeemed[uid] = now;
-        return { ...current, redeemed };
-      }, undefined, false);
+      const { reserveInvite } = require("./invite-utils");
+      const result = await inviteRef.transaction(
+        current => reserveInvite(current, { familyId, uid, now }), undefined, false);
       if (!result.committed) throw inviteError();
     }
     const profile = data && data.profile || {};
