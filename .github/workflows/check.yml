@@ -120,6 +120,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Invitation expiry and reuse
+        run: node --test tests/security/invite-test.mjs
       - name: Install local emulator test dependencies
         run: |
           npm init -y > /dev/null
