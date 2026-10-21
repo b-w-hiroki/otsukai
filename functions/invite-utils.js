@@ -11,4 +11,17 @@ function reserveInvite(current, { familyId, uid, now }) {
   return { ...current, redeemed: { ...redeemed, [uid]: now } };
 }
 
-module.exports = { reserveInvite };
+function admitMember(current, { code, uid, name, emoji, now, expiresAt }) {
+  if (!current || !current.meta || current.meta.inviteCode !== code ||
+      !current.members || (expiresAt !== null && expiresAt <= now)) return;
+  if (current.members[uid]) return current;
+  return {
+    ...current,
+    members: {
+      ...current.members,
+      [uid]: { name, emoji, joinedAt: now, role: "member", memberRole: "child" }
+    }
+  };
+}
+
+module.exports = { reserveInvite, admitMember };
