@@ -844,7 +844,8 @@ exports.createFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     }
     const db = admin.database();
     const familyRef = db.ref(`families/${familyId}`);
-    const family = (await familyRef.once("value")).val();
+    const { withLiveFamily } = require("./live-family");
+    return withLiveFamily(familyRef, async family => {
     if (!family || !family.members || !family.members[context.auth.uid] ||
         family.members[context.auth.uid].memberRole !== "parent") {
       throw new functions.https.HttpsError("permission-denied", "保護者のみ招待できます");
@@ -878,6 +879,7 @@ exports.createFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
       throw new functions.https.HttpsError("permission-denied", "保護者のみ招待できます");
     }
     return { code, expiresAt: issued.expiresAt };
+    });
   });
 
 exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
