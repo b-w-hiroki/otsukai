@@ -865,8 +865,9 @@ exports.createFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     }
     if (!code) throw new functions.https.HttpsError("internal", "招待コードを作れませんでした");
     // The old code no longer passes redemption once meta points to the new code.
-    await familyRef.child("meta/inviteCode").set(code);
-    return { code, expiresAt: Date.now() + 7 * 86400000 };
+    const issued = (await inviteRef.once("value")).val();
+    await familyRef.child("meta").update({ inviteCode: code, inviteExpiresAt: issued.expiresAt });
+    return { code, expiresAt: issued.expiresAt };
   });
 
 exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
