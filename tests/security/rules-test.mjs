@@ -44,6 +44,7 @@ async function run() {
   await assertFails(db("outsider").ref("invites/FAKE").set(family));
   await assertFails(db("outsider").ref("invites/LEGACY").once("value"));
   await assertFails(member("child").update({ role: "admin" }));
+  await assertFails(member("child").update({ memberRole: "parent" }));
   await assertFails(member("legacy").update({ role: "admin", memberRole: "parent" }));
   await assertSucceeds(member("child").update({ name: "Child renamed" }));
   await assertSucceeds(member("legacy").update({ name: "Legacy renamed" }));
