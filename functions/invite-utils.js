@@ -6,8 +6,8 @@ function admitMember(current, { code, uid, name, emoji, now, legacy }) {
   if (current.members[uid]) return current;
   const meta = current.meta;
   // Old string mappings are bounded on their first successful admission.
-  const expiresAt = meta.inviteExpiresAt || (legacy ? now + 7 * 86400000 : null);
-  const maxUses = meta.inviteMaxUses || (legacy ? 10 : null);
+  const expiresAt = meta.inviteExpiresAt ?? (legacy ? now + 7 * 86400000 : null);
+  const maxUses = meta.inviteMaxUses ?? (legacy ? 10 : null);
   if (!Number.isFinite(expiresAt) || expiresAt <= now ||
       !Number.isInteger(maxUses) || maxUses < 1) return;
   const redeemed = meta.inviteRedemptions || {};
