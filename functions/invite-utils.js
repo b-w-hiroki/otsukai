@@ -30,4 +30,11 @@ function admitMember(current, { code, uid, name, emoji, now, expiresAt }) {
   };
 }
 
-module.exports = { reserveInvite, admitMember };
+function publishInvite(current, { uid, code, expiresAt }) {
+  if (!current || !current.meta || !current.members ||
+      !current.members[uid] || current.members[uid].memberRole !== "parent") return;
+  return { ...current, meta: { ...current.meta,
+    inviteCode: code, inviteExpiresAt: expiresAt } };
+}
+
+module.exports = { reserveInvite, admitMember, publishInvite };
