@@ -29,6 +29,7 @@ try {
   const concurrent = await Promise.allSettled([
     redeemInvite(db, args("a")), redeemInvite(db, args("b"))
   ]);
+  console.log("concurrent results", concurrent.map(x => x.status === "rejected" ? String(x.reason) : x.value));
   assert.equal(concurrent.filter(x => x.status === "fulfilled").length, 1);
   const first = concurrent.findIndex(x => x.status === "fulfilled") === 0 ? "a" : "b";
   const family = (await db.ref("families/family").once("value")).val();
