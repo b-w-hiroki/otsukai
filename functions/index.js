@@ -887,34 +887,13 @@ exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
     const code = data && data.code;
     if (typeof code !== "string" || !/^[A-HJ-NP-Z2-9]{6,12}$/.test(code)) throw inviteError();
-    const db = admin.database();
-    const inviteRef = db.ref(`invites/${code}`);
-    const invite = (await inviteRef.once("value")).val();
-    const familyId = typeof invite === "string" ? invite : invite && invite.familyId;
-    if (typeof familyId !== "string" || !/^[-A-Za-z0-9_]{1,128}$/.test(familyId)) throw inviteError();
-    const familyRef = db.ref(`families/${familyId}`);
-    const family = (await familyRef.once("value")).val();
-    if (!family || !family.meta || family.meta.inviteCode !== code || !family.members) throw inviteError();
-    const uid = context.auth.uid;
-    if (family.members[uid]) return { familyId };
-    const { reserveInvite } = require("./invite-utils");
-    const reserved = await inviteRef.transaction(
-      current => reserveInvite(current, { familyId, uid, now: Date.now() }),
-      undefined, false);
-    if (!reserved.committed) throw inviteError();
-    const expiresAt = reserved.snapshot.val().expiresAt;
-    const profile = data && data.profile || {};
-    const name = typeof profile.name === "string" ? profile.name.slice(0, 80) : "";
-    const emoji = typeof profile.emoji === "string" ? profile.emoji.slice(0, 8) : "";
-    const { admitMember } = require("./invite-utils");
-    // The transaction retries against the current family. Rotation or deletion
-    // between code reservation and membership creation therefore cannot admit
-    // a user under a stale code.
-    const admitted = await familyRef.transaction(
-      current => admitMember(current, {
-        code, uid, name, emoji, now: Date.now(),
-        expiresAt
-      }), undefined, false);
-    if (!admitted.committed) throw inviteError();
-    return { familyId };
+    const { redeemInvite, InvalidInviteError } = require("./invite-service");
+    try {
+      return await redeemInvite(admin.database(), {
+        code, uid: context.auth.uid, profile: data && data.profile
+      });
+    } catch (e) {
+      if (e instanceof InvalidInviteError) throw inviteError();
+      throw e;
+    }
   });
