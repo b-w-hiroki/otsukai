@@ -41,7 +41,7 @@ async function run() {
   await assertSucceeds(member("legacy").update({ name: "Legacy renamed" }));
   await assertSucceeds(db("child").ref(`families/${family}/requests/new`).set({ name: "Allowed" }));
   await assertSucceeds(member("parent").update({ name: "Parent renamed" }));
-  await assertSucceeds(member("new-child").set({ role: "member", memberRole: "child" }).catch(e => { throw e; }));
+  await assertSucceeds(db("parent").ref(`families/${family}/members/new-child`).set({ role: "member", memberRole: "child" }));
   await assertFails(db("child").ref("families/other-family").once("value"));
   await assertFails(db("child").ref("families/other-family/requests/new").set({ name: "No" }));
 }
