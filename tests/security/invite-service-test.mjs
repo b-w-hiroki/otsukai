@@ -24,6 +24,8 @@ function fakeDb({ maxUses = 2, legacy = false } = {}) {
       const [collection, key] = path.split("/");
       return {
         async once() { return { val: () => clone(state[collection][key]) }; },
+        on(_event, listener) { listener({ val: () => clone(state[collection][key]) }); },
+        off() {},
         async transaction(transform) {
           if (collection === "families" && beforeFamilyTransaction) {
             const callback = beforeFamilyTransaction;
