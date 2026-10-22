@@ -95,3 +95,10 @@ test("expiry and legacy first-use bound", async () => {
   assert.equal(legacy.state.families.family.meta.inviteExpiresAt, 900 + 7 * 86400000);
   assert.equal(legacy.state.families.family.meta.inviteMaxUses, 10);
 });
+test("legacy cutoff is disabled by default and rejects only when explicitly set", async () => {
+  const before = fakeDb({ legacy: true });
+  await assert.rejects(redeemInvite(before, { ...args("child"), legacyCutoff: 900 }), denied);
+  assert.equal(before.state.families.family.members.child, undefined);
+  const during = fakeDb({ legacy: true });
+  assert.deepEqual(await redeemInvite(during, { ...args("child"), legacyCutoff: 901 }), { familyId: "family" });
+});
