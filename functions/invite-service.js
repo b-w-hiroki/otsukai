@@ -6,9 +6,11 @@ class InvalidInviteError extends Error {
   constructor() { super("invalid invite"); this.code = "invalid-invite"; }
 }
 
-async function redeemInvite(db, { code, uid, profile, clock = Date.now }) {
+async function redeemInvite(db, { code, uid, profile, clock = Date.now, legacyCutoff = null }) {
   const invalid = () => { throw new InvalidInviteError(); };
   const invite = (await db.ref(`invites/${code}`).once("value")).val();
+  if (typeof invite === "string" && legacyCutoff !== null &&
+      (!Number.isFinite(legacyCutoff) || clock() >= legacyCutoff)) invalid();
   const familyId = typeof invite === "string" ? invite : invite && invite.familyId;
   if (typeof familyId !== "string" || !/^[-A-Za-z0-9_]{1,128}$/.test(familyId)) invalid();
   const familyRef = db.ref(`families/${familyId}`);
