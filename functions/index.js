@@ -22,6 +22,9 @@ admin.initializeApp();
 //   データ転送費をゼロにする
 // - RUNTIME_OPTS はどの関数も軽処理のため最小メモリ 128MB（GB秒 ≒ 半減）
 const REGION = "asia-southeast1";
+// Inactive by default: choose a cutoff only after parents can renew codes and
+// the migration window is approved. A change here requires a functions deploy.
+const LEGACY_INVITE_CUTOFF_MS = null;
 const RUNTIME_OPTS = { memory: "128MB", timeoutSeconds: 60 };
 const DB_INSTANCE = "otsukai-app-4b62b-default-rtdb";
 // お問い合わせフォームの通知メールの届け先。送信に使う Gmail アカウント
@@ -825,4 +828,76 @@ exports.submitContactForm = functions
       console.error("お問い合わせメール送信失敗:", e);
     }
     return { ok: true };
+  });
+
+
+// Membership writes use Admin SDK only after a server-verified invitation.
+// Legacy string invites are accepted only when they still match the family's
+// original meta.inviteCode. They are retired when a parent issues a new code.
+function inviteError() {
+  return new functions.https.HttpsError("failed-precondition", "招待コードを確認してください");
+}
+
+exports.createFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
+  .https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
+    const familyId = data && data.familyId;
+    if (typeof familyId !== "string" || !/^[-A-Za-z0-9_]{1,128}$/.test(familyId)) {
+      throw new functions.https.HttpsError("invalid-argument", "家族IDが正しくありません");
+    }
+    const db = admin.database();
+    const familyRef = db.ref(`families/${familyId}`);
+    const { withLiveFamily } = require("./live-family");
+    return withLiveFamily(familyRef, async family => {
+    if (!family || !family.members || !family.members[context.auth.uid] ||
+        family.members[context.auth.uid].memberRole !== "parent") {
+      throw new functions.https.HttpsError("permission-denied", "保護者のみ招待できます");
+    }
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const crypto = require("crypto");
+    let code;
+    let inviteRef;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      code = Array.from(crypto.randomBytes(12), b => alphabet[b % alphabet.length]).join("");
+      inviteRef = db.ref(`invites/${code}`);
+      const result = await inviteRef.transaction(current => current === null ? {
+        familyId, issuedBy: context.auth.uid, expiresAt: Date.now() + 7 * 86400000,
+        maxUses: 10, redeemed: {}
+      } : undefined, undefined, false);
+      if (result.committed) break;
+      code = null;
+    }
+    if (!code) throw new functions.https.HttpsError("internal", "招待コードを作れませんでした");
+    // The old code no longer passes redemption once meta points to the new code.
+    const issued = (await inviteRef.once("value")).val();
+    const { publishInvite } = require("./invite-utils");
+    const updated = await familyRef.transaction(
+      current => publishInvite(current, {
+        uid: context.auth.uid, code, expiresAt: issued.expiresAt
+      }), undefined, false);
+    if (!updated.committed) {
+      // An orphan record has no authority: redemption checks the active code
+      // in the family transaction. Remove it as best effort.
+      await inviteRef.remove().catch(() => {});
+      throw new functions.https.HttpsError("permission-denied", "保護者のみ招待できます");
+    }
+    return { code, expiresAt: issued.expiresAt };
+    });
+  });
+
+exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
+  .https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "ログインが必要です");
+    const code = data && data.code;
+    if (typeof code !== "string" || !/^[A-HJ-NP-Z2-9]{6,12}$/.test(code)) throw inviteError();
+    const { redeemInvite, InvalidInviteError } = require("./invite-service");
+    try {
+      return await redeemInvite(admin.database(), {
+        code, uid: context.auth.uid, profile: data && data.profile,
+        legacyCutoff: LEGACY_INVITE_CUTOFF_MS
+      });
+    } catch (e) {
+      if (e instanceof InvalidInviteError) throw inviteError();
+      throw e;
+    }
   });

@@ -127,7 +127,7 @@ firebase functions:log --only shoppingReminder
 
 ---
 
-## 含まれる関数（10個）
+## 含まれる関数（12個）
 
 | 関数 | トリガー | 内容 |
 |---|---|---|
@@ -140,6 +140,8 @@ firebase functions:log --only shoppingReminder
 | `weeklySummary` | 毎週日曜 20:00 JST | 週の完了件数とMVPを家族全員へ配信（完了ゼロなら送らない） |
 | `archiveOldRequests` | 毎日 03:15 JST | 完了から90日過ぎた依頼とコメントを `archive/` へ移動＋古い週次ミッションデータの掃除 |
 | `deleteMemberAccount` | callable（**本人のみ**。役割問わず自分自身のアカウントをいつでも削除可） | 自分のアカウント完全削除。他人の指定は permission-denied で拒否。**最後の保護者は削除不可**（家族ロック防止） |
+| `createFamilyInvite` | callable（家族の保護者のみ） | 期限付き招待コードを発行し、家族データとの同一トランザクションで保護者権限を再確認する |
+| `redeemFamilyInvite` | callable（ログイン済みの参加者） | 招待を検証し、使用記録と子メンバー作成を家族データの同一トランザクションで確定する |
 | `submitContactForm` | callable（`contact.html`から・未ログインでも可） | お問い合わせを `contactMessages` にサービスID・名称とともに記録し、Gmail SMTP経由で開発者へメール通知（未設定ならDB記録のみ）。`serviceId` は `otsukai`（省略時）または `fictionWarArchive` のみ。後者は入力件名をそのまま使い、差出人表示・本文でサービスを識別 |
 
 `firebase deploy --only functions` でまとめてデプロイされます。

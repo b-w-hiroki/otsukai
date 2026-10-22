@@ -682,7 +682,17 @@ function renderSettings() {
   state.settingsEmoji = state.profile.emoji;
   renderEmojiPicker("set-emoji-picker", "settingsEmoji");
   $("set-family-name").textContent = (state.family.meta && state.family.meta.name) || "";
-  $("set-invite-code").value = (state.family.meta && state.family.meta.inviteCode) || "";
+  const inviteMeta = state.family.meta || {};
+  $("set-invite-code").value = inviteMeta.inviteCode || "";
+  const expiresAt = inviteMeta.inviteExpiresAt;
+  $("set-invite-status").textContent = !inviteMeta.inviteCode
+    ? "招待コードはまだありません。保護者が発行してください。"
+    : expiresAt && expiresAt <= Date.now()
+      ? "招待コードの期限が切れました。保護者が新しいコードを発行してください。"
+      : expiresAt
+        ? "有効期限: " + new Date(expiresAt).toLocaleString("ja-JP") + "（最大10人）"
+        : "旧形式のコードです。保護者は新しい期限付きコードへ切り替えてください。";
+  $("btn-renew-invite").style.display = state.myRole === "parent" ? "" : "none";
   const members = (state.family && state.family.members) || {};
   $("member-list").innerHTML = Object.entries(members).map(([uid, m]) => `
     <span class="member-chip">
