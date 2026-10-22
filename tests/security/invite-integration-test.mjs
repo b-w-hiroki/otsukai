@@ -30,7 +30,7 @@ try {
   const tracingDb = { ref(path) {
     const ref = db.ref(path);
     if (path !== "families/family") return ref;
-    return { once: (...xs) => ref.once(...xs), transaction: (fn, ...xs) => ref.transaction(current => {
+    return { once: (...xs) => ref.once(...xs), on: (...xs) => ref.on(...xs), off: (...xs) => ref.off(...xs), transaction: (fn, ...xs) => ref.transaction(current => {
       console.log("transaction current", JSON.stringify(current));
       return fn(current);
     }, ...xs) };
@@ -52,7 +52,7 @@ try {
   const failingDb = { ref(path) {
     const ref = db.ref(path);
     if (path !== "families/family") return ref;
-    return { once: (...xs) => ref.once(...xs),
+    return { once: (...xs) => ref.once(...xs), on: (...xs) => ref.on(...xs), off: (...xs) => ref.off(...xs),
       transaction: async () => { throw new Error("transient"); } };
   } };
   await assert.rejects(redeemInvite(failingDb, args("retry")), /transient/);
