@@ -25,15 +25,15 @@ await page.evaluate(() => {
   firebase.app = () => ({ functions: region => ({ httpsCallable: name => async payload => {
     if (region !== "asia-southeast1" || name !== "createFamilyInvite" || payload.familyId !== state.familyId) throw new Error("unexpected callable");
     window.__renewalCalls++;
-    state.family.meta.inviteCode = "NEWCODE23456";
+    state.family.meta.inviteCode = "ABCDEFGHJKLM";
     state.family.meta.inviteExpiresAt = Date.now() + 7 * 86400000;
     renderSettings();
-    return { data: { code: "NEWCODE23456" } };
+    return { data: { code: "ABCDEFGHJKLM" } };
   } }) });
 });
 await button.click();
 await page.waitForFunction(() => window.__renewalCalls === 1 && !document.getElementById("btn-renew-invite").disabled);
-check("成功後に新コードが表示される", await page.locator("#set-invite-code").inputValue() === "NEWCODE23456");
+check("成功後に新コードが表示される", await page.locator("#set-invite-code").inputValue() === "ABCDEFGHJKLM");
 check("成功後に期限が表示される", (await page.locator("#set-invite-status").textContent()).includes("有効期限"));
 await page.evaluate(() => {
   state.myRole = "child";
