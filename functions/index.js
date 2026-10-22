@@ -22,6 +22,9 @@ admin.initializeApp();
 //   データ転送費をゼロにする
 // - RUNTIME_OPTS はどの関数も軽処理のため最小メモリ 128MB（GB秒 ≒ 半減）
 const REGION = "asia-southeast1";
+// Inactive by default: choose a cutoff only after parents can renew codes and
+// the migration window is approved. A change here requires a functions deploy.
+const LEGACY_INVITE_CUTOFF_MS = null;
 const RUNTIME_OPTS = { memory: "128MB", timeoutSeconds: 60 };
 const DB_INSTANCE = "otsukai-app-4b62b-default-rtdb";
 // お問い合わせフォームの通知メールの届け先。送信に使う Gmail アカウント
@@ -890,7 +893,8 @@ exports.redeemFamilyInvite = functions.region(REGION).runWith(RUNTIME_OPTS)
     const { redeemInvite, InvalidInviteError } = require("./invite-service");
     try {
       return await redeemInvite(admin.database(), {
-        code, uid: context.auth.uid, profile: data && data.profile
+        code, uid: context.auth.uid, profile: data && data.profile,
+        legacyCutoff: LEGACY_INVITE_CUTOFF_MS
       });
     } catch (e) {
       if (e instanceof InvalidInviteError) throw inviteError();
