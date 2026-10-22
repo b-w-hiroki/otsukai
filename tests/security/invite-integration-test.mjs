@@ -26,19 +26,9 @@ async function seed(maxUses = 1) {
 }
 try {
   await seed();
-  console.log("seed", JSON.stringify((await db.ref("families/family").once("value")).val()));
-  const tracingDb = { ref(path) {
-    const ref = db.ref(path);
-    if (path !== "families/family") return ref;
-    return { once: (...xs) => ref.once(...xs), on: (...xs) => ref.on(...xs), off: (...xs) => ref.off(...xs), transaction: (fn, ...xs) => ref.transaction(current => {
-      console.log("transaction current", JSON.stringify(current));
-      return fn(current);
-    }, ...xs) };
-  } };
   const concurrent = await Promise.allSettled([
-    redeemInvite(tracingDb, args("a")), redeemInvite(tracingDb, args("b"))
+    redeemInvite(db, args("a")), redeemInvite(db, args("b"))
   ]);
-  console.log("concurrent results", concurrent.map(x => x.status === "rejected" ? String(x.reason) : x.value));
   assert.equal(concurrent.filter(x => x.status === "fulfilled").length, 1);
   const first = concurrent.findIndex(x => x.status === "fulfilled") === 0 ? "a" : "b";
   const family = (await db.ref("families/family").once("value")).val();
