@@ -218,6 +218,27 @@
     footer .links { display: flex; flex-wrap: wrap; gap: 0 4px; }
     footer .links a { display: inline-block; padding: 10px 8px 10px 0; color: var(--ink-2); }
     footer .copy { margin-top: 12px; }
+  
+    .product-story figcaption, .story-step { color: var(--pri-dark); }
+    .story-step { background: var(--pri-soft); border-radius: 12px; min-height: 44px; display: grid; place-items: center; }
+    /* Product story: illustration of a use case, not an interactive app screen. */
+    .product-story { min-width: 0; margin: 0; padding: 24px; border: 1px solid var(--line, var(--border)); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow, 0 16px 40px rgb(0 0 0 / .08)); }
+    .product-story figcaption { font-size: 12px; font-weight: 700; letter-spacing: .08em; margin-bottom: 18px; }
+    .product-story h2 { font-size: clamp(24px, 5vw, 32px); line-height: 1.4; margin: 0 0 20px; }
+    .story-note { font-size: 12px; line-height: 1.6; margin: 16px 0 0; color: var(--muted); }
+    .story-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+    .story-steps li { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line, var(--border)); }
+    .story-steps li:last-child { border-bottom: 0; }
+    .story-step { font-size: 13px; font-weight: 800; }
+    .story-steps strong { display: block; font-size: 18px; line-height: 1.5; }
+    .story-steps small { display: block; font-size: 13px; line-height: 1.7; }
+    .story-amount { font-variant-numeric: tabular-nums; font-size: 28px; font-weight: 800; }
+    .story-status { display: inline-block; padding: 3px 10px; border: 1px solid currentColor; border-radius: 99px; font-size: 12px; }
+    .story-calendar { border: 1px solid var(--line, var(--border)); border-radius: 16px; overflow: hidden; }
+    .story-calendar img { display: block; width: 100%; height: auto; }
+    .story-milk { width: 64px; height: 64px; float: right; margin-left: 12px; }
+    @media (max-width: 480px) { .product-story { padding: 20px; border-radius: 20px; } }
+
   </style>
 
   <!-- birdman studio の姉妹アプリ導線（4アプリ共通）。アプリ一覧は sister-apps.js の APPS だけを編集する -->
@@ -292,12 +313,17 @@
         </div>
         <p class="note">インストール不要。iPhone / Android のブラウザで開いて、「ホーム画面に追加」するとアプリのように使えます。</p>
       </div>
-      <div class="stage" aria-hidden="true">
-        <div class="phone"><img src="./docs/screenshots/01-home.png" width="480" height="1039" alt="" fetchpriority="high" /></div>
-        <div class="chip c1"><img src="./shortcut-icons/milk.svg" alt="" /></div>
-        <div class="chip c2"><img src="./shortcut-icons/egg.svg" alt="" /></div>
-        <div class="chip c3"><img src="./shortcut-icons/carrot.svg" alt="" /></div>
-      </div>
+      <figure class="product-story" aria-label="牛乳のおつかいを家族で共有する利用イメージ">
+        <figcaption>ひとつのおつかいから、ありがとうまで。</figcaption>
+        <img class="story-milk" src="./shortcut-icons/milk.svg" alt="" width="64" height="64">
+        <h2 class="maru">牛乳、お願い。</h2>
+        <ol class="story-steps">
+          <li><span class="story-step">01</span><div><small>頼む</small><strong>牛乳をリストに追加</strong></div></li>
+          <li><span class="story-step">02</span><div><small>担当が決まる</small><strong>「買うよ」で宣言</strong></div></li>
+          <li><span class="story-step">03</span><div><small>買えたら完了</small><strong>「買ったよ」に、ありがとう。</strong></div></li>
+        </ol>
+        <p class="story-note">家族で使う流れのイメージです。実際の買い物データではありません。</p>
+      </figure>
     </div>
 
     <section id="why">
