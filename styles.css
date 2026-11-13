@@ -70,11 +70,12 @@ body {
 .launch-guide-kicker { margin: 20px 0 6px; color: var(--pri); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
 .launch-guide h1 { margin: 0; font-size: clamp(28px, 8vw, 36px); }
 .launch-guide-lead { max-width: 340px; margin: 14px 0 18px; color: var(--ink-2); font-size: 15px; line-height: 1.8; }
-.launch-guide-points { width: 100%; display: grid; gap: 8px; margin-bottom: 24px; }
-.launch-guide-points span { min-height: 44px; padding: 10px 14px; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); font-weight: 700; font-size: 13px; }
+.launch-guide-points { width: fit-content; max-width: 100%; display: grid; gap: 8px; margin: 0 0 24px; padding: 0; list-style: none; text-align: left; }
+.launch-guide-points li { display: flex; align-items: baseline; gap: 10px; color: var(--ink-2); font-size: .875rem; line-height: 1.6; }
+.launch-guide-points li span { flex: 0 0 auto; }
 .launch-guide-actions { width: 100%; }
 .launch-guide-actions > button { min-height: 48px; }
-.launch-guide-note { margin: 7px 0 10px; color: var(--muted); font-size: 11px; }
+.launch-guide-note { margin: 7px 0 10px; color: var(--ink-2); font-size: .75rem; line-height: 1.6; }
 .launch-guide-about { min-height: 44px; margin-top: 8px; padding: 8px 14px; background: transparent; color: var(--pri); box-shadow: none; text-decoration: underline; text-underline-offset: 3px; }
 .launch-guide-about:hover:not(:disabled) { transform: none; box-shadow: none; }
 
@@ -93,8 +94,7 @@ body {
   .launch-guide-logo { width: 64px; height: 64px; }
   .launch-guide-kicker { margin-top: 10px; }
   .launch-guide-lead { margin: 8px 0 10px; }
-  .launch-guide-points { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
-  .launch-guide-points span { padding: 8px 5px; }
+  .launch-guide-points { gap: 4px; margin-bottom: 16px; }
 }
 
 /* ======= Layout ======= */
